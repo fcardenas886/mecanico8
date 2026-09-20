@@ -1,0 +1,11 @@
+.env
+*.stackdump
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
+
+# Archivos subidos por usuarios y respaldos locales
+uploads/*
+!uploads/.gitkeep
+*.sql.bak
