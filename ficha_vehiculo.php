@@ -173,5 +173,27 @@ $stmtComp->execute([
 ]);
 $repuestosCompatibles = $stmtComp->fetchAll();
 
+// Lo último que se le puso a ESTE auto (por tipo de repuesto), según sus órdenes entregadas.
+$stmtUsados = $pdo->prepare("
+    SELECT p.ProductoID, p.Nombre, p.TipoRepuesto, p.ViscosidadAceite, p.MarcaRepuesto, p.PrecioVenta, p.Stock,
+           ot.OrdenTrabajoID, ot.FechaEntrega, ot.KilometrajeIngreso
+    FROM presupuestodetalle pd
+    JOIN presupuestos pr ON pd.PresupuestoID = pr.PresupuestoID
+    JOIN ordenestrabajo ot ON pr.OrdenTrabajoID = ot.OrdenTrabajoID
+    JOIN productos p ON pd.ProductoID = p.ProductoID
+    WHERE ot.VehiculoID = :v AND ot.Estado = 'Entregado' AND pd.Aprobado = 1
+      AND pd.TipoLinea = 'Repuesto' AND p.TipoRepuesto <> 'General'
+    ORDER BY ot.FechaEntrega DESC
+");
+$stmtUsados->execute([':v' => $vehiculo['VehiculoID']]);
+$usadosEnEsteAuto = [];
+foreach ($stmtUsados->fetchAll() as $u) {
+    $usadosEnEsteAuto[$u['TipoRepuesto']] ??= $u;
+}
+
+// Lo ya mostrado como "usado en este auto" no se repite en la lista del modelo.
+$idsUsados = array_column($usadosEnEsteAuto, 'ProductoID');
+$repuestosCompatibles = array_values(array_filter($repuestosCompatibles, fn($r) => !in_array($r['ProductoID'], $idsUsados)));
+
 include __DIR__ . '/views/ficha_vehiculo.view.php';
 require_once __DIR__ . '/includes/footer.php';

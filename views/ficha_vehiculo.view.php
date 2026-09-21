@@ -198,8 +198,12 @@
               </span>
             </div>
             <div style="font-size: 0.8rem; color: #cbd5e1; margin-top: 0.3rem;">
-              Realizado a los <strong><?= number_format($m['KilometrajeRealizado'], 0, ',', '.') ?> km</strong>
-              (<?= date('d/m/Y', strtotime($m['FechaRealizado'])) ?>)
+              Realizado el <strong><?= date('d/m/Y', strtotime($m['FechaRealizado'])) ?></strong>
+              <?php if ((int)$m['KilometrajeRealizado'] > 0): ?>
+                a los <strong><?= number_format($m['KilometrajeRealizado'], 0, ',', '.') ?> km</strong>
+              <?php else: ?>
+                <span style="color: var(--text-muted);">(no se anotó el kilometraje en esa visita)</span>
+              <?php endif; ?>
               <?php if ($m['KilometrajeProximo']): ?>
                 • Próximo cambio a los: <strong><?= number_format($m['KilometrajeProximo'], 0, ',', '.') ?> km</strong>
                 <?php if ($m['DiferenciaKm'] !== null): ?>
@@ -253,7 +257,37 @@ $nombreAuto = $vehiculo['Marca'] . ' ' . $vehiculo['Modelo'];
     </a>
   </div>
 
-  <?php if (empty($repuestosCompatibles)): ?>
+  <?php if (!empty($usadosEnEsteAuto)): ?>
+    <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: #c4b5fd; margin-bottom: 0.4rem;">
+      <i class="fa-solid fa-clock-rotate-left"></i> Lo último que se le puso a este auto
+    </div>
+    <div style="overflow-x: auto; margin-bottom: 1rem;">
+      <table class="table" style="font-size: 0.85rem;">
+        <thead><tr><th>Qué es</th><th>Repuesto</th><th>Cuándo</th><th>En bodega</th><th>Precio hoy</th></tr></thead>
+        <tbody>
+          <?php foreach ($usadosEnEsteAuto as $tipo => $u): ?>
+            <tr>
+              <td><span class="badge badge-success" style="font-size: 0.72rem;"><?= htmlspecialchars($tiposRepuestoTxt[$tipo] ?? $tipo) ?></span></td>
+              <td><strong style="color:#fff;"><?= htmlspecialchars($u['Nombre']) ?></strong><?= $u['ViscosidadAceite'] ? ' <span style="color:#f59e0b; font-weight:600;">(' . htmlspecialchars($u['ViscosidadAceite']) . ')</span>' : '' ?></td>
+              <td><?= date('d/m/Y', strtotime($u['FechaEntrega'])) ?><?= $u['KilometrajeIngreso'] ? ' · ' . number_format($u['KilometrajeIngreso'], 0, ',', '.') . ' km' : '' ?> <span style="color: var(--text-muted);">(<?= htmlspecialchars(formatFolioOT($u['OrdenTrabajoID'])) ?>)</span></td>
+              <td><?= $u['Stock'] > 0 ? '<span style="color:#34d399; font-weight:700;">' . (int)$u['Stock'] . ' disp.</span>' : '<span style="color:#f87171; font-weight:600;">Sin stock</span>' ?></td>
+              <td style="font-weight:700; color:#93c5fd;">$<?= number_format($u['PrecioVenta'], 0, ',', '.') ?></td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  <?php endif; ?>
+
+  <?php if (!empty($usadosEnEsteAuto) && !empty($repuestosCompatibles)): ?>
+    <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); margin-bottom: 0.4rem;">
+      Otros repuestos registrados para este modelo
+    </div>
+  <?php endif; ?>
+
+  <?php if (empty($repuestosCompatibles) && !empty($usadosEnEsteAuto)): ?>
+    <?php /* Ya se muestra lo usado en este auto; no hace falta el aviso de "sin datos". */ ?>
+  <?php elseif (empty($repuestosCompatibles)): ?>
     <div style="background: rgba(255,255,255,0.02); border: 1px dashed var(--border-dark); border-radius: 8px; padding: 1rem 1.25rem; display: flex; gap: 0.85rem; align-items: flex-start;">
       <i class="fa-solid fa-circle-info" style="color: #60a5fa; margin-top: 0.2rem;"></i>
       <div style="font-size: 0.88rem; line-height: 1.5;">
