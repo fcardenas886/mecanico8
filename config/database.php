@@ -1,10 +1,13 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v4.9.1');
+define('APP_VERSION', 'v4.9.2');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v4.9.2' => [
+        'Consulta rápida de repuestos (antes ¿Qué necesita este auto?): una sola caja para escribir un modelo o elegir un auto del taller, con aviso de cuándo conviene usar la ficha del vehículo.',
+    ],
     'v4.9.1' => [
         'Caja: la ventana Servicio ahora ofrece los servicios del catálogo con su precio ya cargado (se puede editar), además de escribir uno distinto.',
     ],

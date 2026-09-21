@@ -167,7 +167,7 @@ $changelogActual = APP_CHANGELOG[APP_VERSION] ?? [];
         <li><a href="ordenestrabajo.php" class="dropdown-item"><i class="fa-solid fa-clipboard-list"></i> Órdenes de trabajo (seguimiento)</a></li>
         <li><a href="vehiculos.php" class="dropdown-item"><i class="fa-solid fa-car-side"></i> Vehículos y su historial</a></li>
         <li class="dropdown-divider"></li>
-        <li><a href="buscador_repuestos.php" class="dropdown-item" style="color: #93c5fd;"><i class="fa-solid fa-wand-magic-sparkles"></i> ¿Qué necesita este auto?</a></li>
+        <li><a href="buscador_repuestos.php" class="dropdown-item" style="color: #93c5fd;"><i class="fa-solid fa-wand-magic-sparkles"></i> Consulta rápida de repuestos</a></li>
         <?php if (in_array(currentUser()['rol'] ?? '', ['Administrador', 'Supervisor'], true)): ?><li><a href="servicios.php" class="dropdown-item"><i class="fa-solid fa-tags"></i> Servicios y precios</a></li><?php endif; ?>
       </ul>
     </li>

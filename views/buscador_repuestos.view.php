@@ -47,10 +47,10 @@ function compatBadges(array $r): string {
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
   <div>
     <h1 style="font-size: 1.5rem; font-weight: 700;">
-      <i class="fa-solid fa-wand-magic-sparkles" style="color: #60a5fa;"></i> ¿Qué necesita este auto?
+      <i class="fa-solid fa-wand-magic-sparkles" style="color: #60a5fa;"></i> Consulta rápida de repuestos
     </h1>
     <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0.25rem 0 0 0;">
-      Buscador inteligente de aceites, filtros y repuestos compatibles con stock en bodega y guías técnicas públicas.
+      Consulta rápida: qué aceites, filtros y repuestos sirven para un modelo, y cuánto stock hay en bodega.
     </p>
   </div>
   <div style="display: flex; gap: 0.5rem;">
@@ -62,59 +62,43 @@ function compatBadges(array $r): string {
 
 <!-- Buscador Rápido -->
 <div class="br-search-box">
-  <form method="GET" action="buscador_repuestos.php" style="display: flex; flex-direction: column; gap: 1rem;">
-    
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; align-items: flex-end;">
-      
-      <!-- Opción 1: Elegir de vehículos registrados -->
-      <div>
-        <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.4rem;">
-          SELECCIONAR UN VEHÍCULO REGISTRADO EN EL TALLER
-        </label>
-        <select name="vehiculo_id" class="form-control" onchange="if(this.value) this.form.submit();">
-          <option value="">-- Elige un vehículo del taller --</option>
-          <?php foreach ($vehiculos as $v): 
-            $selected = $vehiculoId === (int)$v['VehiculoID'] ? 'selected' : '';
-          ?>
-            <option value="<?= $v['VehiculoID'] ?>" <?= $selected ?>>
-              [<?= htmlspecialchars($v['Patente']) ?>] <?= htmlspecialchars($v['Marca'] . ' ' . $v['Modelo'] . ($v['Anio'] ? ' ' . $v['Anio'] : '')) ?> — <?= htmlspecialchars($v['ClienteNombre']) ?>
-            </option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-
-      <!-- Opción 2: Búsqueda libre por Marca y Modelo -->
-      <div style="display: flex; gap: 0.5rem;">
-        <div style="flex: 1;">
-          <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.4rem;">
-            O ESCRIBE MARCA
-          </label>
-          <input type="text" name="marca" class="form-control" placeholder="Ej: Toyota" value="<?= htmlspecialchars($marcaParam) ?>">
-        </div>
-        <div style="flex: 1;">
-          <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.4rem;">
-            MODELO
-          </label>
-          <input type="text" name="modelo" class="form-control" placeholder="Ej: Yaris" value="<?= htmlspecialchars($modeloParam) ?>">
-        </div>
-      </div>
-
-      <div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; height: 42px;">
-          <i class="fa-solid fa-magnifying-glass"></i> Consultar Compatibilidad
-        </button>
-      </div>
-
+  <form method="GET" action="buscador_repuestos.php" style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end;">
+    <div style="flex: 1; min-width: 260px;">
+      <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.4rem;">AUTO O MODELO</label>
+      <input type="text" name="auto" list="brOpciones" class="form-control" autocomplete="off" placeholder="Escribe un modelo (Toyota Yaris) o elige un auto del taller"
+             value="<?= htmlspecialchars($vehiculoSeleccionado ? ('[' . $vehiculoSeleccionado['Patente'] . '] ' . $vehiculoSeleccionado['Marca'] . ' ' . $vehiculoSeleccionado['Modelo'] . ($vehiculoSeleccionado['Anio'] ? ' ' . $vehiculoSeleccionado['Anio'] : '') . ' — ' . $vehiculoSeleccionado['ClienteNombre']) : trim($marcaParam . ' ' . $modeloParam)) ?>">
+      <datalist id="brOpciones">
+        <?php foreach ($vehiculos as $v): ?>
+          <option value="[<?= htmlspecialchars($v['Patente']) ?>] <?= htmlspecialchars($v['Marca'] . ' ' . $v['Modelo'] . ($v['Anio'] ? ' ' . $v['Anio'] : '')) ?> — <?= htmlspecialchars($v['ClienteNombre']) ?>">
+        <?php endforeach; ?>
+        <?php foreach ($marcasModelos as $mm): ?>
+          <option value="<?= htmlspecialchars($mm['MarcaVehiculo'] . ' ' . $mm['ModeloVehiculo']) ?>">
+        <?php endforeach; ?>
+      </datalist>
     </div>
-
+    <button type="submit" class="btn btn-primary" style="height: 42px;">
+      <i class="fa-solid fa-magnifying-glass"></i> Buscar repuestos
+    </button>
+    <?php if ($vehiculoSeleccionado || $marcaParam !== '' || $modeloParam !== ''): ?>
+      <a href="buscador_repuestos.php" class="btn btn-secondary" style="height: 42px; display: inline-flex; align-items: center;">Limpiar</a>
+    <?php endif; ?>
   </form>
+  <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.75rem;">
+    <i class="fa-solid fa-circle-info"></i>
+    <?php if ($vehiculoSeleccionado): ?>
+      Estás viendo un auto del taller. Para su historial, VIN y lo último que se le puso, abre su
+      <a href="ficha_vehiculo.php?id=<?= (int)$vehiculoSeleccionado['VehiculoID'] ?>" style="color: #93c5fd; font-weight: 600;">ficha del vehículo</a>.
+    <?php else: ?>
+      Para consultas rápidas de cualquier modelo, aunque no sea cliente. Si el auto ya está en el taller, usa su ficha en <a href="vehiculos.php" style="color: #93c5fd; font-weight: 600;">Vehículos</a>, que es más precisa.
+    <?php endif; ?>
+  </div>
 </div>
 
 <!-- Si no hay búsqueda activa, sugerir accesos rápidos de autos populares -->
 <?php if (empty($marcaParam) && empty($modeloParam) && !$vehiculoSeleccionado): ?>
   <div class="fv-section">
     <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--text-muted); text-transform: uppercase;">
-      Vehículos más frecuentes en el taller (Consultas Rápidas)
+      Modelos frecuentes en el taller
     </h2>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;">
       <a href="buscador_repuestos.php?marca=Toyota&modelo=Yaris" class="br-quick-car">

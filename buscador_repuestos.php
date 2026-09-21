@@ -33,6 +33,33 @@ $vehiculoId = (int)($_GET['vehiculo_id'] ?? 0);
 $marcaParam = trim($_GET['marca'] ?? '');
 $modeloParam = trim($_GET['modelo'] ?? '');
 
+// Caja única "Auto o modelo": puede ser un auto del taller (patente/marca/modelo/cliente) o un modelo conocido.
+$consulta = trim($_GET['auto'] ?? '');
+if ($consulta !== '' && $vehiculoId <= 0 && $marcaParam === '' && $modeloParam === '') {
+    $norm = fn($s) => mb_strtolower(preg_replace('/\s+/', ' ', trim($s)));
+    $qn = $norm($consulta);
+    foreach ($vehiculos as $v) {
+        $etiqueta = '[' . $v['Patente'] . '] ' . $v['Marca'] . ' ' . $v['Modelo'] . ($v['Anio'] ? ' ' . $v['Anio'] : '') . ' — ' . $v['ClienteNombre'];
+        if ($norm($etiqueta) === $qn || $norm($v['Patente']) === $qn) { $vehiculoId = (int)$v['VehiculoID']; break; }
+    }
+    if ($vehiculoId <= 0) {
+        foreach ($marcasModelos as $mm) {
+            $par = $norm($mm['MarcaVehiculo'] . ' ' . $mm['ModeloVehiculo']);
+            if ($qn === $par || str_starts_with($qn, $par . ' ')) { $marcaParam = $mm['MarcaVehiculo']; $modeloParam = $mm['ModeloVehiculo']; break; }
+        }
+    }
+    if ($vehiculoId <= 0 && $marcaParam === '') {
+        $marcasConocidas = array_unique(array_map(fn($m) => $norm($m['MarcaVehiculo']), $marcasModelos));
+        $partes = explode(' ', $consulta, 2);
+        if (count($partes) === 1) {
+            if (in_array($qn, $marcasConocidas, true)) $marcaParam = $consulta; else $modeloParam = $consulta;
+        } else {
+            $marcaParam = $partes[0];
+            $modeloParam = $partes[1];
+        }
+    }
+}
+
 $vehiculoSeleccionado = null;
 if ($vehiculoId > 0) {
     $stmtV = $pdo->prepare("
