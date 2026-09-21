@@ -171,7 +171,14 @@ function compatBadges(array $r): string {
         (Patente: <code style="font-weight: 700;"><?= htmlspecialchars($vehiculoSeleccionado['Patente']) ?></code>)
         — Cliente: <?= htmlspecialchars($vehiculoSeleccionado['ClienteNombre']) ?>
       </div>
-      <div style="display: flex; gap: 0.5rem;">
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <?php if (!empty($vehiculoSeleccionado['VIN'])): ?>
+          <button type="button" onclick="buscarEnMannFilterConVin(<?= htmlspecialchars(json_encode($vehiculoSeleccionado['VIN']), ENT_QUOTES) ?>)" class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.78rem; border-color: #16a34a; color: #4ade80;" title="Copia el VIN y abre el catálogo Mann-Filter en otra pestaña">
+            <i class="fa-solid fa-filter"></i> Buscar en Mann-Filter con VIN
+          </button>
+        <?php else: ?>
+          <span style="font-size: 0.75rem; color: var(--text-muted); align-self: center;" title="Registra el VIN en la ficha del vehículo para poder buscar en Mann-Filter por VIN"><i class="fa-solid fa-circle-info"></i> Sin VIN registrado</span>
+        <?php endif; ?>
         <a href="ficha_vehiculo.php?id=<?= $vehiculoSeleccionado['VehiculoID'] ?>" class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.78rem;">
           <i class="fa-solid fa-file-waveform"></i> Ver Ficha Clínica
         </a>

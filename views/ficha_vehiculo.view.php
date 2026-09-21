@@ -72,6 +72,7 @@
               <span style="color: var(--text-muted); font-size: 0.75rem; font-family: monospace; margin-left: 0.3rem;">
                 VIN: <?= htmlspecialchars($vehiculo['VIN']) ?>
               </span>
+              <button type="button" onclick="buscarEnMannFilterConVin(<?= htmlspecialchars(json_encode($vehiculo['VIN']), ENT_QUOTES) ?>)" class="btn btn-secondary" style="padding: 0.15rem 0.5rem; font-size: 0.72rem; margin-left: 0.3rem;" title="Copia el VIN y abre el catálogo Mann-Filter"><i class="fa-solid fa-filter"></i> Buscar filtros con este VIN</button>
             <?php endif; ?>
           </div>
         <?php endif; ?>

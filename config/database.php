@@ -1,10 +1,13 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v4.6.0');
+define('APP_VERSION', 'v4.6.1');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v4.6.1' => [
+        'Botón "Buscar en Mann-Filter con VIN": copia el VIN del vehículo y abre el catálogo Mann-Filter en otra pestaña, listo para pegar.',
+    ],
     'v4.6.0' => [
         'El sistema aprende qué repuestos usa cada auto: al entregar una orden recuerda el aceite y los filtros (por marca, modelo, año y motor) y los sugiere la próxima vez.',
         '¿Qué necesita este auto? ahora muestra primero "Lo que ya usamos en este auto" y marca lo comprobado en el taller.',
