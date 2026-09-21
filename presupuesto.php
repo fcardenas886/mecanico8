@@ -159,7 +159,7 @@ $stmtDiag = $pdo->prepare("
 $stmtDiag->execute([':id' => $otId]);
 $hallazgos = $stmtDiag->fetchAll();
 
-$productos = $pdo->query("SELECT ProductoID, Nombre, PrecioVenta, Stock FROM productos WHERE Activo = TRUE ORDER BY Nombre ASC")->fetchAll();
+$productos = $pdo->query("SELECT ProductoID, Nombre, PrecioVenta, Stock, CodigoBarras, MarcaRepuesto, NumeroParteOEM, NumeroParteAlternativo FROM productos WHERE Activo = TRUE ORDER BY Nombre ASC")->fetchAll();
 
 require_once __DIR__ . '/includes/header.php';
 include __DIR__ . '/views/presupuesto.view.php';

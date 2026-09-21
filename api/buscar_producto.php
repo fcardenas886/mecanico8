@@ -16,6 +16,7 @@ try {
     $pdo = getDB();
 
     if (!empty($query)) {
+        $patronRef = patronReferencia($query); // busca también por N° de parte OEM / del fabricante
         // Búsqueda directa por texto / código de barra principal / códigos alternativos / PLU
         $stmt = $pdo->prepare("
             SELECT p.ProductoID, p.CodigoBarras, p.Nombre, p.PrecioVenta, p.CostoCompra, p.Stock, p.StockMinimo, p.UnidadMedida, p.EsPesable, p.CodigoPLU, p.CategoriaID,
@@ -34,6 +35,7 @@ try {
                 OR p.Nombre LIKE :like_q 
                 OR p.CodigoPLU = :plu
                 OR EXISTS (SELECT 1 FROM productoscodigos pc WHERE pc.ProductoID = p.ProductoID AND pc.CodigoBarras = :q_alt)
+                OR " . sqlCoincideReferencia('p', ':ref1', ':ref2') . "
             )
             ORDER BY (p.CodigoBarras = :q2) DESC, (pc_match.CodigoBarras IS NOT NULL) DESC, (p.CodigoPLU = :plu2) DESC, p.Nombre ASC 
             LIMIT 40
@@ -45,7 +47,9 @@ try {
             ':plu' => $query,
             ':q_alt' => $query,
             ':q2' => $query,
-            ':plu2' => $query
+            ':plu2' => $query,
+            ':ref1' => $patronRef,
+            ':ref2' => $patronRef
         ]);
     } elseif ($filtro === 'mas_vendidos') {
         // Ordenado por mayor volumen de venta histórico en detalleventas (compatible con ONLY_FULL_GROUP_BY)

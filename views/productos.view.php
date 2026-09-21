@@ -55,6 +55,13 @@
             <td><code><?= htmlspecialchars($p['CodigoBarras'] ?: 'SIN CÓDIGO') ?></code></td>
             <td style="font-weight: 600; color: #fff;">
               <?= htmlspecialchars($p['Nombre']) ?>
+              <?php if (!empty($p['NumeroParteAlternativo']) || !empty($p['NumeroParteOEM']) || !empty($p['MarcaRepuesto'])): ?>
+                <div style="font-size: 0.74rem; font-weight: 400; color: var(--text-muted); margin-top: 2px;">
+                  <?= $p['MarcaRepuesto'] ? htmlspecialchars($p['MarcaRepuesto']) . ' · ' : '' ?>
+                  <?= $p['NumeroParteAlternativo'] ? 'N° fabricante: <strong style="color:#cbd5e1;">' . htmlspecialchars($p['NumeroParteAlternativo']) . '</strong>' : '' ?>
+                  <?= $p['NumeroParteOEM'] ? ' · OEM: <strong style="color:#cbd5e1;">' . htmlspecialchars($p['NumeroParteOEM']) . '</strong>' : '' ?>
+                </div>
+              <?php endif; ?>
               <?php if (!$p['Activo']): ?>
                 <span class="badge badge-danger" style="font-size: 0.65rem; padding: 0.15rem 0.3rem; margin-left: 0.4rem;">INACTIVO</span>
               <?php endif; ?>
@@ -111,8 +118,8 @@
 </div>
 
 <!-- Modal Nuevo/Editar Producto -->
-<div id="productModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center;">
-  <div style="background: var(--card-bg); border: 1px solid var(--border-dark); border-radius: 16px; width: 450px; padding: 1.75rem; box-shadow: var(--shadow-lg);">
+<div id="productModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 1000; align-items: flex-start; justify-content: center; overflow-y: auto; padding: 1.5rem 1rem;">
+  <div style="background: var(--card-bg); border: 1px solid var(--border-dark); border-radius: 16px; width: 480px; max-width: 100%; padding: 1.75rem; margin: auto; box-shadow: var(--shadow-lg);">
     <h2 id="modalTitle" style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1.25rem;">Agregar Nuevo Producto</h2>
     
     <form method="POST" action="productos.php" style="display: flex; flex-direction: column; gap: 1rem;">
@@ -122,6 +129,7 @@
       <div>
         <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">CÓDIGO DE BARRAS</label>
         <input type="text" name="codigo_barras" id="prodCodigoInput" class="form-control" placeholder="Ej: 780123456789">
+        <small style="color: var(--text-muted); font-size: 0.72rem;">Es el código que se escanea al vender. Si el repuesto no trae código de barras, escribe un código interno propio (ej. FIL-W671).</small>
       </div>
       <div>
         <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">NOMBRE PRODUCTO *</label>
@@ -135,6 +143,42 @@
           <?php endforeach; ?>
         </select>
       </div>
+
+      <details id="detRepuesto" style="border: 1px solid var(--border-dark); border-radius: 10px; padding: 0.6rem 0.9rem;">
+        <summary style="cursor: pointer; font-size: 0.85rem; font-weight: 700; color: #93c5fd;"><i class="fa-solid fa-gears"></i> Datos de repuesto (aceites, filtros, frenos...)</summary>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.75rem;">
+          <div>
+            <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">TIPO DE REPUESTO</label>
+            <select name="tipo_repuesto" id="prodTipoRepuesto" class="form-control" onchange="toggleViscosidad()">
+              <?php foreach (tiposRepuesto() as $valor => $texto): ?>
+                <option value="<?= $valor ?>"><?= htmlspecialchars($texto) ?></option>
+              <?php endforeach; ?>
+            </select>
+            <small style="color: var(--text-muted); font-size: 0.72rem;">Necesario para que "¿Qué necesita este auto?" y el aprendizaje del taller lo reconozcan.</small>
+          </div>
+          <div>
+            <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">MARCA DEL REPUESTO</label>
+            <input type="text" name="marca_repuesto" id="prodMarcaRepuesto" class="form-control" placeholder="Ej: Mann-Filter, Bosch, Shell">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div>
+              <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">N° PARTE FABRICANTE</label>
+              <input type="text" name="numero_parte_alt" id="prodParteAlt" class="form-control" placeholder="Ej: W 67/1">
+              <small style="color: var(--text-muted); font-size: 0.72rem;">El de la caja (referencia de la marca).</small>
+            </div>
+            <div>
+              <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">N° PARTE OEM</label>
+              <input type="text" name="numero_parte_oem" id="prodParteOEM" class="form-control" placeholder="Ej: 15208-65F0A">
+              <small style="color: var(--text-muted); font-size: 0.72rem;">El del fabricante del auto.</small>
+            </div>
+          </div>
+          <div id="divViscosidad" style="display: none;">
+            <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">VISCOSIDAD DEL ACEITE</label>
+            <input type="text" name="viscosidad_aceite" id="prodViscosidad" class="form-control" placeholder="Ej: 5W-30">
+          </div>
+        </div>
+      </details>
+
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
         <div>
           <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">PRECIO VENTA ($) *</label>
@@ -196,6 +240,12 @@ function togglePluField() {
   }
 }
 
+function toggleViscosidad() {
+  const esAceite = document.getElementById('prodTipoRepuesto').value === 'Aceite';
+  document.getElementById('divViscosidad').style.display = esAceite ? 'block' : 'none';
+  if (!esAceite) document.getElementById('prodViscosidad').value = '';
+}
+
 function abrirNuevoModal() {
   document.getElementById('modalTitle').textContent = 'Agregar Nuevo Producto';
   document.getElementById('prodIdInput').value = '';
@@ -210,6 +260,10 @@ function abrirNuevoModal() {
   document.getElementById('prodEsPesableInput').checked = false;
   document.getElementById('prodCodigoPLUInput').value = '';
   togglePluField();
+  document.getElementById('prodTipoRepuesto').value = 'General';
+  ['prodMarcaRepuesto', 'prodParteAlt', 'prodParteOEM', 'prodViscosidad'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('detRepuesto').open = false;
+  toggleViscosidad();
 
   // Stock editable solo al crear (stock inicial)
   var stockInput = document.getElementById('prodStockInput');
@@ -234,6 +288,13 @@ function abrirEditarModal(p) {
   document.getElementById('prodEsPesableInput').checked = parseInt(p.EsPesable) === 1;
   document.getElementById('prodCodigoPLUInput').value = p.CodigoPLU || '';
   togglePluField();
+  document.getElementById('prodTipoRepuesto').value = p.TipoRepuesto || 'General';
+  document.getElementById('prodMarcaRepuesto').value = p.MarcaRepuesto || '';
+  document.getElementById('prodParteAlt').value = p.NumeroParteAlternativo || '';
+  document.getElementById('prodParteOEM').value = p.NumeroParteOEM || '';
+  document.getElementById('prodViscosidad').value = p.ViscosidadAceite || '';
+  document.getElementById('detRepuesto').open = (p.TipoRepuesto && p.TipoRepuesto !== 'General') || !!(p.NumeroParteAlternativo || p.NumeroParteOEM || p.MarcaRepuesto);
+  toggleViscosidad();
 
   // Al editar, el stock actual es de solo lectura: se ajusta por Compras/ventas/Ajustes
   var stockInput = document.getElementById('prodStockInput');

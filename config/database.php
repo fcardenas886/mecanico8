@@ -1,10 +1,15 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v4.6.1');
+define('APP_VERSION', 'v4.7.0');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v4.7.0' => [
+        'Productos: nuevos campos de repuesto (tipo, marca, N° de parte del fabricante y OEM, viscosidad) y aclaración de cuándo usar un código interno si el repuesto no trae código de barras.',
+        'Se puede buscar un repuesto por su número de parte en Productos, Caja POS y Presupuesto, escrito como sea (W 67/1, w671, W67-1).',
+        'Presupuesto: la lista de repuestos ahora tiene un filtro por nombre, marca o N° de parte. Las fichas y el buscador muestran el N° de parte real, no el código de barras.',
+    ],
     'v4.6.1' => [
         'Botón "Buscar en Mann-Filter con VIN": copia el VIN del vehículo y abre el catálogo Mann-Filter en otra pestaña, listo para pegar.',
     ],

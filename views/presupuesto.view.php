@@ -143,11 +143,16 @@ $decisionClase = [
         <input type="hidden" name="action" value="agregar_repuesto">
         <div style="flex: 1; min-width: 260px;">
           <label>REPUESTO</label>
-          <select name="producto_id" class="form-control" required>
+          <input type="search" id="filtroRepuesto" class="form-control" placeholder="Escribe nombre, marca o N° de parte (ej. W 67/1) para filtrar la lista" autocomplete="off" style="margin-bottom: 0.4rem;">
+          <select name="producto_id" id="selRepuesto" class="form-control" required>
             <option value="">Selecciona un repuesto...</option>
-            <?php foreach ($productos as $p): ?>
-              <option value="<?= $p['ProductoID'] ?>">
-                <?= htmlspecialchars($p['Nombre']) ?> — <?= formatCLP($p['PrecioVenta']) ?> (stock: <?= (float)$p['Stock'] ?>)
+            <?php foreach ($productos as $p):
+              $partes = array_filter([$p['MarcaRepuesto'], $p['NumeroParteAlternativo'], $p['NumeroParteOEM'], $p['CodigoBarras']]);
+            ?>
+              <option value="<?= $p['ProductoID'] ?>"
+                      data-plano="<?= htmlspecialchars(mb_strtolower($p['Nombre'] . ' ' . implode(' ', $partes))) ?>"
+                      data-norm="<?= htmlspecialchars(normalizarReferencia($p['Nombre'] . implode('', $partes))) ?>">
+                <?= htmlspecialchars($p['Nombre']) ?><?= $p['NumeroParteAlternativo'] ? ' · N° ' . htmlspecialchars($p['NumeroParteAlternativo']) : '' ?> — <?= formatCLP($p['PrecioVenta']) ?> (stock: <?= (float)$p['Stock'] ?>)
               </option>
             <?php endforeach; ?>
           </select>
@@ -330,3 +335,29 @@ $decisionClase = [
   </div>
 
 <?php endif; ?>
+
+<script>
+// Filtro de la lista de repuestos: por nombre, marca o número de parte (sin importar espacios, guiones o barras).
+(function () {
+  const filtro = document.getElementById('filtroRepuesto');
+  const sel = document.getElementById('selRepuesto');
+  if (!filtro || !sel) return;
+  const norm = s => s.toUpperCase().replace(/[\s\-\/\.]+/g, '');
+  const opciones = Array.from(sel.options).filter(o => o.value !== '');
+  filtro.addEventListener('input', function () {
+    const q = filtro.value.trim();
+    const tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
+    const qn = norm(q);
+    let visibles = [];
+    opciones.forEach(o => {
+      const coincide = !q || tokens.every(t => (o.dataset.plano || '').includes(t)) || (qn.length >= 3 && (o.dataset.norm || '').includes(qn));
+      o.hidden = !coincide;
+      o.disabled = !coincide;
+      if (coincide) visibles.push(o);
+    });
+    if (sel.selectedOptions[0] && sel.selectedOptions[0].disabled) sel.value = '';
+    if (q && visibles.length === 1) sel.value = visibles[0].value;
+    sel.options[0].textContent = !q ? 'Selecciona un repuesto...' : (visibles.length ? visibles.length + ' coincidencia(s): elige una' : 'Ningún repuesto coincide');
+  });
+})();
+</script>

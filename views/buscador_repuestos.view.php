@@ -1,7 +1,14 @@
 <?php
 // Etiquetas bajo cada repuesto: de dónde viene la sugerencia, para qué motor y avisos de compatibilidad.
 function compatBadges(array $r): string {
-    $h = '<div style="margin-top: 3px; display: flex; gap: 4px; flex-wrap: wrap; align-items: center;">';
+    $h = '';
+    if (!empty($r['NumeroParteAlternativo']) || !empty($r['NumeroParteOEM'])) {
+        $h .= '<div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 2px;">'
+            . (!empty($r['NumeroParteAlternativo']) ? 'N° fabricante: <strong style="color:#cbd5e1;">' . htmlspecialchars($r['NumeroParteAlternativo']) . '</strong>' : '')
+            . (!empty($r['NumeroParteOEM']) ? ' · OEM: <strong style="color:#cbd5e1;">' . htmlspecialchars($r['NumeroParteOEM']) . '</strong>' : '')
+            . '</div>';
+    }
+    $h .= '<div style="margin-top: 3px; display: flex; gap: 4px; flex-wrap: wrap; align-items: center;">';
     if (($r['Origen'] ?? '') === 'Aprendido') {
         $h .= '<span class="badge" style="background: rgba(167,139,250,0.18); color: #c4b5fd; font-size: 0.68rem;" title="El taller ya usó este repuesto en este modelo"><i class="fa-solid fa-brain"></i> Comprobado en el taller · ' . (int)$r['VecesUsado'] . ' ' . ((int)$r['VecesUsado'] === 1 ? 'vez' : 'veces') . '</span>';
     }

@@ -28,6 +28,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $esPesable = isset($_POST['es_pesable']) ? 1 : 0;
         $codigoPLU = !empty($_POST['codigo_plu']) ? trim($_POST['codigo_plu']) : null;
 
+        // Datos de repuesto (opcionales)
+        $tipoRepuesto = array_key_exists($_POST['tipo_repuesto'] ?? '', tiposRepuesto()) ? $_POST['tipo_repuesto'] : 'General';
+        $marcaRepuesto = trim($_POST['marca_repuesto'] ?? '') ?: null;
+        $parteOEM = trim($_POST['numero_parte_oem'] ?? '') ?: null;
+        $parteAlt = trim($_POST['numero_parte_alt'] ?? '') ?: null;
+        $viscosidad = ($tipoRepuesto === 'Aceite') ? (trim($_POST['viscosidad_aceite'] ?? '') ?: null) : null;
+
         // Validar PLU si es pesable
         if ($esPesable && $codigoPLU !== null && !preg_match('/^[0-9]{4}$/', $codigoPLU)) {
             $error = 'El Código PLU de la balanza debe tener exactamente 4 dígitos numéricos.';
@@ -42,7 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             SET CodigoBarras = :codigo, Nombre = :nombre, CategoriaID = :cat,
                                 PrecioVenta = :precio, CostoCompra = :costo,
                                 StockMinimo = :stockmin, Activo = :activo,
-                                EsPesable = :espesable, CodigoPLU = :plu
+                                EsPesable = :espesable, CodigoPLU = :plu,
+                                TipoRepuesto = :tiporep, MarcaRepuesto = :marcarep, NumeroParteOEM = :oem,
+                                NumeroParteAlternativo = :alt, ViscosidadAceite = :visc
                             WHERE ProductoID = :id
                         ");
                         $stmt->execute([
@@ -55,12 +64,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             ':activo' => $activo,
                             ':espesable' => $esPesable,
                             ':plu' => $codigoPLU,
+                            ':tiporep' => $tipoRepuesto, ':marcarep' => $marcaRepuesto, ':oem' => $parteOEM,
+                            ':alt' => $parteAlt, ':visc' => $viscosidad,
                             ':id' => $id
                         ]);
                     } else {
                         $stmt = $pdo->prepare("
-                            INSERT INTO productos (CodigoBarras, Nombre, CategoriaID, PrecioVenta, CostoCompra, Stock, StockMinimo, Activo, EsPesable, CodigoPLU)
-                            VALUES (:codigo, :nombre, :cat, :precio, :costo, :stock, :stockmin, :activo, :espesable, :plu)
+                            INSERT INTO productos (CodigoBarras, Nombre, CategoriaID, PrecioVenta, CostoCompra, Stock, StockMinimo, Activo, EsPesable, CodigoPLU,
+                                                   TipoRepuesto, MarcaRepuesto, NumeroParteOEM, NumeroParteAlternativo, ViscosidadAceite)
+                            VALUES (:codigo, :nombre, :cat, :precio, :costo, :stock, :stockmin, :activo, :espesable, :plu,
+                                    :tiporep, :marcarep, :oem, :alt, :visc)
                         ");
                         $stmt->execute([
                             ':codigo' => $codigo,
@@ -72,7 +85,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             ':stockmin' => $stockMinimo,
                             ':activo' => $activo,
                             ':espesable' => $esPesable,
-                            ':plu' => $codigoPLU
+                            ':plu' => $codigoPLU,
+                            ':tiporep' => $tipoRepuesto, ':marcarep' => $marcaRepuesto, ':oem' => $parteOEM,
+                            ':alt' => $parteAlt, ':visc' => $viscosidad
                         ]);
                     }
                     $message = 'Producto guardado exitosamente.';
@@ -97,6 +112,8 @@ if (!empty($search)) {
         WHERE p.Nombre LIKE :q 
            OR p.CodigoBarras = :exact_q 
            OR p.CodigoPLU = :plu_q
+           OR " . sqlCoincideReferencia('p', ':ref1', ':ref2') . "
+           OR p.MarcaRepuesto LIKE :marca_q
            OR EXISTS (SELECT 1 FROM productoscodigos pc WHERE pc.ProductoID = p.ProductoID AND pc.CodigoBarras = :exact_q2)
         ORDER BY p.Nombre ASC
     ");
@@ -104,7 +121,10 @@ if (!empty($search)) {
         ':q' => "%$search%",
         ':exact_q' => $search,
         ':plu_q' => $search,
-        ':exact_q2' => $search
+        ':exact_q2' => $search,
+        ':ref1' => patronReferencia($search),
+        ':ref2' => patronReferencia($search),
+        ':marca_q' => "%$search%"
     ]);
 } else {
     $stmtP = $pdo->query("

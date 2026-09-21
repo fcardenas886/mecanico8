@@ -330,7 +330,12 @@ $nombreAuto = $vehiculo['Marca'] . ' ' . $vehiculo['Modelo'];
               </td>
               <td><?= htmlspecialchars($rc['MarcaRepuesto'] ?: '-') ?></td>
               <td>
-                <code style="font-size: 0.78rem;"><?= htmlspecialchars($rc['NumeroParteOEM'] ?: $rc['NumeroParteAlternativo'] ?: $rc['CodigoBarras']) ?></code>
+                <?php if ($rc['NumeroParteAlternativo'] || $rc['NumeroParteOEM']): ?>
+                  <?php if ($rc['NumeroParteAlternativo']): ?><div><span style="color: var(--text-muted); font-size: 0.7rem;">Fab.</span> <code style="font-size: 0.78rem;"><?= htmlspecialchars($rc['NumeroParteAlternativo']) ?></code></div><?php endif; ?>
+                  <?php if ($rc['NumeroParteOEM']): ?><div><span style="color: var(--text-muted); font-size: 0.7rem;">OEM</span> <code style="font-size: 0.78rem;"><?= htmlspecialchars($rc['NumeroParteOEM']) ?></code></div><?php endif; ?>
+                <?php else: ?>
+                  <span style="color: var(--text-muted);">-</span>
+                <?php endif; ?>
               </td>
               <td>
                 <?php if ($rc['Stock'] > 0): ?>

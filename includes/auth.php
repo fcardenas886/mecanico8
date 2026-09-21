@@ -4,6 +4,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/busqueda_repuestos.php';
 
 function requireLogin() {
     if (empty($_SESSION['usuario'])) {
