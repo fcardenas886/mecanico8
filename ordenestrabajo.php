@@ -5,7 +5,7 @@ $pdo = getDB();
 $q = trim($_GET['q'] ?? '');
 
 $stmt = $pdo->prepare("
-    SELECT ot.OrdenTrabajoID, ot.VehiculoID, ot.FechaIngreso, ot.Estado, ot.KilometrajeIngreso,
+    SELECT ot.OrdenTrabajoID, ot.VehiculoID, ot.FechaIngreso, ot.Estado, ot.KilometrajeIngreso, ot.VentaID, ot.ManoObraCobrada,
            v.Patente, v.Marca, v.Modelo,
            c.Nombre AS ClienteNombre, c.Telefono AS ClienteTelefono,
            u.Nombre AS UsuarioNombre,

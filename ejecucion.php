@@ -70,6 +70,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = 'Todavía falta cobrar la OT en caja antes de marcarla como lista.';
         }
+    } elseif ($action === 'marcar_entregado' && $ot['Estado'] !== 'Listo para entregar') {
+        $error = $ot['Estado'] === 'Entregado'
+            ? 'Esta orden ya fue entregada.'
+            : 'Antes de entregar, la orden debe estar cobrada en caja y marcada como "Listo para entregar".';
     } elseif ($action === 'marcar_entregado') {
         $yaEntregada = $ot['Estado'] === 'Entregado';
         $pdo->prepare("UPDATE ordenestrabajo SET Estado = 'Entregado', FechaEntrega = NOW() WHERE OrdenTrabajoID = :id")

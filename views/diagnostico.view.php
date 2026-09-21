@@ -113,12 +113,12 @@ $badgeClase = [
   </div>
 </div>
 
-<!-- Estación de Servicio & Chequeo de Fluidos (Bahía Técnica) -->
+<!-- Chequeo de niveles y fluidos (Bahía Técnica) -->
 <div class="dg-section">
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
     <div>
       <h2 style="font-size: 1rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
-        <i class="fa-solid fa-oil-can" style="color: #f59e0b;"></i> Estación de Servicio & Chequeo de Fluidos
+        <i class="fa-solid fa-oil-can" style="color: #f59e0b;"></i> Chequeo de niveles y fluidos
       </h2>
       <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0.2rem 0 0 0;">
         Inspección técnica en bahía con motor frío y capó abierto. Marca los niveles y selecciona los fluidos que requieren cambio para agregarlos al Presupuesto.
@@ -381,7 +381,7 @@ $badgeClase = [
 
 <!-- Hallazgos por Área Técnica -->
 <div class="dg-section">
-  <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 1rem;">Hallazgos Técnicos de Bahía</h2>
+  <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 1rem;">Hallazgos del mecánico</h2>
 
   <?php foreach (['Mecánica', 'Electricidad', 'Carrocería'] as $area): ?>
     <div class="dg-area-title"><?= $area ?></div>

@@ -121,7 +121,7 @@ function chkLabel($valor) {
 
     <!-- Estación de Servicio y Fluidos (Imagen 2) -->
     <?php if ($estacion): ?>
-      <div class="cp-section-title">Estación de Servicio (Niveles y Fluidos)</div>
+      <div class="cp-section-title">Niveles y fluidos</div>
       <table class="cp-es-table">
         <thead>
           <tr>

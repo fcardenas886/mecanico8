@@ -52,7 +52,7 @@
         <?php foreach ($vehiculos as $v): ?>
           <tr>
             <td>
-              <a href="ficha_vehiculo.php?id=<?= $v['VehiculoID'] ?>" style="text-decoration: none;" title="Ver Ficha Clínica y Hoja de Vida">
+              <a href="ficha_vehiculo.php?id=<?= $v['VehiculoID'] ?>" style="text-decoration: none;" title="Ver historial del vehículo">
                 <code style="font-weight: 800; color: #38bdf8; font-size: 0.95rem;"><?= htmlspecialchars($v['Patente']) ?></code>
               </a>
             </td>
@@ -80,7 +80,7 @@
             </td>
             <td style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
               <a href="ficha_vehiculo.php?id=<?= $v['VehiculoID'] ?>" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: rgba(59, 130, 246, 0.15); border-color: #3b82f6; color: #93c5fd;" title="Ver Hoja de Vida e Historial">
-                <i class="fa-solid fa-file-waveform"></i> Ficha
+                <i class="fa-solid fa-file-waveform"></i> Historial
               </a>
               <button onclick='abrirEditarVehiculo(<?= json_encode($v, JSON_HEX_APOS | JSON_HEX_QUOT) ?>)' class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" title="Editar datos del vehículo">
                 <i class="fa-solid fa-pen"></i>

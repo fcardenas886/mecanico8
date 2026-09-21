@@ -40,5 +40,7 @@ $stmtUltimas = $pdo->query("
 ");
 $ultimasVentas = $stmtUltimas->fetchAll();
 
+$tallerRes = tallerResumen($pdo);
+
 include __DIR__ . '/views/index.view.php';
 require_once __DIR__ . '/includes/footer.php';

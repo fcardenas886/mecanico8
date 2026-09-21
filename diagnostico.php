@@ -131,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':lvcarga' => $lavVidrioCarga, ':lav' => $lavadoCarroceria,
                 ':obs' => $obsEstacion ?: null
             ]);
-            $message = 'Chequeo de Estación de Servicio y Fluidos guardado correctamente.';
+            $message = 'Chequeo de niveles y fluidos guardado correctamente.';
         }
 
         // Si se solicitó cargar al presupuesto

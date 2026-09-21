@@ -1,3 +1,43 @@
+<!-- Taller: qué hay que hacer hoy -->
+<?php
+$tg = $tallerRes['por_grupo'];
+$tarjetasTaller = [
+    ['diagnosticar', 'Por diagnosticar', 'fa-stethoscope', '#60a5fa'],
+    ['presupuestar', 'Por presupuestar', 'fa-file-invoice-dollar', '#a78bfa'],
+    ['esperando', 'Esperando al cliente', 'fa-hourglass-half', '#fbbf24'],
+    ['reparacion', 'En reparación o por cobrar', 'fa-screwdriver-wrench', '#f97316'],
+    ['retirar', 'Listos para retirar', 'fa-key', '#34d399'],
+];
+?>
+<div class="table-card" style="padding: 1.25rem; margin-bottom: 1.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+    <div>
+      <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0;"><i class="fa-solid fa-wrench" style="color: #f59e0b;"></i> Taller: qué hay que hacer hoy</h2>
+      <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0.2rem 0 0;">
+        <?= (int)$tallerRes['total_activas'] === 0 ? 'No hay vehículos en el taller ahora.' : (int)$tallerRes['total_activas'] . ' vehículo' . ((int)$tallerRes['total_activas'] === 1 ? '' : 's') . ' en el taller. Pulsa una tarjeta para ver esas órdenes.' ?>
+      </p>
+    </div>
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+      <a href="ordeningreso.php" class="btn btn-primary" style="padding: 0.6rem 1.1rem;"><i class="fa-solid fa-plus"></i> Recibir un vehículo</a>
+      <a href="ordenestrabajo.php" class="btn btn-secondary" style="padding: 0.6rem 1.1rem;">Ver todas las órdenes</a>
+    </div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem;">
+    <?php foreach ($tarjetasTaller as [$clave, $titulo, $icono, $color]): ?>
+      <a href="ordenestrabajo.php?f=<?= $clave ?>" style="text-decoration: none; color: inherit; border: 1px solid var(--border-dark); border-left: 4px solid <?= $color ?>; border-radius: 10px; padding: 0.85rem 1rem; display: block; <?= $tg[$clave] > 0 ? '' : 'opacity: 0.6;' ?>">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 1.7rem; font-weight: 800;"><?= (int)$tg[$clave] ?></span>
+          <i class="fa-solid <?= $icono ?>" style="color: <?= $color ?>;"></i>
+        </div>
+        <div style="font-size: 0.82rem; font-weight: 600; margin-top: 0.15rem;"><?= $titulo ?></div>
+        <?php if ($clave === 'esperando' && $tallerRes['monto_esperando'] > 0): ?>
+          <div style="font-size: 0.75rem; color: #fbbf24;"><?= formatCLP($tallerRes['monto_esperando']) ?> por aprobar</div>
+        <?php endif; ?>
+      </a>
+    <?php endforeach; ?>
+  </div>
+</div>
+
 <!-- Tarjetas de Estadísticas -->
 <div class="grid-stats">
   <div class="stat-card">

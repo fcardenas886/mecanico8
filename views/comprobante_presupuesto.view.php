@@ -6,7 +6,7 @@ $validezFecha = date('d/m/Y', strtotime(($presupuesto['FechaCreacion'] ?? 'now')
 // Preparar mensaje de WhatsApp
 $telLimpio = preg_replace('/\D/', '', $ot['ClienteTelefono'] ?? '');
 $msgWhatsapp = "Hola " . $ot['ClienteNombre'] . ", te enviamos el Presupuesto formal de tu vehículo " . $ot['Marca'] . " " . $ot['Modelo'] . " (Patente " . $ot['Patente'] . ") del taller " . $nombreEmpresa . ".\n";
-$msgWhatsapp .= "Folio Cotización: " . $folio . "\n";
+$msgWhatsapp .= "Folio Presupuesto: " . $folio . "\n";
 $msgWhatsapp .= "Total Cotizado: $" . number_format($totalPresupuesto, 0, ',', '.') . " CLP\n";
 if (!empty($presupuesto['TiempoEntrega'])) {
     $msgWhatsapp .= "Tiempo estimado de entrega: " . $presupuesto['TiempoEntrega'] . "\n";
@@ -362,7 +362,7 @@ $waUrl = "https://wa.me/56" . $telLimpio . "?text=" . urlencode($msgWhatsapp);
       </div>
     <?php endif; ?>
     <div>
-      <strong>Condiciones Generales:</strong> Cotización válida por 15 días corridos. Precios incluyen IVA. Garantía técnica de 3 meses o 5.000 kilómetros en mano de obra realizada. Repuestos retirados quedarán a disposición del cliente al momento de la entrega.
+      <strong>Condiciones Generales:</strong> Presupuesto válido por 15 días corridos. Precios incluyen IVA. Garantía técnica de 3 meses o 5.000 kilómetros en mano de obra realizada. Repuestos retirados quedarán a disposición del cliente al momento de la entrega.
     </div>
   </div>
 

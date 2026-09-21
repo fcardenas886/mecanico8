@@ -1,10 +1,17 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v4.7.0');
+define('APP_VERSION', 'v4.8.0');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v4.8.0' => [
+        'Inicio: nuevo bloque "Taller: qué hay que hacer hoy" con las órdenes por diagnosticar, por presupuestar, esperando al cliente, en reparación y listas para retirar, y botón para recibir un vehículo.',
+        'Una orden ya cobrada en caja deja de decir "Empezar reparación": ahora dice "Cobrada, falta entregar".',
+        'Presupuesto: se quitaron botones repetidos (dos de aprobar y cuatro de imprimir/PDF); quedan Aprobó todo, Aprobó solo lo marcado y Rechazó.',
+        'Una orden ya no se puede marcar como Entregada si no está cobrada y lista para entregar.',
+        'Textos unificados: presupuesto (antes también cotización), historial del vehículo (antes ficha clínica), niveles y fluidos.',
+    ],
     'v4.7.0' => [
         'Productos: nuevos campos de repuesto (tipo, marca, N° de parte del fabricante y OEM, viscosidad) y aclaración de cuándo usar un código interno si el repuesto no trae código de barras.',
         'Se puede buscar un repuesto por su número de parte en Productos, Caja POS y Presupuesto, escrito como sea (W 67/1, w671, W67-1).',

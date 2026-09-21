@@ -21,6 +21,7 @@ const TALLER_PASOS = [
 function otEstadoInfo(array $ot): array {
     $id = (int)$ot['OrdenTrabajoID'];
     $estado = $ot['Estado'];
+    $cobrada = !empty($ot['VentaID']) || !empty($ot['ManoObraCobrada']);
     $tienePresupuesto = !empty($ot['PresupuestoID']) && (int)($ot['CantidadLineasPresupuesto'] ?? 0) > 0;
     $pendiente = $tienePresupuesto && ($ot['DecisionCliente'] ?? '') === 'Pendiente';
 
@@ -63,6 +64,11 @@ function otEstadoInfo(array $ot): array {
             $info['grupo'] = 'reparacion';
             $info['ayuda'] = 'El cliente aceptó el presupuesto';
             $info['accion'] = ['Empezar reparación', "ejecucion.php?id=$id", 'btn-primary'];
+            if ($cobrada) {
+                $info['etiqueta'] = 'Cobrada, falta entregar';
+                $info['ayuda'] = 'Ya se cobró en caja: marca la orden como lista';
+                $info['accion'] = ['Marcar lista para retirar', "ejecucion.php?id=$id", 'btn-primary'];
+            }
             break;
         case $estado === 'En reparación':
             $info['paso'] = 4;
@@ -71,6 +77,11 @@ function otEstadoInfo(array $ot): array {
             $info['grupo'] = 'reparacion';
             $info['ayuda'] = 'Pendiente cobrar y terminar';
             $info['accion'] = ['Cobrar y terminar', "ejecucion.php?id=$id", 'btn-primary'];
+            if ($cobrada) {
+                $info['etiqueta'] = 'Cobrada, falta entregar';
+                $info['ayuda'] = 'Ya se cobró en caja: marca la orden como lista';
+                $info['accion'] = ['Marcar lista para retirar', "ejecucion.php?id=$id", 'btn-primary'];
+            }
             break;
         case $estado === 'Presupuesto rechazado':
             $info['paso'] = 4;
@@ -181,4 +192,27 @@ function otMiniProgreso(array $info): string {
         $html .= '<span class="' . $c . '"></span>';
     }
     return $html . '</div>';
+}
+
+/**
+ * Resumen del taller para la pantalla de inicio: cuántas órdenes hay en cada situación.
+ * Devuelve ['por_grupo' => [...], 'monto_esperando' => int, 'total_activas' => int].
+ */
+function tallerResumen(PDO $pdo): array {
+    $filas = $pdo->query("
+        SELECT ot.OrdenTrabajoID, ot.Estado, ot.VentaID, ot.ManoObraCobrada, p.PresupuestoID, p.DecisionCliente,
+               (SELECT COUNT(*) FROM presupuestodetalle pd WHERE pd.PresupuestoID = p.PresupuestoID) AS CantidadLineasPresupuesto,
+               (SELECT COALESCE(SUM(Subtotal), 0) FROM presupuestodetalle pd WHERE pd.PresupuestoID = p.PresupuestoID) AS TotalPresupuesto
+        FROM ordenestrabajo ot
+        LEFT JOIN presupuestos p ON p.PresupuestoID = (SELECT MAX(p2.PresupuestoID) FROM presupuestos p2 WHERE p2.OrdenTrabajoID = ot.OrdenTrabajoID)
+        WHERE ot.Estado <> 'Entregado'
+    ")->fetchAll();
+    $res = ['por_grupo' => ['diagnosticar' => 0, 'presupuestar' => 0, 'esperando' => 0, 'reparacion' => 0, 'retirar' => 0], 'monto_esperando' => 0, 'total_activas' => 0];
+    foreach ($filas as $f) {
+        $inf = otEstadoInfo($f);
+        if (isset($res['por_grupo'][$inf['grupo']])) $res['por_grupo'][$inf['grupo']]++;
+        if ($inf['grupo'] === 'esperando') $res['monto_esperando'] += (int)$f['TotalPresupuesto'];
+        $res['total_activas']++;
+    }
+    return $res;
 }

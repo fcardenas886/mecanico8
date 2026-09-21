@@ -105,9 +105,9 @@ $decisionClase = [
             <i class="fa-solid fa-circle-question" style="font-size: 1.25rem;"></i> ¿Qué sigue ahora con este presupuesto?
           </div>
           <div style="font-size: 0.88rem; color: #e2e8f0; margin-top: 0.45rem; line-height: 1.55;">
-            <strong>1. Comparte el total de <?= formatCLP($total) ?></strong> con <strong><?= htmlspecialchars($ot['ClienteNombre']) ?></strong> por WhatsApp o PDF impreso.<br>
-            <strong>2. Cuando el cliente te dé el visto bueno</strong>, presiona el botón verde <strong>"Aprobar y Pasar a Taller"</strong>.<br>
-            <strong>3. La orden avanzará a Ejecución</strong> para asignar mecánico e iniciar las reparaciones en taller.
+            <strong>1. Comparte el total de <?= formatCLP($total) ?></strong> con <strong><?= htmlspecialchars($ot['ClienteNombre']) ?></strong>: por WhatsApp o con el botón "Imprimir presupuesto" de arriba.<br>
+            <strong>2. Cuando el cliente responda</strong>, usa los tres botones de más abajo: <strong>Aprobó todo</strong>, <strong>Aprobó solo lo marcado</strong> o <strong>Rechazó</strong>.<br>
+            <strong>3. Si aprueba</strong>, la orden pasa a reparación y cobro.
           </div>
         </div>
         <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
@@ -119,12 +119,6 @@ $decisionClase = [
               <i class="fa-brands fa-whatsapp"></i> Enviar por WhatsApp
             </a>
           <?php endif; ?>
-          <a href="comprobante_presupuesto.php?id=<?= $otId ?>" target="_blank" class="btn btn-secondary" style="padding: 0.65rem 1rem;" title="Ver cotización formal para imprimir">
-            <i class="fa-solid fa-file-pdf"></i> Ver Cotización PDF
-          </a>
-          <button type="submit" form="formDecision" name="decision" value="AprobadoTotal" class="btn btn-primary" style="padding: 0.65rem 1.25rem; font-weight: 800; background: #10b981; border-color: #059669; font-size: 0.95rem;">
-            <i class="fa-solid fa-circle-check"></i> ✅ Aprobar y Pasar a Taller
-          </button>
         </div>
       </div>
     </div>
@@ -284,23 +278,20 @@ $decisionClase = [
               <i class="fa-solid fa-stamp"></i> ¿Qué respondió el cliente <?= htmlspecialchars($ot['ClienteNombre']) ?>?
             </div>
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-              Selecciona una opción para avanzar la orden de trabajo según la decisión del cliente:
+              Marca en la tabla las líneas que el cliente aceptó y registra su respuesta:
             </p>
             <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
               <button type="submit" name="decision" value="AprobadoTotal" class="btn btn-primary" style="padding: 0.75rem 1.35rem; font-weight: 800; font-size: 0.95rem; background: #10b981; border-color: #059669;">
-                <i class="fa-solid fa-circle-check"></i> ✅ Aprobó Todo (Pasar a Taller)
+                <i class="fa-solid fa-circle-check"></i> Aprobó todo
               </button>
               <button type="submit" name="decision" value="AprobadoParcial" class="btn btn-secondary" style="padding: 0.75rem 1.1rem; font-weight: 600;">
-                <i class="fa-solid fa-list-check"></i> Aprobó Solo lo Marcado
+                <i class="fa-solid fa-list-check"></i> Aprobó solo lo marcado
               </button>
               <button type="submit" name="decision" value="Rechazado" class="btn btn-secondary" style="padding: 0.75rem 1.1rem; color: #f87171; border-color: rgba(239,68,68,0.4);"
                 onclick="return confirm('¿Confirmas que el cliente rechazó este presupuesto?');">
-                <i class="fa-solid fa-xmark"></i> Rechazó el Presupuesto
+                <i class="fa-solid fa-xmark"></i> Rechazó
               </button>
               <input type="hidden" name="action" value="decidir">
-              <a href="comprobante_presupuesto.php?id=<?= $otId ?>" target="_blank" class="btn btn-secondary" style="padding: 0.75rem 1.1rem; margin-left: auto;">
-                <i class="fa-solid fa-file-pdf"></i> Ver Cotización Formal / WhatsApp
-              </a>
             </div>
           </div>
         <?php endif; ?>
@@ -318,15 +309,9 @@ $decisionClase = [
 
       <?php if ($decidido): ?>
         <div class="no-print" style="margin-top: 1rem; display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-          <a href="comprobante_presupuesto.php?id=<?= $otId ?>" target="_blank" class="btn btn-secondary" style="padding: 0.65rem 1.1rem;">
-            <i class="fa-solid fa-file-pdf"></i> Ver Cotización Formal (PDF / WhatsApp)
-          </a>
-          <button type="button" onclick="window.print()" class="btn btn-secondary" style="padding: 0.65rem 1.1rem;">
-            <i class="fa-solid fa-print"></i> Imprimir Rápido
-          </button>
           <?php if ($presupuesto['DecisionCliente'] !== 'Rechazado'): ?>
             <a href="ejecucion.php?id=<?= $otId ?>" class="btn btn-primary" style="padding: 0.65rem 1.2rem; font-weight: 700;">
-              <i class="fa-solid fa-gears"></i> Ir a Ejecución de Taller
+              <i class="fa-solid fa-arrow-right"></i> Siguiente: reparación y cobro
             </a>
           <?php endif; ?>
         </div>

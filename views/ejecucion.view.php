@@ -70,7 +70,7 @@ $tipoLabel = ['Repuesto' => 'Repuesto', 'ManoObra' => 'Mano de Obra', 'Terceros'
   <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid var(--success); color: #34d399; padding: 1rem 1.25rem; border-radius: 8px; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
     <div>
       <div style="font-weight: 700; font-size: 1rem;"><i class="fa-solid fa-circle-check"></i> Vehículo entregado el <?= date('d/m/Y H:i', strtotime($ot['FechaEntrega'])) ?></div>
-      <div style="font-size: 0.82rem; color: #a7f3d0; margin-top: 0.2rem;">Los servicios preventivos fueron registrados automáticamente en la Ficha Clínica del Vehículo.</div>
+      <div style="font-size: 0.82rem; color: #a7f3d0; margin-top: 0.2rem;">Los servicios preventivos fueron registrados automáticamente en el historial del vehículo.</div>
       <?php if (!empty($aprendidos)): ?>
         <div style="font-size: 0.82rem; color: #a7f3d0; margin-top: 0.2rem;">
           <i class="fa-solid fa-brain"></i> El sistema recordó qué usa este auto (<?= htmlspecialchars(implode(', ', $aprendidos)) ?>) y lo sugerirá la próxima vez en <a href="buscador_repuestos.php?vehiculo_id=<?= (int)$ot['VehiculoID'] ?>" style="color:#fff; text-decoration: underline;">¿Qué necesita este auto?</a>.
@@ -79,10 +79,10 @@ $tipoLabel = ['Repuesto' => 'Repuesto', 'ManoObra' => 'Mano de Obra', 'Terceros'
     </div>
     <div style="display: flex; gap: 0.5rem;">
       <a href="ficha_vehiculo.php?id=<?= $ot['VehiculoID'] ?>" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.82rem;">
-        <i class="fa-solid fa-file-waveform"></i> Ver Ficha y Próximos Servicios
+        <i class="fa-solid fa-file-waveform"></i> Ver historial y próximos servicios
       </a>
       <a href="comprobante_presupuesto.php?id=<?= $otId ?>" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.82rem;" target="_blank">
-        <i class="fa-solid fa-file-pdf"></i> Ver Cotización
+        <i class="fa-solid fa-file-pdf"></i> Ver presupuesto
       </a>
     </div>
   </div>

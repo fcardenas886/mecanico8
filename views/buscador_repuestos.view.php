@@ -187,7 +187,7 @@ function compatBadges(array $r): string {
           <span style="font-size: 0.75rem; color: var(--text-muted); align-self: center;" title="Registra el VIN en la ficha del vehículo para poder buscar en Mann-Filter por VIN"><i class="fa-solid fa-circle-info"></i> Sin VIN registrado</span>
         <?php endif; ?>
         <a href="ficha_vehiculo.php?id=<?= $vehiculoSeleccionado['VehiculoID'] ?>" class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.78rem;">
-          <i class="fa-solid fa-file-waveform"></i> Ver Ficha Clínica
+          <i class="fa-solid fa-file-waveform"></i> Ver historial del vehículo
         </a>
         <a href="ordeningreso.php?vehiculo_id=<?= $vehiculoSeleccionado['VehiculoID'] ?>" class="btn btn-primary" style="padding: 0.25rem 0.6rem; font-size: 0.78rem;">
           <i class="fa-solid fa-right-to-bracket"></i> Nueva OT
