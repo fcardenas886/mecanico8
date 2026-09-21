@@ -43,7 +43,7 @@ $totalPresupuesto = 0;
 $totalAprobado = 0;
 
 foreach ($lineas as $l) {
-    $totalPresupuesto += $l['Subtotal'];
+    if ($l['PoliticaCobro'] !== 'SoloSiNoAprueba') $totalPresupuesto += $l['Subtotal'];
     if ($l['Aprobado']) $totalAprobado += $l['Subtotal'];
 
     if ($l['TipoLinea'] === 'Repuesto') {

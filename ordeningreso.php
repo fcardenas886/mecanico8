@@ -196,7 +196,7 @@ foreach ($checklistItems as $item) {
 
 // Catálogo de Operaciones Solicitadas Rápidas (Imagen 1)
 $operacionesCatalogo = $pdo->query("
-    SELECT OperacionID, Nombre, Categoria FROM operacionessolicitadas WHERE Activo = TRUE ORDER BY Orden ASC
+    SELECT OperacionID, Nombre, Categoria FROM operacionessolicitadas WHERE Activo = TRUE AND EsDiagnosticoBase = 0 ORDER BY Orden ASC
 ")->fetchAll();
 
 // Si se llega desde la Ficha de Vehículo con un vehículo puntual, precargarlo.

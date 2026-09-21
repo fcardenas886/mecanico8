@@ -45,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $pdo->prepare("INSERT INTO presupuestos (OrdenTrabajoID, UsuarioID) VALUES (:ot, :uid)");
         $stmt->execute([':ot' => $otId, ':uid' => $user['id']]);
         $presupuesto = cargarPresupuesto($pdo, $otId);
+        if ($presupuesto) agregarDiagnosticoAlPresupuesto($pdo, (int)$presupuesto['PresupuestoID'], $ot['Estado']);
     }
 
     if ($presupuesto && $presupuesto['DecisionCliente'] === 'Pendiente') {
@@ -67,6 +68,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $error = 'Selecciona un repuesto válido.';
             }
+        } elseif ($action === 'agregar_servicio') {
+            $stmtS = $pdo->prepare("SELECT OperacionID, Nombre, PrecioBase, PoliticaCobro FROM operacionessolicitadas WHERE OperacionID = :id AND Activo = TRUE AND PrecioBase > 0");
+            $stmtS->execute([':id' => (int)($_POST['servicio_id'] ?? 0)]);
+            $serv = $stmtS->fetch();
+            $cantidad = (float)($_POST['cantidad'] ?? 1);
+            if ($serv && $cantidad > 0) {
+                $subtotal = (int)round($serv['PrecioBase'] * $cantidad);
+                $pdo->prepare("
+                    INSERT INTO presupuestodetalle (PresupuestoID, TipoLinea, Descripcion, Cantidad, PrecioUnitario, Subtotal, ServicioID, PoliticaCobro)
+                    VALUES (:pid, 'ManoObra', :desc, :cant, :precio, :subtotal, :sid, :pol)
+                ")->execute([
+                    ':pid' => $presupuesto['PresupuestoID'], ':desc' => $serv['Nombre'], ':cant' => $cantidad,
+                    ':precio' => $serv['PrecioBase'], ':subtotal' => $subtotal, ':sid' => $serv['OperacionID'], ':pol' => $serv['PoliticaCobro'],
+                ]);
+            } else {
+                $error = 'Selecciona un servicio válido.';
+            }
+        } elseif ($action === 'cambiar_politica') {
+            $lineaId = (int)($_POST['linea_id'] ?? 0);
+            $nueva = ($_POST['politica'] ?? '') === 'SoloSiNoAprueba' ? 'SoloSiNoAprueba' : 'Siempre';
+            $pdo->prepare("UPDATE presupuestodetalle SET PoliticaCobro = :p WHERE PresupuestoDetalleID = :id AND PresupuestoID = :pid AND TipoLinea = 'ManoObra'")
+                ->execute([':p' => $nueva, ':id' => $lineaId, ':pid' => $presupuesto['PresupuestoID']]);
         } elseif ($action === 'agregar_linea') {
             $tipo = $_POST['tipo'] ?? '';
             $descripcion = trim($_POST['descripcion'] ?? '');
@@ -112,6 +135,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     // AprobadoTotal: todas las líneas quedan Aprobado = 1 (valor por defecto al crearlas).
 
+                    // Líneas condicionales (ej. diagnóstico): solo se cobran si el cliente no aprueba trabajo.
+                    $stmtC = $pdo->prepare("SELECT COUNT(*) FROM presupuestodetalle WHERE PresupuestoID = :pid AND PoliticaCobro <> 'SoloSiNoAprueba' AND Aprobado = 1");
+                    $stmtC->execute([':pid' => $presupuesto['PresupuestoID']]);
+                    $cobraCondicional = ((int)$stmtC->fetchColumn() === 0) ? 1 : 0;
+                    $pdo->prepare("UPDATE presupuestodetalle SET Aprobado = :ap WHERE PresupuestoID = :pid AND PoliticaCobro = 'SoloSiNoAprueba'")
+                        ->execute([':ap' => $cobraCondicional, ':pid' => $presupuesto['PresupuestoID']]);
+
                     $pdo->prepare("UPDATE presupuestos SET DecisionCliente = :d, FechaDecision = NOW() WHERE PresupuestoID = :id")
                         ->execute([':d' => $decision, ':id' => $presupuesto['PresupuestoID']]);
 
@@ -146,7 +176,7 @@ if ($presupuesto) {
     $stmtL = $pdo->prepare("SELECT * FROM presupuestodetalle WHERE PresupuestoID = :pid ORDER BY PresupuestoDetalleID ASC");
     $stmtL->execute([':pid' => $presupuesto['PresupuestoID']]);
     $lineas = $stmtL->fetchAll();
-    foreach ($lineas as $l) { $total += $l['Subtotal']; }
+    foreach ($lineas as $l) { if ($l['PoliticaCobro'] !== 'SoloSiNoAprueba') $total += $l['Subtotal']; }
 }
 
 $totalAprobado = 0;
@@ -159,6 +189,7 @@ $stmtDiag = $pdo->prepare("
 $stmtDiag->execute([':id' => $otId]);
 $hallazgos = $stmtDiag->fetchAll();
 
+$servicios = $pdo->query("SELECT OperacionID, Nombre, Categoria, PrecioBase FROM operacionessolicitadas WHERE Activo = TRUE AND PrecioBase > 0 ORDER BY EsDiagnosticoBase DESC, Categoria, Orden")->fetchAll();
 $productos = $pdo->query("SELECT ProductoID, Nombre, PrecioVenta, Stock, CodigoBarras, MarcaRepuesto, NumeroParteOEM, NumeroParteAlternativo FROM productos WHERE Activo = TRUE ORDER BY Nombre ASC")->fetchAll();
 
 require_once __DIR__ . '/includes/header.php';

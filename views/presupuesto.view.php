@@ -158,7 +158,27 @@ $decisionClase = [
         <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Agregar</button>
       </form>
 
-      <h2 style="font-size: 1rem; font-weight: 700; margin: 1.25rem 0 0.75rem;">Agregar mano de obra o tercero</h2>
+      <h2 style="font-size: 1rem; font-weight: 700; margin: 1.25rem 0 0.75rem;">Agregar un servicio del catálogo</h2>
+      <form method="POST" action="presupuesto.php?id=<?= $otId ?>" class="pr-add-row">
+        <?= csrfField() ?>
+        <input type="hidden" name="action" value="agregar_servicio">
+        <div style="flex: 1; min-width: 220px;">
+          <label>SERVICIO (precio ya definido)</label>
+          <select name="servicio_id" class="form-control" required>
+            <option value="">Elegir servicio…</option>
+            <?php foreach ($servicios as $sv): ?>
+              <option value="<?= $sv['OperacionID'] ?>"><?= htmlspecialchars($sv['Nombre']) ?> — <?= formatCLP($sv['PrecioBase']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div style="width: 110px;">
+          <label>CANTIDAD</label>
+          <input type="number" name="cantidad" class="form-control" value="1" min="0.01" step="0.01">
+        </div>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Agregar</button>
+      </form>
+
+      <h2 style="font-size: 1rem; font-weight: 700; margin: 1.25rem 0 0.75rem;">Agregar otra mano de obra o tercero (precio libre)</h2>
       <form method="POST" action="presupuesto.php?id=<?= $otId ?>" class="pr-add-row">
         <?= csrfField() ?>
         <input type="hidden" name="action" value="agregar_linea">
@@ -227,16 +247,23 @@ $decisionClase = [
               </tr>
             </thead>
             <tbody>
-              <?php foreach ($lineas as $l): ?>
-                <tr>
+              <?php foreach ($lineas as $l): $cond = $l['PoliticaCobro'] === 'SoloSiNoAprueba'; ?>
+                <tr<?= $cond ? ' style="opacity:.85;"' : '' ?>>
                   <?php if ($pendiente): ?>
-                    <td><input type="checkbox" name="lineas_aprobadas[]" value="<?= $l['PresupuestoDetalleID'] ?>" checked style="width: 1.05rem; height: 1.05rem;"></td>
+                    <td><?php if (!$cond): ?><input type="checkbox" name="lineas_aprobadas[]" value="<?= $l['PresupuestoDetalleID'] ?>" checked style="width: 1.05rem; height: 1.05rem;"><?php endif; ?></td>
                   <?php endif; ?>
                   <td><span class="badge <?= $tipoClase[$l['TipoLinea']] ?>"><?= $tipoLabel[$l['TipoLinea']] ?></span></td>
-                  <td><?= htmlspecialchars($l['Descripcion']) ?></td>
+                  <td><?= htmlspecialchars($l['Descripcion']) ?>
+                    <?php if ($cond): ?>
+                      <div style="font-size:.75rem; color:var(--text-muted);"><i class="fa-solid fa-circle-info"></i> Sin costo si el cliente aprueba la reparación; se cobra solo si no aprueba.
+                        <?php if ($pendiente): ?><button type="submit" form="formPolitica<?= $l['PresupuestoDetalleID'] ?>" style="background:none;border:0;color:var(--primary);cursor:pointer;font-size:.75rem;text-decoration:underline;">Cobrar siempre</button><?php endif; ?>
+                      </div>
+                    <?php elseif ($l['ServicioID'] && $pendiente && $l['TipoLinea'] === 'ManoObra'): ?>
+                    <?php endif; ?>
+                  </td>
                   <td><?= rtrim(rtrim(number_format((float)$l['Cantidad'], 3, ',', '.'), '0'), ',') ?></td>
                   <td><?= formatCLP($l['PrecioUnitario']) ?></td>
-                  <td style="font-weight: 700;"><?= formatCLP($l['Subtotal']) ?></td>
+                  <td style="font-weight: 700;"><?= $cond && !$decidido ? '<span style="text-decoration:line-through; color:var(--text-muted); font-weight:500;">' . formatCLP($l['Subtotal']) . '</span>' : formatCLP($l['Subtotal']) ?></td>
                   <?php if ($decidido): ?>
                     <td><span class="badge <?= $l['Aprobado'] ? 'badge-success' : 'badge-danger' ?>"><?= $l['Aprobado'] ? 'Aprobada' : 'No aprobada' ?></span></td>
                   <?php endif; ?>
@@ -255,9 +282,9 @@ $decisionClase = [
                 <?php if ($decidido): ?><td></td><?php endif; ?>
                 <?php if ($pendiente): ?><td></td><?php endif; ?>
               </tr>
-              <?php if ($decidido && $presupuesto['DecisionCliente'] === 'AprobadoParcial'): ?>
+              <?php if ($decidido && $totalAprobado !== (int)$total): ?>
                 <tr class="pr-total-row">
-                  <td colspan="<?= $decidido ? 4 : 3 ?>" style="text-align: right; color: var(--success);">Total Aprobado</td>
+                  <td colspan="<?= $decidido ? 4 : 3 ?>" style="text-align: right; color: var(--success);">Total a cobrar</td>
                   <td style="color: var(--success);"><?= formatCLP($totalAprobado) ?></td>
                   <td></td>
                 </tr>
@@ -304,6 +331,14 @@ $decisionClase = [
             <input type="hidden" name="action" value="eliminar_linea">
             <input type="hidden" name="linea_id" value="<?= $l['PresupuestoDetalleID'] ?>">
           </form>
+          <?php if ($l['PoliticaCobro'] === 'SoloSiNoAprueba'): ?>
+          <form method="POST" action="presupuesto.php?id=<?= $otId ?>" id="formPolitica<?= $l['PresupuestoDetalleID'] ?>" style="display: none;">
+            <?= csrfField() ?>
+            <input type="hidden" name="action" value="cambiar_politica">
+            <input type="hidden" name="politica" value="Siempre">
+            <input type="hidden" name="linea_id" value="<?= $l['PresupuestoDetalleID'] ?>">
+          </form>
+          <?php endif; ?>
         <?php endforeach; ?>
       <?php endif; ?>
 

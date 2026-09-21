@@ -299,13 +299,17 @@ $waUrl = "https://wa.me/56" . $telLimpio . "?text=" . urlencode($msgWhatsapp);
           <tr>
             <td>
               <?= htmlspecialchars($lm['Descripcion']) ?>
-              <?php if (!$lm['Aprobado'] && $presupuesto['DecisionCliente'] !== 'Pendiente'): ?>
+              <?php $lmCond = $lm['PoliticaCobro'] === 'SoloSiNoAprueba'; ?>
+              <?php if ($lmCond && !($presupuesto['DecisionCliente'] === 'Rechazado' && $lm['Aprobado'])): ?>
+                <span style="color: #059669; font-size: 0.72rem; font-weight: bold;">(Sin costo si aprueba la reparación)</span>
+              <?php endif; ?>
+              <?php if (!$lmCond && !$lm['Aprobado'] && $presupuesto['DecisionCliente'] !== 'Pendiente'): ?>
                 <span style="color: #dc2626; font-size: 0.72rem; font-weight: bold;">(No autorizado)</span>
               <?php endif; ?>
             </td>
             <td style="text-align: center;"><?= rtrim(rtrim(number_format((float)$lm['Cantidad'], 3, ',', '.'), '0'), ',') ?></td>
             <td style="text-align: right;">$<?= number_format($lm['PrecioUnitario'], 0, ',', '.') ?></td>
-            <td style="text-align: right; font-weight: 600;">$<?= number_format($lm['Subtotal'], 0, ',', '.') ?></td>
+            <td style="text-align: right; font-weight: 600;"><?= ($lmCond && !($presupuesto['DecisionCliente'] === 'Rechazado' && $lm['Aprobado'])) ? '<span style="text-decoration: line-through; color:#94a3b8;">$' . number_format($lm['Subtotal'], 0, ',', '.') . '</span>' : '$' . number_format($lm['Subtotal'], 0, ',', '.') ?></td>
           </tr>
         <?php endforeach; ?>
       <?php endif; ?>
@@ -340,9 +344,9 @@ $waUrl = "https://wa.me/56" . $telLimpio . "?text=" . urlencode($msgWhatsapp);
         <td style="color: #64748b;">Subtotal Presupuesto:</td>
         <td style="text-align: right; font-weight: 600;">$<?= number_format($totalPresupuesto, 0, ',', '.') ?></td>
       </tr>
-      <?php if ($presupuesto['DecisionCliente'] === 'AprobadoParcial'): ?>
+      <?php if ($presupuesto['DecisionCliente'] !== 'Pendiente' && (int)$totalAprobado !== (int)$totalPresupuesto): ?>
         <tr>
-          <td style="color: #059669; font-weight: 700;">Total Aprobado Cliente:</td>
+          <td style="color: #059669; font-weight: 700;">Total a pagar:</td>
           <td style="text-align: right; font-weight: 800; color: #059669;">$<?= number_format($totalAprobado, 0, ',', '.') ?></td>
         </tr>
       <?php else: ?>

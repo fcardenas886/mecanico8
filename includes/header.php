@@ -159,7 +159,7 @@ $changelogActual = APP_CHANGELOG[APP_VERSION] ?? [];
 
     <!-- Grupo: Taller -->
     <li class="nav-item">
-      <div class="nav-link <?= in_array($currentPage, ['vehiculos.php', 'ficha_vehiculo.php', 'buscador_repuestos.php', 'ordeningreso.php', 'ordenestrabajo.php', 'comprobante_ot.php', 'diagnostico.php', 'presupuesto.php', 'ejecucion.php']) ? 'active' : '' ?>">
+      <div class="nav-link <?= in_array($currentPage, ['vehiculos.php', 'ficha_vehiculo.php', 'buscador_repuestos.php', 'ordeningreso.php', 'ordenestrabajo.php', 'comprobante_ot.php', 'diagnostico.php', 'presupuesto.php', 'ejecucion.php', 'servicios.php']) ? 'active' : '' ?>">
         <i class="fa-solid fa-wrench"></i> Taller <i class="fa-solid fa-chevron-down nav-caret"></i>
       </div>
       <ul class="dropdown-menu" style="min-width: 280px;">
@@ -168,6 +168,7 @@ $changelogActual = APP_CHANGELOG[APP_VERSION] ?? [];
         <li><a href="vehiculos.php" class="dropdown-item"><i class="fa-solid fa-car-side"></i> Vehículos y su historial</a></li>
         <li class="dropdown-divider"></li>
         <li><a href="buscador_repuestos.php" class="dropdown-item" style="color: #93c5fd;"><i class="fa-solid fa-wand-magic-sparkles"></i> ¿Qué necesita este auto?</a></li>
+        <?php if (in_array(currentUser()['rol'] ?? '', ['Administrador', 'Supervisor'], true)): ?><li><a href="servicios.php" class="dropdown-item"><i class="fa-solid fa-tags"></i> Servicios y precios</a></li><?php endif; ?>
       </ul>
     </li>
 

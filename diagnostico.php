@@ -144,6 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->prepare("INSERT INTO presupuestos (OrdenTrabajoID, UsuarioID) VALUES (:ot, :uid)")
                     ->execute([':ot' => $otId, ':uid' => $user['id']]);
                 $presupuestoId = (int)$pdo->lastInsertId();
+                agregarDiagnosticoAlPresupuesto($pdo, $presupuestoId, (string)($ot["Estado"] ?? ""));
             }
 
             // Consultar estación de servicio

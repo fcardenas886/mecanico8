@@ -10,7 +10,7 @@ $stmt = $pdo->prepare("
            c.Nombre AS ClienteNombre, c.Telefono AS ClienteTelefono,
            u.Nombre AS UsuarioNombre,
            p.PresupuestoID, p.DecisionCliente,
-           (SELECT COALESCE(SUM(Subtotal), 0) FROM presupuestodetalle pd WHERE pd.PresupuestoID = p.PresupuestoID) AS TotalPresupuesto,
+           (SELECT COALESCE(SUM(Subtotal), 0) FROM presupuestodetalle pd WHERE pd.PresupuestoID = p.PresupuestoID AND pd.PoliticaCobro <> 'SoloSiNoAprueba') AS TotalPresupuesto,
            (SELECT COUNT(*) FROM presupuestodetalle pd WHERE pd.PresupuestoID = p.PresupuestoID) AS CantidadLineasPresupuesto
     FROM ordenestrabajo ot
     JOIN vehiculos v ON ot.VehiculoID = v.VehiculoID

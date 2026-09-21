@@ -202,7 +202,7 @@ function tallerResumen(PDO $pdo): array {
     $filas = $pdo->query("
         SELECT ot.OrdenTrabajoID, ot.Estado, ot.VentaID, ot.ManoObraCobrada, p.PresupuestoID, p.DecisionCliente,
                (SELECT COUNT(*) FROM presupuestodetalle pd WHERE pd.PresupuestoID = p.PresupuestoID) AS CantidadLineasPresupuesto,
-               (SELECT COALESCE(SUM(Subtotal), 0) FROM presupuestodetalle pd WHERE pd.PresupuestoID = p.PresupuestoID) AS TotalPresupuesto
+               (SELECT COALESCE(SUM(Subtotal), 0) FROM presupuestodetalle pd WHERE pd.PresupuestoID = p.PresupuestoID AND pd.PoliticaCobro <> 'SoloSiNoAprueba') AS TotalPresupuesto
         FROM ordenestrabajo ot
         LEFT JOIN presupuestos p ON p.PresupuestoID = (SELECT MAX(p2.PresupuestoID) FROM presupuestos p2 WHERE p2.OrdenTrabajoID = ot.OrdenTrabajoID)
         WHERE ot.Estado <> 'Entregado'

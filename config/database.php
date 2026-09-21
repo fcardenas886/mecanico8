@@ -1,10 +1,15 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v4.8.0');
+define('APP_VERSION', 'v4.9.0');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v4.9.0' => [
+        'Nueva pantalla Servicios y precios: la mano de obra del taller con su precio ya definido, que se elige al armar el presupuesto.',
+        'El diagnóstico es un servicio más: se agrega solo al presupuesto, no se cobra si el cliente aprueba la reparación y se cobra si no la aprueba (se puede cambiar a cobrar siempre).',
+        'El presupuesto impreso, el listado de órdenes y el cobro respetan esa regla.',
+    ],
     'v4.8.0' => [
         'Inicio: nuevo bloque "Taller: qué hay que hacer hoy" con las órdenes por diagnosticar, por presupuestar, esperando al cliente, en reparación y listas para retirar, y botón para recibir un vehículo.',
         'Una orden ya cobrada en caja deja de decir "Empezar reparación": ahora dice "Cobrada, falta entregar".',
