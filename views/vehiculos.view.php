@@ -97,8 +97,8 @@
 </div>
 
 <!-- Modal Vehículo -->
-<div id="vehiculoModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center;">
-  <div style="background: var(--card-bg); border: 1px solid var(--border-dark); border-radius: 16px; width: 460px; max-width: 95%; padding: 1.75rem; box-shadow: var(--shadow-lg);">
+<div id="vehiculoModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 1000; align-items: flex-start; justify-content: center; overflow-y: auto; padding: 1.5rem 1rem;">
+  <div style="background: var(--card-bg); border: 1px solid var(--border-dark); border-radius: 16px; width: 460px; max-width: 95%; padding: 1.75rem; margin: auto; box-shadow: var(--shadow-lg);">
     <h2 id="vehiculoModalTitle" style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1.25rem;">Registrar Vehículo</h2>
 
     <form method="POST" action="vehiculos.php" style="display: flex; flex-direction: column; gap: 1rem;">
