@@ -529,6 +529,8 @@ function toggleVehiculoModo() {
   const modo = document.querySelector('input[name="vehiculo_modo"]:checked').value;
   document.getElementById('vehiculoExistenteBlock').style.display = modo === 'existente' ? 'block' : 'none';
   document.getElementById('vehiculoNuevoBlock').style.display = modo === 'nuevo' ? 'block' : 'none';
+  // Los campos obligatorios ocultos bloquean el envío sin avisar: solo son requeridos en modo nuevo.
+  ['vn_patente', 'vn_marca', 'vn_modelo'].forEach(id => { document.getElementById(id).required = (modo === 'nuevo'); });
 }
 
 function onSelectVehiculoExistente(vid) {
@@ -911,6 +913,7 @@ document.getElementById('formOrdenIngreso').addEventListener('submit', function(
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+  toggleVehiculoModo();
   const clienteIdInit = document.getElementById('clienteSelect').value;
   if (clienteIdInit) {
     fetchVehiculos(clienteIdInit, VEHICULO_PRECARGADO_ID);
