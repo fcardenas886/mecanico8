@@ -464,6 +464,18 @@
       <button onclick="document.getElementById('servicioModal').style.display='none'" class="btn btn-secondary" style="padding: 0.3rem 0.6rem;">&times;</button>
     </div>
     <div style="display: flex; flex-direction: column; gap: 1rem;">
+      <?php if (!empty($serviciosCatalogo)): ?>
+      <div>
+        <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">SERVICIOS DEL TALLER (precio definido)</label>
+        <select id="servicioCatalogoSelect" class="form-control" onchange="elegirServicioCatalogo(this)">
+          <option value="">Elegir de la lista…</option>
+          <?php foreach ($serviciosCatalogo as $sv): ?>
+            <option value="<?= (int)$sv['OperacionID'] ?>" data-nombre="<?= htmlspecialchars($sv['Nombre']) ?>" data-precio="<?= (int)$sv['PrecioBase'] ?>"><?= htmlspecialchars($sv['Nombre']) ?> — <?= formatCLP($sv['PrecioBase']) ?></option>
+          <?php endforeach; ?>
+        </select>
+        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.25rem;">O escribe uno distinto abajo.</div>
+      </div>
+      <?php endif; ?>
       <div>
         <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">DESCRIPCIÓN</label>
         <input type="text" id="servicioNombreInput" class="form-control" placeholder="Ej: Cambio de foco delantero + instalación">

@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/header.php';
+
+$serviciosCatalogo = getDB()->query("SELECT OperacionID, Nombre, PrecioBase FROM operacionessolicitadas WHERE Activo = TRUE AND PrecioBase > 0 ORDER BY EsDiagnosticoBase DESC, Categoria, Orden")->fetchAll();
 $pdo = getDB();
 
 // Verificar si el usuario actual tiene un turno activo/abierto

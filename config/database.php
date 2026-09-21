@@ -1,10 +1,13 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v4.9.0');
+define('APP_VERSION', 'v4.9.1');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v4.9.1' => [
+        'Caja: la ventana Servicio ahora ofrece los servicios del catálogo con su precio ya cargado (se puede editar), además de escribir uno distinto.',
+    ],
     'v4.9.0' => [
         'Nueva pantalla Servicios y precios: la mano de obra del taller con su precio ya definido, que se elige al armar el presupuesto.',
         'El diagnóstico es un servicio más: se agrega solo al presupuesto, no se cobra si el cliente aprueba la reparación y se cobra si no la aprueba (se puede cambiar a cobrar siempre).',

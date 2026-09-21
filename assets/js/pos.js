@@ -1545,6 +1545,14 @@ async function cargarPresupuestoOT(otId) {
   }
 }
 
+function elegirServicioCatalogo(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt || !opt.value) return;
+  document.getElementById('servicioNombreInput').value = opt.dataset.nombre;
+  document.getElementById('servicioPrecioInput').value = opt.dataset.precio;
+  document.getElementById('servicioCantidadInput').value = '1';
+}
+
 function agregarServicioManual() {
   const nombreEl = document.getElementById('servicioNombreInput');
   const precioEl = document.getElementById('servicioPrecioInput');
@@ -1570,6 +1578,8 @@ function agregarServicioManual() {
   nombreEl.value = '';
   precioEl.value = '';
   cantEl.value = '1';
+  const catSel = document.getElementById('servicioCatalogoSelect');
+  if (catSel) catSel.value = '';
   const modal = document.getElementById('servicioModal');
   if (modal) modal.style.display = 'none';
   renderCart();
