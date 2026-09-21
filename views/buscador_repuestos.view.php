@@ -1,3 +1,24 @@
+<?php
+// Etiquetas bajo cada repuesto: de dónde viene la sugerencia, para qué motor y avisos de compatibilidad.
+function compatBadges(array $r): string {
+    $h = '<div style="margin-top: 3px; display: flex; gap: 4px; flex-wrap: wrap; align-items: center;">';
+    if (($r['Origen'] ?? '') === 'Aprendido') {
+        $h .= '<span class="badge" style="background: rgba(167,139,250,0.18); color: #c4b5fd; font-size: 0.68rem;" title="El taller ya usó este repuesto en este modelo"><i class="fa-solid fa-brain"></i> Comprobado en el taller · ' . (int)$r['VecesUsado'] . ' ' . ((int)$r['VecesUsado'] === 1 ? 'vez' : 'veces') . '</span>';
+    }
+    if (!empty($r['Motor'])) {
+        $h .= '<span class="badge" style="background: rgba(56,189,248,0.15); color: #7dd3fc; font-size: 0.68rem;">Motor ' . htmlspecialchars($r['Motor']) . '</span>';
+    }
+    foreach ($r['_avisos'] ?? [] as $a) {
+        $h .= '<span class="badge badge-warning" style="font-size: 0.68rem;"><i class="fa-solid fa-triangle-exclamation"></i> ' . htmlspecialchars($a) . '</span>';
+    }
+    if (($r['Origen'] ?? '') === 'Aprendido') {
+        $h .= '<form method="POST" action="' . htmlspecialchars($_SERVER['REQUEST_URI']) . '" style="display:inline;" onsubmit="return confirm(\'¿Quitar esta sugerencia? Solo hazlo si el repuesto se registró por error.\');">'
+            . csrfField() . '<input type="hidden" name="action" value="quitar_compat"><input type="hidden" name="compat_id" value="' . (int)$r['CompatibilidadID'] . '">'
+            . '<button type="submit" style="background:none; border:none; color: var(--text-muted); font-size: 0.7rem; cursor: pointer; text-decoration: underline;">quitar</button></form>';
+    }
+    return $h . '</div>';
+}
+?>
 <style>
   .br-search-box { background: var(--card-bg); border: 1px solid var(--border-dark); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem; }
   .br-quick-car { background: rgba(255,255,255,0.03); border: 1px solid var(--border-dark); border-radius: 8px; padding: 0.75rem 1rem; cursor: pointer; text-decoration: none; color: #fff; transition: 0.15s; display: flex; align-items: center; justify-content: space-between; }
@@ -159,6 +180,35 @@
         </a>
       </div>
     </div>
+    <?php if (empty(trim((string)$vehiculoSeleccionado['Motor']))): ?>
+      <p style="color: var(--text-muted); font-size: 0.8rem; margin: -0.75rem 0 1.25rem;"><i class="fa-solid fa-lightbulb"></i> Este vehículo no tiene motor registrado. Si lo completas en su ficha, el sistema puede avisar cuando un repuesto sea para otro motor.</p>
+    <?php endif; ?>
+
+    <div class="br-cat-section" style="border-color: rgba(167,139,250,0.45);">
+      <div class="br-cat-header"><i class="fa-solid fa-clock-rotate-left" style="color: #c4b5fd;"></i> Lo que ya usamos en este auto</div>
+      <?php if (empty($usadosEnEsteAuto)): ?>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Todavía no hay órdenes entregadas de este vehículo con repuestos de aceite, filtros o frenos. Cuando se entregue una, el sistema recordará qué se le puso.</p>
+      <?php else: ?>
+        <table class="table" style="font-size: 0.85rem;">
+          <thead><tr><th>Tipo</th><th>Repuesto</th><th>Última vez</th><th>Stock</th><th>Precio</th></tr></thead>
+          <tbody>
+            <?php foreach ($usadosEnEsteAuto as $tipo => $h): ?>
+              <tr>
+                <td><?= htmlspecialchars(preg_replace('/(?<!^)([A-Z])/', ' $1', $tipo)) ?></td>
+                <td><strong style="color:#fff;"><?= htmlspecialchars($h['Nombre']) ?></strong><?= $h['ViscosidadAceite'] ? ' <span class="badge badge-warning">' . htmlspecialchars($h['ViscosidadAceite']) . '</span>' : '' ?></td>
+                <td><?= date('d/m/Y', strtotime($h['FechaEntrega'])) ?><?= $h['KilometrajeIngreso'] ? ' · ' . number_format($h['KilometrajeIngreso'], 0, ',', '.') . ' km' : '' ?> <span style="color: var(--text-muted);">(<?= htmlspecialchars(formatFolioOT($h['OrdenTrabajoID'])) ?>)</span></td>
+                <td><?= $h['Stock'] > 0 ? '<span style="color:#34d399; font-weight:700;">' . (int)$h['Stock'] . ' disp.</span>' : '<span style="color:#f87171;">Sin stock</span>' ?></td>
+                <td style="font-weight:700; color:#93c5fd;">$<?= number_format($h['PrecioVenta'], 0, ',', '.') ?></td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      <?php endif; ?>
+    </div>
+  <?php endif; ?>
+
+  <?php if (!empty($mensaje)): ?>
+    <div style="background: rgba(16,185,129,0.15); border: 1px solid var(--success); color: #34d399; padding: 0.6rem 1rem; border-radius: 8px; margin-bottom: 1rem;"><?= htmlspecialchars($mensaje) ?></div>
   <?php endif; ?>
 
   <!-- Categoría 1: Aceites de Motor -->
@@ -184,7 +234,7 @@
           <?php foreach ($repuestosPorTipo['Aceite'] as $r): ?>
             <tr>
               <td>
-                <strong style="color: #fff;"><?= htmlspecialchars($r['ProductoNombre']) ?></strong>
+                <strong style="color: #fff;"><?= htmlspecialchars($r['ProductoNombre']) ?></strong><?= compatBadges($r) ?>
                 <div style="font-size: 0.75rem; color: var(--text-muted);"><?= htmlspecialchars($r['ProductoDesc']) ?></div>
               </td>
               <td><span class="badge badge-warning" style="font-weight: 700;"><?= htmlspecialchars($r['ViscosidadAceite']) ?></span></td>
@@ -227,7 +277,7 @@
         <tbody>
           <?php foreach ($repuestosPorTipo['FiltroAceite'] as $r): ?>
             <tr>
-              <td><strong style="color: #fff;"><?= htmlspecialchars($r['ProductoNombre']) ?></strong></td>
+              <td><strong style="color: #fff;"><?= htmlspecialchars($r['ProductoNombre']) ?></strong><?= compatBadges($r) ?></td>
               <td><?= htmlspecialchars($r['MarcaRepuesto'] ?: '-') ?></td>
               <td><code><?= htmlspecialchars($r['NumeroParteOEM'] ?: $r['NumeroParteAlternativo'] ?: $r['CodigoBarras']) ?></code></td>
               <td><?= htmlspecialchars($r['Notas'] ?: $r['Motor'] ?: '-') ?></td>
@@ -271,7 +321,7 @@
           <?php foreach ($filtrosAireYOtros as $r): ?>
             <tr>
               <td><span class="badge badge-success"><?= htmlspecialchars($r['TipoRepuesto']) ?></span></td>
-              <td><strong style="color: #fff;"><?= htmlspecialchars($r['ProductoNombre']) ?></strong></td>
+              <td><strong style="color: #fff;"><?= htmlspecialchars($r['ProductoNombre']) ?></strong><?= compatBadges($r) ?></td>
               <td><?= htmlspecialchars($r['MarcaRepuesto'] ?: '-') ?></td>
               <td><code><?= htmlspecialchars($r['NumeroParteOEM'] ?: $r['NumeroParteAlternativo'] ?: $r['CodigoBarras']) ?></code></td>
               <td>
@@ -312,7 +362,7 @@
           <?php foreach ($frenosYBujias as $r): ?>
             <tr>
               <td><span class="badge badge-success"><?= htmlspecialchars($r['TipoRepuesto']) ?></span></td>
-              <td><strong style="color: #fff;"><?= htmlspecialchars($r['ProductoNombre']) ?></strong></td>
+              <td><strong style="color: #fff;"><?= htmlspecialchars($r['ProductoNombre']) ?></strong><?= compatBadges($r) ?></td>
               <td><?= htmlspecialchars($r['MarcaRepuesto'] ?: '-') ?></td>
               <td><code><?= htmlspecialchars($r['NumeroParteOEM'] ?: $r['NumeroParteAlternativo'] ?: $r['CodigoBarras']) ?></code></td>
               <td>

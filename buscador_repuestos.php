@@ -2,6 +2,15 @@
 require_once __DIR__ . '/includes/header.php';
 
 $pdo = getDB();
+$mensaje = '';
+
+// Quitar una compatibilidad aprendida por error (las cargadas a mano no se borran desde aquí)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'quitar_compat') {
+    verifyCsrf();
+    $del = $pdo->prepare("DELETE FROM compatibilidadrepuestos WHERE CompatibilidadID = :id AND Origen = 'Aprendido'");
+    $del->execute([':id' => (int)($_POST['compat_id'] ?? 0)]);
+    $mensaje = $del->rowCount() ? 'Se quitó la sugerencia aprendida.' : '';
+}
 
 // Obtener lista de vehículos registrados
 $vehiculos = $pdo->query("
@@ -71,6 +80,59 @@ if ($marcaParam !== '' || $modeloParam !== '') {
         ':likeModelo' => "%$modeloParam%"
     ]);
     $repuestosEncontrados = $stmtRep->fetchAll();
+
+    // Si hay un vehículo concreto, avisa cuando la compatibilidad es de otro motor o de otros años,
+    // y deja esas opciones al final. Lo más comprobado por el taller va primero.
+    // Motores distintos = cilindrada sin coincidencia (1.4 vs 1.6) o combustible distinto (diésel vs gasolina).
+    $motorDistinto = function (string $veh, string $rep): bool {
+        preg_match_all('/\d\.\d/', $veh, $a);
+        preg_match_all('/\d\.\d/', $rep, $b);
+        if ($a[0] && $b[0] && !array_intersect($a[0], $b[0])) return true;
+        $comb = fn($s) => preg_match('/di[eé]sel|petrol/i', $s) ? 'd' : (preg_match('/gasolina|bencina/i', $s) ? 'g' : '');
+        if ($comb($veh) && $comb($rep) && $comb($veh) !== $comb($rep)) return true;
+        if (!$a[0] && !$b[0] && !$comb($veh) && !$comb($rep)) {
+            $x = strtolower(preg_replace('/\s+/', '', $veh));
+            $y = strtolower(preg_replace('/\s+/', '', $rep));
+            return !str_contains($x, $y) && !str_contains($y, $x);
+        }
+        return false;
+    };
+    $motorVeh = $vehiculoSeleccionado ? trim((string)$vehiculoSeleccionado['Motor']) : '';
+    $anioVeh = $vehiculoSeleccionado ? (int)$vehiculoSeleccionado['Anio'] : 0;
+    foreach ($repuestosEncontrados as &$rep) {
+        $avisos = [];
+        $motorRep = trim((string)($rep['Motor'] ?? ''));
+        if ($motorVeh !== '' && $motorRep !== '' && $motorDistinto($motorVeh, $motorRep)) {
+            $avisos[] = 'Es para motor ' . $motorRep;
+        }
+        if ($anioVeh > 0 && (($rep['AnioDesde'] && $anioVeh < (int)$rep['AnioDesde']) || ($rep['AnioHasta'] && $anioVeh > (int)$rep['AnioHasta']))) {
+            $rango = ($rep['AnioDesde'] ?: '?') . ((int)$rep['AnioDesde'] === (int)$rep['AnioHasta'] ? '' : '-' . ($rep['AnioHasta'] ?: '?'));
+            $avisos[] = ($rep['Origen'] ?? '') === 'Aprendido' ? 'Solo comprobado en un ' . $rango : 'Es para años ' . $rango;
+        }
+        $rep['_avisos'] = $avisos;
+    }
+    unset($rep);
+    usort($repuestosEncontrados, fn($a, $b) => [count($a['_avisos']) > 0, -(int)$a['VecesUsado']] <=> [count($b['_avisos']) > 0, -(int)$b['VecesUsado']]);
+}
+
+// Memoria del vehículo: lo último que se le puso en órdenes ya entregadas, por tipo de repuesto.
+$usadosEnEsteAuto = [];
+if ($vehiculoSeleccionado) {
+    $stmtHist = $pdo->prepare("
+        SELECT p.ProductoID, p.Nombre, p.TipoRepuesto, p.ViscosidadAceite, p.MarcaRepuesto, p.PrecioVenta, p.Stock,
+               ot.OrdenTrabajoID, ot.FechaEntrega, ot.KilometrajeIngreso
+        FROM presupuestodetalle pd
+        JOIN presupuestos pr ON pd.PresupuestoID = pr.PresupuestoID
+        JOIN ordenestrabajo ot ON pr.OrdenTrabajoID = ot.OrdenTrabajoID
+        JOIN productos p ON pd.ProductoID = p.ProductoID
+        WHERE ot.VehiculoID = :v AND ot.Estado = 'Entregado' AND pd.Aprobado = 1
+          AND pd.TipoLinea = 'Repuesto' AND p.TipoRepuesto <> 'General'
+        ORDER BY ot.FechaEntrega DESC
+    ");
+    $stmtHist->execute([':v' => $vehiculoSeleccionado['VehiculoID']]);
+    foreach ($stmtHist->fetchAll() as $h) {
+        $usadosEnEsteAuto[$h['TipoRepuesto']] ??= $h;
+    }
 }
 
 // Agrupar repuestos por tipo

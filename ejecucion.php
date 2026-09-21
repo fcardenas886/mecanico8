@@ -71,8 +71,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Todavía falta cobrar la OT en caja antes de marcarla como lista.';
         }
     } elseif ($action === 'marcar_entregado') {
+        $yaEntregada = $ot['Estado'] === 'Entregado';
         $pdo->prepare("UPDATE ordenestrabajo SET Estado = 'Entregado', FechaEntrega = NOW() WHERE OrdenTrabajoID = :id")
             ->execute([':id' => $otId]);
+
+        // El sistema recuerda qué repuestos usa este vehículo/modelo para sugerirlos la próxima vez.
+        // Si algo falla aquí, la entrega igual queda registrada.
+        if (!$yaEntregada) {
+            try {
+                require_once __DIR__ . '/includes/repuestos_aprendizaje.php';
+                $aprendidos = aprenderRepuestosOT($pdo, $otId);
+            } catch (Exception $e) {
+                $aprendidos = [];
+            }
+        }
 
         // Registrar automáticamente en historialmantenimiento si se realizaron tareas preventivas clave
         $kmIngreso = (int)($ot['KilometrajeIngreso'] ?? 0);

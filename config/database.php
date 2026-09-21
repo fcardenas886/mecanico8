@@ -1,10 +1,15 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v4.5.0');
+define('APP_VERSION', 'v4.6.0');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v4.6.0' => [
+        'El sistema aprende qué repuestos usa cada auto: al entregar una orden recuerda el aceite y los filtros (por marca, modelo, año y motor) y los sugiere la próxima vez.',
+        '¿Qué necesita este auto? ahora muestra primero "Lo que ya usamos en este auto" y marca lo comprobado en el taller.',
+        'Avisos automáticos cuando un repuesto es de otro motor (cilindrada o diésel/gasolina) o de otros años; lo aprendido por error se puede quitar.',
+    ],
     'v4.5.0' => [
         'Taller más fácil de usar: barra de 5 pasos (Recepción, Diagnóstico, Presupuesto, Reparación y cobro, Entrega) en cada pantalla, con el paso actual resaltado.',
         'Órdenes de trabajo: cada orden muestra su situación en palabras simples y un único botón con lo que sigue ("Diagnosticar", "Hacer presupuesto", "Registrar respuesta", "Entregar al cliente"...).',

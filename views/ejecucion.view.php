@@ -71,6 +71,11 @@ $tipoLabel = ['Repuesto' => 'Repuesto', 'ManoObra' => 'Mano de Obra', 'Terceros'
     <div>
       <div style="font-weight: 700; font-size: 1rem;"><i class="fa-solid fa-circle-check"></i> Vehículo entregado el <?= date('d/m/Y H:i', strtotime($ot['FechaEntrega'])) ?></div>
       <div style="font-size: 0.82rem; color: #a7f3d0; margin-top: 0.2rem;">Los servicios preventivos fueron registrados automáticamente en la Ficha Clínica del Vehículo.</div>
+      <?php if (!empty($aprendidos)): ?>
+        <div style="font-size: 0.82rem; color: #a7f3d0; margin-top: 0.2rem;">
+          <i class="fa-solid fa-brain"></i> El sistema recordó qué usa este auto (<?= htmlspecialchars(implode(', ', $aprendidos)) ?>) y lo sugerirá la próxima vez en <a href="buscador_repuestos.php?vehiculo_id=<?= (int)$ot['VehiculoID'] ?>" style="color:#fff; text-decoration: underline;">¿Qué necesita este auto?</a>.
+        </div>
+      <?php endif; ?>
     </div>
     <div style="display: flex; gap: 0.5rem;">
       <a href="ficha_vehiculo.php?id=<?= $ot['VehiculoID'] ?>" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.82rem;">
