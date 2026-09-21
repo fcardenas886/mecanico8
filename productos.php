@@ -33,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $marcaRepuesto = trim($_POST['marca_repuesto'] ?? '') ?: null;
         $parteOEM = trim($_POST['numero_parte_oem'] ?? '') ?: null;
         $parteAlt = trim($_POST['numero_parte_alt'] ?? '') ?: null;
+        $descripcion = trim($_POST['descripcion'] ?? '') ?: null;
         $viscosidad = ($tipoRepuesto === 'Aceite') ? (trim($_POST['viscosidad_aceite'] ?? '') ?: null) : null;
 
         // Validar PLU si es pesable
@@ -51,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 StockMinimo = :stockmin, Activo = :activo,
                                 EsPesable = :espesable, CodigoPLU = :plu,
                                 TipoRepuesto = :tiporep, MarcaRepuesto = :marcarep, NumeroParteOEM = :oem,
-                                NumeroParteAlternativo = :alt, ViscosidadAceite = :visc
+                                NumeroParteAlternativo = :alt, ViscosidadAceite = :visc, Descripcion = :descr
                             WHERE ProductoID = :id
                         ");
                         $stmt->execute([
@@ -65,15 +66,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             ':espesable' => $esPesable,
                             ':plu' => $codigoPLU,
                             ':tiporep' => $tipoRepuesto, ':marcarep' => $marcaRepuesto, ':oem' => $parteOEM,
-                            ':alt' => $parteAlt, ':visc' => $viscosidad,
+                            ':alt' => $parteAlt, ':visc' => $viscosidad, ':descr' => $descripcion,
                             ':id' => $id
                         ]);
                     } else {
                         $stmt = $pdo->prepare("
                             INSERT INTO productos (CodigoBarras, Nombre, CategoriaID, PrecioVenta, CostoCompra, Stock, StockMinimo, Activo, EsPesable, CodigoPLU,
-                                                   TipoRepuesto, MarcaRepuesto, NumeroParteOEM, NumeroParteAlternativo, ViscosidadAceite)
+                                                   TipoRepuesto, MarcaRepuesto, NumeroParteOEM, NumeroParteAlternativo, ViscosidadAceite, Descripcion)
                             VALUES (:codigo, :nombre, :cat, :precio, :costo, :stock, :stockmin, :activo, :espesable, :plu,
-                                    :tiporep, :marcarep, :oem, :alt, :visc)
+                                    :tiporep, :marcarep, :oem, :alt, :visc, :descr)
                         ");
                         $stmt->execute([
                             ':codigo' => $codigo,
@@ -87,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             ':espesable' => $esPesable,
                             ':plu' => $codigoPLU,
                             ':tiporep' => $tipoRepuesto, ':marcarep' => $marcaRepuesto, ':oem' => $parteOEM,
-                            ':alt' => $parteAlt, ':visc' => $viscosidad
+                            ':alt' => $parteAlt, ':visc' => $viscosidad, ':descr' => $descripcion
                         ]);
                     }
                     $message = 'Producto guardado exitosamente.';

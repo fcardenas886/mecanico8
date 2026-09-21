@@ -172,6 +172,11 @@
               <small style="color: var(--text-muted); font-size: 0.72rem;">El del fabricante del auto.</small>
             </div>
           </div>
+          <div style="grid-column: 1 / -1;">
+            <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">DESCRIPCIÓN (opcional)</label>
+            <input type="text" name="descripcion" id="prodDescripcion" class="form-control" maxlength="255" placeholder="Ej: Bajo contenido en cenizas, para motores gasolina y diésel">
+            <small style="color: var(--text-muted); font-size: 0.72rem;">Se muestra bajo el nombre en la Consulta rápida de repuestos.</small>
+          </div>
           <div id="divViscosidad" style="display: none;">
             <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">VISCOSIDAD DEL ACEITE</label>
             <input type="text" name="viscosidad_aceite" id="prodViscosidad" class="form-control" placeholder="Ej: 5W-30">
@@ -261,7 +266,7 @@ function abrirNuevoModal() {
   document.getElementById('prodCodigoPLUInput').value = '';
   togglePluField();
   document.getElementById('prodTipoRepuesto').value = 'General';
-  ['prodMarcaRepuesto', 'prodParteAlt', 'prodParteOEM', 'prodViscosidad'].forEach(id => document.getElementById(id).value = '');
+  ['prodMarcaRepuesto', 'prodParteAlt', 'prodParteOEM', 'prodViscosidad', 'prodDescripcion'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('detRepuesto').open = false;
   toggleViscosidad();
 
@@ -293,7 +298,8 @@ function abrirEditarModal(p) {
   document.getElementById('prodParteAlt').value = p.NumeroParteAlternativo || '';
   document.getElementById('prodParteOEM').value = p.NumeroParteOEM || '';
   document.getElementById('prodViscosidad').value = p.ViscosidadAceite || '';
-  document.getElementById('detRepuesto').open = (p.TipoRepuesto && p.TipoRepuesto !== 'General') || !!(p.NumeroParteAlternativo || p.NumeroParteOEM || p.MarcaRepuesto);
+  document.getElementById('prodDescripcion').value = p.Descripcion || '';
+  document.getElementById('detRepuesto').open = (p.TipoRepuesto && p.TipoRepuesto !== 'General') || !!(p.NumeroParteAlternativo || p.NumeroParteOEM || p.MarcaRepuesto || p.Descripcion);
   toggleViscosidad();
 
   // Al editar, el stock actual es de solo lectura: se ajusta por Compras/ventas/Ajustes

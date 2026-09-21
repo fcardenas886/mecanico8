@@ -1,10 +1,13 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v4.9.2');
+define('APP_VERSION', 'v4.9.3');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v4.9.3' => [
+        'Productos: nuevo campo Descripción (opcional) en la sección de repuesto, que se muestra en la Consulta rápida de repuestos.',
+    ],
     'v4.9.2' => [
         'Consulta rápida de repuestos (antes ¿Qué necesita este auto?): una sola caja para escribir un modelo o elegir un auto del taller, con aviso de cuándo conviene usar la ficha del vehículo.',
     ],
