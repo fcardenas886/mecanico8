@@ -231,39 +231,37 @@
   <?php endif; ?>
 </div>
 
-<!-- Sección 2: ¿Qué necesita este auto? (Repuestos Compatibles & Guías Públicas de Lubricantes) -->
+<!-- Sección 2: ¿Qué necesita este auto? -->
+<?php
+$tiposRepuestoTxt = [
+    'Aceite' => 'Aceite de motor', 'FiltroAceite' => 'Filtro de aceite', 'FiltroAire' => 'Filtro de aire',
+    'FiltroCabina' => 'Filtro de cabina', 'FiltroCombustible' => 'Filtro de combustible', 'Frenos' => 'Frenos',
+    'Bujias' => 'Bujías', 'Distribucion' => 'Distribución', 'General' => 'Otros',
+];
+$nombreAuto = $vehiculo['Marca'] . ' ' . $vehiculo['Modelo'];
+?>
 <div class="fv-section">
   <div class="fv-section-title">
     <div>
       <i class="fa-solid fa-car-tunnel" style="color: #60a5fa;"></i> ¿Qué necesita este auto?
       <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted); margin-left: 0.5rem;">
-        Catálogo en bodega para <?= htmlspecialchars($vehiculo['Marca'] . ' ' . $vehiculo['Modelo']) ?>
+        Aceite y filtros para <?= htmlspecialchars($nombreAuto) ?>
       </span>
     </div>
-
-    <!-- Enlaces directos a las Guías Públicas de Lubricantes -->
-    <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
-      <a href="https://lubematch.shell.com/" target="_blank" class="guide-link-btn guide-shell" title="Buscador oficial de aceites Shell por marca y modelo">
-        <i class="fa-solid fa-oil-can"></i> Shell LubeMatch
-      </a>
-      <a href="https://www.liqui-moly.com/es/es/servicio/guia-de-aceites.html" target="_blank" class="guide-link-btn guide-liquimoly" title="Guía técnica de lubricantes y fluidos alemana Liqui Moly">
-        <i class="fa-solid fa-flask"></i> Liqui Moly Guide
-      </a>
-      <a href="https://catalog.mann-filter.com/" target="_blank" class="guide-link-btn guide-mann" title="Catálogo Mann-Filter oficial de filtros de aceite, aire, cabina y combustible">
-        <i class="fa-solid fa-filter"></i> Catálogo Mann-Filter
-      </a>
-    </div>
+    <a href="buscador_repuestos.php?vehiculo_id=<?= (int)$vehiculo['VehiculoID'] ?>" class="btn btn-secondary" style="padding: 0.3rem 0.75rem; font-size: 0.8rem;">
+      Ver búsqueda completa <i class="fa-solid fa-arrow-right" style="font-size: 0.7rem;"></i>
+    </a>
   </div>
 
   <?php if (empty($repuestosCompatibles)): ?>
-    <div style="background: rgba(255,255,255,0.02); border: 1px dashed var(--border-dark); border-radius: 8px; padding: 1.5rem; text-align: center;">
-      <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0 0 0.75rem 0;">
-        No hay repuestos registrados específicamente para <strong><?= htmlspecialchars($vehiculo['Marca'] . ' ' . $vehiculo['Modelo']) ?></strong> en la matriz local.
-      </p>
-      <div style="display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;">
-        <a href="https://lubematch.shell.com/" target="_blank" class="guide-link-btn guide-shell">Consultar en Shell LubeMatch</a>
-        <a href="https://catalog.mann-filter.com/" target="_blank" class="guide-link-btn guide-mann">Consultar en Mann-Filter</a>
-        <a href="productos.php" class="btn btn-secondary" style="font-size: 0.82rem;">Ver Catálogo de Productos</a>
+    <div style="background: rgba(255,255,255,0.02); border: 1px dashed var(--border-dark); border-radius: 8px; padding: 1rem 1.25rem; display: flex; gap: 0.85rem; align-items: flex-start;">
+      <i class="fa-solid fa-circle-info" style="color: #60a5fa; margin-top: 0.2rem;"></i>
+      <div style="font-size: 0.88rem; line-height: 1.5;">
+        <strong>Todavía no hay repuestos guardados para este modelo.</strong>
+        <div style="color: var(--text-muted);">
+          Se van llenando solos: cuando se entregue una orden de este auto con aceite o filtros, el sistema lo recuerda y lo muestra aquí.
+          Mientras tanto, consulta lo que corresponde en el catálogo del fabricante (abajo).
+        </div>
       </div>
     </div>
   <?php else: ?>
@@ -271,26 +269,28 @@
       <table class="table" style="font-size: 0.85rem;">
         <thead>
           <tr>
-            <th>Tipo</th>
-            <th>Repuesto / Descripción</th>
+            <th>Qué es</th>
+            <th>Repuesto</th>
             <th>Marca</th>
-            <th>N° Parte (OEM / Alt)</th>
-            <th>Stock Bodega</th>
-            <th>Precio Venta</th>
+            <th>N° de parte</th>
+            <th>En bodega</th>
+            <th>Precio</th>
           </tr>
         </thead>
         <tbody>
           <?php foreach ($repuestosCompatibles as $rc): ?>
             <tr>
               <td>
-                <span class="badge badge-success" style="font-size: 0.72rem;"><?= htmlspecialchars($rc['TipoRepuesto']) ?></span>
+                <span class="badge badge-success" style="font-size: 0.72rem;"><?= htmlspecialchars($tiposRepuestoTxt[$rc['TipoRepuesto']] ?? $rc['TipoRepuesto']) ?></span>
               </td>
               <td>
                 <strong style="color: #fff;"><?= htmlspecialchars($rc['ProductoNombre']) ?></strong>
                 <?php if (!empty($rc['ViscosidadAceite'])): ?>
                   <span style="color: #f59e0b; font-weight: 600;">(<?= htmlspecialchars($rc['ViscosidadAceite']) ?>)</span>
                 <?php endif; ?>
-                <?php if (!empty($rc['Notas'])): ?>
+                <?php if (($rc['Origen'] ?? '') === 'Aprendido'): ?>
+                  <div style="font-size: 0.72rem; color: #c4b5fd;"><i class="fa-solid fa-brain"></i> Comprobado en el taller · <?= (int)$rc['VecesUsado'] ?> <?= (int)$rc['VecesUsado'] === 1 ? 'vez' : 'veces' ?></div>
+                <?php elseif (!empty($rc['Notas'])): ?>
                   <div style="font-size: 0.75rem; color: var(--text-muted);"><?= htmlspecialchars($rc['Notas']) ?></div>
                 <?php endif; ?>
               </td>
@@ -314,6 +314,30 @@
       </table>
     </div>
   <?php endif; ?>
+
+  <!-- Catálogos de los fabricantes: un solo lugar, cada uno con su para qué -->
+  <div style="margin-top: 1.1rem; padding-top: 0.9rem; border-top: 1px solid var(--border-dark);">
+    <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); margin-bottom: 0.6rem;">
+      ¿No está aquí? Consúltalo en el catálogo del fabricante
+    </div>
+    <div style="display: flex; gap: 1.25rem; flex-wrap: wrap;">
+      <div>
+        <a href="https://lubematch.shell.com/" target="_blank" rel="noopener" class="guide-link-btn guide-shell"><i class="fa-solid fa-oil-can"></i> Shell LubeMatch</a>
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.3rem;">Qué aceite y viscosidad usa el auto</div>
+      </div>
+      <div>
+        <a href="https://www.liqui-moly.com/es/es/servicio/guia-de-aceites.html" target="_blank" rel="noopener" class="guide-link-btn guide-liquimoly"><i class="fa-solid fa-flask"></i> Liqui Moly</a>
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.3rem;">Aceites y fluidos alternativos</div>
+      </div>
+      <div>
+        <a href="https://www.mann-filter.com/es/catalogo.html" target="_blank" rel="noopener" class="guide-link-btn guide-mann"><i class="fa-solid fa-filter"></i> Mann-Filter</a>
+        <?php if (!empty($vehiculo['VIN'])): ?>
+          <button type="button" onclick="buscarEnMannFilterConVin(<?= htmlspecialchars(json_encode($vehiculo['VIN']), ENT_QUOTES) ?>)" style="background: none; border: none; color: #4ade80; font-size: 0.75rem; cursor: pointer; text-decoration: underline; padding: 0; margin-left: 0.4rem;">buscar con el VIN</button>
+        <?php endif; ?>
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.3rem;">Filtros de aceite, aire, cabina y combustible</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Sección 3: Historial Clínico de Órdenes de Trabajo (Timeline) -->
