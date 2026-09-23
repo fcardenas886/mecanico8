@@ -52,68 +52,42 @@ $visibles = array_filter($filas, function ($par) use ($filtro) {
   .ot-mas .links a:hover { text-decoration: underline; }
 </style>
 
-<!-- Barra Superior con Título, Selector de Vista y Botón de Recepción -->
+<!-- Barra Superior con Título y Botón de Recepción -->
 <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
   <div>
     <h1 style="font-size: 1.5rem; font-weight: 700;">Órdenes de trabajo</h1>
-    <p style="color: var(--text-muted); font-size: 0.9rem;">Control integral de vehículos en taller, diagnóstico, presupuestos y entregas.</p>
+    <p style="color: var(--text-muted); font-size: 0.9rem;">Cada fila es un vehículo en el taller. El botón de la derecha te dice qué hacer a continuación.</p>
   </div>
-  
-  <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
-    <!-- Selector de Modo de Vista (Kanban / Lista) -->
-    <div style="display: inline-flex; background: var(--card-bg); border: 1px solid var(--border-dark); border-radius: 8px; padding: 3px; gap: 3px;">
-      <button type="button" id="btnModoKanban" class="btn btn-primary" onclick="cambiarModoVista('kanban')" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; font-weight: 700;">
-        <i class="fa-solid fa-table-columns"></i> Tablero Kanban
-      </button>
-      <button type="button" id="btnModoLista" class="btn btn-outline-secondary" onclick="cambiarModoVista('lista')" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; font-weight: 600;">
-        <i class="fa-solid fa-list"></i> Vista Lista
-      </button>
-    </div>
+  <a href="ordeningreso.php" class="btn btn-primary" style="padding: 0.7rem 1.2rem;">
+    <i class="fa-solid fa-plus"></i> Recibir un vehículo
+  </a>
+</div>
 
-    <a href="ordeningreso.php" class="btn btn-primary" style="padding: 0.55rem 1.1rem; font-weight: 700;">
-      <i class="fa-solid fa-plus"></i> Recibir un vehículo
+<details class="ts-help ot-guia" style="display: block;">
+  <summary><i class="fa-solid fa-circle-info" style="margin-right: 0.4rem;"></i> ¿Cómo funciona? (los 5 pasos de cada orden)</summary>
+  <ol>
+    <li><strong>Recepción:</strong> anotas cliente, vehículo y en qué estado llega. Se imprime un comprobante.</li>
+    <li><strong>Diagnóstico:</strong> el mecánico revisa y anota lo que encuentra. Si el cliente ya sabe qué necesita, se puede saltar.</li>
+    <li><strong>Presupuesto:</strong> se detallan repuestos y mano de obra con precio; el cliente aprueba todo, una parte o nada.</li>
+    <li><strong>Reparación y cobro:</strong> se asigna al mecánico y se cobra en caja lo aprobado.</li>
+    <li><strong>Entrega:</strong> se avisa al cliente y se le entrega el vehículo.</li>
+  </ol>
+</details>
+
+<form method="GET" style="margin-bottom: 1rem; display: flex; gap: 0.5rem; max-width: 460px;">
+  <input type="hidden" name="f" value="<?= htmlspecialchars($filtro) ?>">
+  <input type="text" name="q" class="form-control" placeholder="Buscar por patente, cliente o N° de orden..." value="<?= htmlspecialchars($q) ?>">
+  <button type="submit" class="btn btn-secondary" title="Buscar"><i class="fa-solid fa-magnifying-glass"></i></button>
+</form>
+
+<div class="ot-tabs">
+  <?php foreach ($pestanas as $clave => [$nombre, $desc]):
+    if ($clave === 'entregadas' || $clave === 'todas' || $clave === 'activas' || $conteo[$clave] > 0 || $filtro === $clave): ?>
+    <a class="ot-tab <?= $filtro === $clave ? 'active' : '' ?>" href="?f=<?= $clave ?><?= $q !== '' ? '&q=' . urlencode($q) : '' ?>" title="<?= htmlspecialchars($desc) ?>">
+      <?= htmlspecialchars($nombre) ?> <span class="n"><?= $conteo[$clave] ?></span>
     </a>
-  </div>
+  <?php endif; endforeach; ?>
 </div>
-
-<!-- ========================================== -->
-<!-- 1. VISTA TABLERO KANBAN (INTERACTIVO)      -->
-<!-- ========================================== -->
-<div id="vistaKanbanContainer">
-  <?php include __DIR__ . '/kanban_ot.view.php'; ?>
-</div>
-
-<!-- ========================================== -->
-<!-- 2. VISTA TABLA TRADICIONAL                -->
-<!-- ========================================== -->
-<div id="vistaListaContainer" style="display: none;">
-
-  <details class="ts-help ot-guia" style="display: block;">
-    <summary><i class="fa-solid fa-circle-info" style="margin-right: 0.4rem;"></i> ¿Cómo funciona? (los 5 pasos de cada orden)</summary>
-    <ol>
-      <li><strong>Recepción:</strong> anotas cliente, vehículo y en qué estado llega. Se imprime un comprobante.</li>
-      <li><strong>Diagnóstico:</strong> el mecánico revisa y anota lo que encuentra. Si el cliente ya sabe qué necesita, se puede saltar.</li>
-      <li><strong>Presupuesto:</strong> se detallan repuestos y mano de obra con precio; el cliente aprueba todo, una parte o nada.</li>
-      <li><strong>Reparación y cobro:</strong> se asigna al mecánico y se cobra en caja lo aprobado.</li>
-      <li><strong>Entrega:</strong> se avisa al cliente y se le entrega el vehículo.</li>
-    </ol>
-  </details>
-
-  <form method="GET" style="margin-bottom: 1rem; display: flex; gap: 0.5rem; max-width: 460px;">
-    <input type="hidden" name="f" value="<?= htmlspecialchars($filtro) ?>">
-    <input type="hidden" name="vista" value="lista">
-    <input type="text" name="q" class="form-control" placeholder="Buscar por patente, cliente o N° de orden..." value="<?= htmlspecialchars($q) ?>">
-    <button type="submit" class="btn btn-secondary" title="Buscar"><i class="fa-solid fa-magnifying-glass"></i></button>
-  </form>
-
-  <div class="ot-tabs">
-    <?php foreach ($pestanas as $clave => [$nombre, $desc]):
-      if ($clave === 'entregadas' || $clave === 'todas' || $clave === 'activas' || $conteo[$clave] > 0 || $filtro === $clave): ?>
-      <a class="ot-tab <?= $filtro === $clave ? 'active' : '' ?>" href="?vista=lista&f=<?= $clave ?><?= $q !== '' ? '&q=' . urlencode($q) : '' ?>" title="<?= htmlspecialchars($desc) ?>">
-        <?= htmlspecialchars($nombre) ?> <span class="n"><?= $conteo[$clave] ?></span>
-      </a>
-    <?php endif; endforeach; ?>
-  </div>
 
   <div class="table-card">
     <table class="table">
@@ -219,10 +193,3 @@ $visibles = array_filter($filas, function ($par) use ($filtro) {
     </table>
   </div>
 
-</div>
-
-<!-- Inyección del token CSRF y lógica JavaScript del Kanban -->
-<script>
-  window.CSRF_TOKEN = "<?= csrfToken() ?>";
-</script>
-<script src="assets/js/kanban_ot.js"></script>
