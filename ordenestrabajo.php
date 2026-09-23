@@ -6,9 +6,11 @@ $q = trim($_GET['q'] ?? '');
 
 $stmt = $pdo->prepare("
     SELECT ot.OrdenTrabajoID, ot.VehiculoID, ot.FechaIngreso, ot.Estado, ot.KilometrajeIngreso, ot.VentaID, ot.ManoObraCobrada,
-           v.Patente, v.Marca, v.Modelo,
+           ot.MecanicoID, ot.FechaEntrega, ot.OperacionesTextoLibre,
+           v.Patente, v.Marca, v.Modelo, v.Anio, v.Color,
            c.Nombre AS ClienteNombre, c.Telefono AS ClienteTelefono,
            u.Nombre AS UsuarioNombre,
+           m.Nombre AS MecanicoNombre,
            p.PresupuestoID, p.DecisionCliente,
            (SELECT COALESCE(SUM(Subtotal), 0) FROM presupuestodetalle pd WHERE pd.PresupuestoID = p.PresupuestoID AND pd.PoliticaCobro <> 'SoloSiNoAprueba') AS TotalPresupuesto,
            (SELECT COUNT(*) FROM presupuestodetalle pd WHERE pd.PresupuestoID = p.PresupuestoID) AS CantidadLineasPresupuesto
@@ -16,6 +18,7 @@ $stmt = $pdo->prepare("
     JOIN vehiculos v ON ot.VehiculoID = v.VehiculoID
     JOIN clientes c ON ot.ClienteID = c.ClienteID
     JOIN usuarios u ON ot.UsuarioID = u.UsuarioID
+    LEFT JOIN usuarios m ON ot.MecanicoID = m.UsuarioID
     LEFT JOIN (
         SELECT p1.*
         FROM presupuestos p1
@@ -32,6 +35,9 @@ $stmt = $pdo->prepare("
 $idNum = ctype_digit($q) ? (int)$q : 0;
 $stmt->execute([':q' => $q, ':like' => "%$q%", ':like2' => "%$q%", ':idnum' => $idNum]);
 $ordenes = $stmt->fetchAll();
+
+// Cargar mecánicos activos para filtros y asignación rápida
+$mecanicos = $pdo->query("SELECT UsuarioID, Nombre FROM usuarios WHERE Activo = TRUE ORDER BY Nombre ASC")->fetchAll();
 
 include __DIR__ . '/views/ordenestrabajo.view.php';
 require_once __DIR__ . '/includes/footer.php';

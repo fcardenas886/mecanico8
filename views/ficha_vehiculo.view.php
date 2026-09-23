@@ -221,14 +221,38 @@
             <?php endif; ?>
           </div>
 
-          <form method="POST" action="ficha_vehiculo.php?id=<?= $vehiculoId ?>" onsubmit="return confirm('¿Eliminar este registro de mantenimiento?');">
-            <?= csrfField() ?>
-            <input type="hidden" name="action" value="eliminar_mantenimiento">
-            <input type="hidden" name="mantenimiento_id" value="<?= $m['MantenimientoID'] ?>">
-            <button type="submit" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Eliminar registro">
-              <i class="fa-solid fa-trash"></i>
-            </button>
-          </form>
+          <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+            <?php
+              require_once __DIR__ . '/../includes/whatsapp_helper.php';
+              $msgWAMaint = mensajeAlertaMantenimientoWhatsApp(
+                  ['Nombre' => $vehiculo['ClienteNombre'] ?? 'Cliente'],
+                  $vehiculo,
+                  $m,
+                  obtenerNombreTaller($pdo)
+              );
+              $urlWAMaint = generarUrlWhatsapp($vehiculo['ClienteTelefono'] ?? '', $msgWAMaint);
+            ?>
+            <?php if ($urlWAMaint): ?>
+              <a href="<?= $urlWAMaint ?>" target="_blank" class="btn" style="background: #16a34a; color: #ffffff; padding: 0.3rem 0.6rem; font-size: 0.75rem;" title="Enviar recordatorio por WhatsApp al cliente">
+                <i class="fa-brands fa-whatsapp"></i> Avisar
+              </a>
+            <?php endif; ?>
+
+            <?php if (stripos($m['TipoMantenimiento'], 'aceite') !== false): ?>
+              <a href="sticker_aceite.php?vehiculo_id=<?= $vehiculoId ?>&mantenimiento_id=<?= $m['MantenimientoID'] ?>" target="_blank" class="btn" style="background: #f59e0b; color: #000; font-weight: 700; padding: 0.3rem 0.6rem; font-size: 0.75rem;" title="Imprimir etiqueta térmica para parabrisas">
+                <i class="fa-solid fa-tag"></i> Sticker
+              </a>
+            <?php endif; ?>
+
+            <form method="POST" action="ficha_vehiculo.php?id=<?= $vehiculoId ?>" onsubmit="return confirm('¿Eliminar este registro de mantenimiento?');" style="margin: 0;">
+              <?= csrfField() ?>
+              <input type="hidden" name="action" value="eliminar_mantenimiento">
+              <input type="hidden" name="mantenimiento_id" value="<?= $m['MantenimientoID'] ?>">
+              <button type="submit" class="btn btn-secondary" style="padding: 0.3rem 0.5rem; font-size: 0.75rem;" title="Eliminar registro">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </form>
+          </div>
         </div>
       <?php endforeach; ?>
     </div>

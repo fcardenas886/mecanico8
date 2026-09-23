@@ -47,7 +47,17 @@ $decisionClase = [
   </div>
   <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
     <span class="badge <?= $pendiente ? 'badge-warning' : 'badge-success' ?>"><?= htmlspecialchars(otEstadoInfo($ot + ['PresupuestoID' => $presupuesto['PresupuestoID'] ?? null, 'DecisionCliente' => $presupuesto['DecisionCliente'] ?? null, 'CantidadLineasPresupuesto' => count($lineas)])['etiqueta']) ?></span>
-    <?php if ($presupuesto): ?>
+    <?php if ($presupuesto): 
+      require_once __DIR__ . '/../includes/whatsapp_helper.php';
+      $waNombreTaller = obtenerNombreTaller($pdo);
+      $waMsg = mensajePresupuestoWhatsApp($ot, $presupuesto, (float)$total, $waNombreTaller);
+      $waUrl = generarUrlWhatsapp($ot['ClienteTelefono'] ?? '', $waMsg);
+    ?>
+      <?php if ($waUrl): ?>
+        <a href="<?= $waUrl ?>" target="_blank" class="btn" style="background: #16a34a; color: #ffffff; padding: 0.4rem 0.8rem; font-size: 0.85rem;" title="Enviar presupuesto por WhatsApp al cliente">
+          <i class="fa-brands fa-whatsapp"></i> Enviar por WhatsApp
+        </a>
+      <?php endif; ?>
       <a href="comprobante_presupuesto.php?id=<?= $otId ?>" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" target="_blank">
         <i class="fa-solid fa-print"></i> Imprimir presupuesto
       </a>

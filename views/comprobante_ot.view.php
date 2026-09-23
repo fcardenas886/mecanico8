@@ -62,7 +62,17 @@ function chkLabel($valor) {
 <?php otStepper($ot, 1); ?>
 <div class="ts-help no-print" style="justify-content: space-between; align-items: center; flex-wrap: wrap;">
   <div><i class="fa-solid fa-circle-check" style="color:#34d399;"></i> <strong>Vehículo recibido.</strong> Imprime el comprobante: se genera una copia para el cliente y otra reducida para dejar dentro del auto.</div>
-  <div style="display: flex; gap: 0.5rem;">
+  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+    <?php
+      require_once __DIR__ . '/../includes/whatsapp_helper.php';
+      $msgWARecepcion = mensajeRecepcionWhatsApp($ot, $nombreTaller);
+      $urlWARecepcion = generarUrlWhatsapp($ot['ClienteTelefono'] ?? '', $msgWARecepcion);
+    ?>
+    <?php if ($urlWARecepcion): ?>
+      <a href="<?= $urlWARecepcion ?>" target="_blank" class="btn" style="background: #16a34a; color: #ffffff;" title="Enviar comprobante de ingreso por WhatsApp">
+        <i class="fa-brands fa-whatsapp"></i> Enviar por WhatsApp
+      </a>
+    <?php endif; ?>
     <button onclick="window.print()" class="btn btn-secondary"><i class="fa-solid fa-print"></i> Imprimir</button>
     <a href="diagnostico.php?id=<?= $otId ?>" class="btn btn-primary">Siguiente: diagnóstico <i class="fa-solid fa-arrow-right"></i></a>
   </div>

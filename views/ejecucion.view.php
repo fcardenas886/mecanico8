@@ -37,6 +37,9 @@ $tipoLabel = ['Repuesto' => 'Repuesto', 'ManoObra' => 'Mano de Obra', 'Terceros'
     <a href="comprobante_presupuesto.php?id=<?= $otId ?>" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" target="_blank">
       <i class="fa-solid fa-print"></i> Presupuesto
     </a>
+    <a href="sticker_aceite.php?ot=<?= $otId ?>" class="btn" style="background: #f59e0b; color: #000; font-weight: 700; padding: 0.4rem 0.8rem; font-size: 0.85rem;" target="_blank" title="Imprimir etiqueta para parabrisas">
+      <i class="fa-solid fa-tag"></i> Sticker Aceite
+    </a>
     <a href="ficha_vehiculo.php?id=<?= $ot['VehiculoID'] ?>" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
       <i class="fa-solid fa-car"></i> Historial del vehículo
     </a>
@@ -77,7 +80,10 @@ $tipoLabel = ['Repuesto' => 'Repuesto', 'ManoObra' => 'Mano de Obra', 'Terceros'
         </div>
       <?php endif; ?>
     </div>
-    <div style="display: flex; gap: 0.5rem;">
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+      <a href="sticker_aceite.php?ot=<?= $otId ?>" class="btn" style="background: #f59e0b; color: #000; font-weight: 700; padding: 0.4rem 0.8rem; font-size: 0.82rem;" target="_blank" title="Imprimir etiqueta térmica para parabrisas">
+        <i class="fa-solid fa-tag"></i> Imprimir Sticker Aceite
+      </a>
       <a href="ficha_vehiculo.php?id=<?= $ot['VehiculoID'] ?>" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.82rem;">
         <i class="fa-solid fa-file-waveform"></i> Ver historial y próximos servicios
       </a>
@@ -160,7 +166,24 @@ $tipoLabel = ['Repuesto' => 'Repuesto', 'ManoObra' => 'Mano de Obra', 'Terceros'
         <i class="fa-solid fa-key"></i> Marcar Entregado
       </button>
     </form>
+    <?php
+      require_once __DIR__ . '/../includes/whatsapp_helper.php';
+      $saldoPendiente = (!empty($ot['VentaID']) || !empty($ot['ManoObraCobrada'])) ? 0 : (float)$totalPresupuesto;
+      $msgWAAutoListo = mensajeAutoListoWhatsApp($ot, $saldoPendiente, obtenerNombreTaller($pdo));
+      $urlWAAutoListo = generarUrlWhatsapp($ot['ClienteTelefono'] ?? '', $msgWAAutoListo);
+    ?>
+    <?php if ($urlWAAutoListo): ?>
+      <a href="<?= $urlWAAutoListo ?>" target="_blank" class="btn" style="background: #16a34a; color: #ffffff; padding: 0.7rem 1.2rem;" title="Notificar por WhatsApp que el auto está listo para retiro">
+        <i class="fa-brands fa-whatsapp"></i> Avisar al Cliente: Auto Listo
+      </a>
+    <?php endif; ?>
+    <a href="sticker_aceite.php?ot=<?= $otId ?>" target="_blank" class="btn" style="background: #f59e0b; color: #000; font-weight: 700; padding: 0.7rem 1.2rem;" title="Imprimir etiqueta para parabrisas">
+      <i class="fa-solid fa-tag"></i> Imprimir Sticker Aceite
+    </a>
   <?php else: ?>
     <span style="color: var(--text-muted); font-size: 0.9rem;">Esta OT ya fue entregada.</span>
+    <a href="sticker_aceite.php?ot=<?= $otId ?>" target="_blank" class="btn" style="background: #f59e0b; color: #000; font-weight: 700; padding: 0.5rem 1rem;" title="Imprimir etiqueta para parabrisas">
+      <i class="fa-solid fa-tag"></i> Imprimir Sticker Aceite
+    </a>
   <?php endif; ?>
 </div>

@@ -10,7 +10,7 @@ $otId = (int)($_GET['id'] ?? $_POST['ot_id'] ?? 0);
 function cargarOT(PDO $pdo, int $otId) {
     $stmt = $pdo->prepare("
         SELECT ot.*, v.Patente, v.Marca, v.Modelo, v.Anio, c.Nombre AS ClienteNombre,
-               m.Nombre AS MecanicoNombre
+               c.Telefono AS ClienteTelefono, m.Nombre AS MecanicoNombre
         FROM ordenestrabajo ot
         JOIN vehiculos v ON ot.VehiculoID = v.VehiculoID
         JOIN clientes c ON ot.ClienteID = c.ClienteID

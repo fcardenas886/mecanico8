@@ -3,16 +3,10 @@ $folio = formatFolioOT($ot['OrdenTrabajoID']);
 $fechaEmision = date('d/m/Y', strtotime($presupuesto['FechaCreacion'] ?? 'now'));
 $validezFecha = date('d/m/Y', strtotime(($presupuesto['FechaCreacion'] ?? 'now') . ' +15 days'));
 
-// Preparar mensaje de WhatsApp
-$telLimpio = preg_replace('/\D/', '', $ot['ClienteTelefono'] ?? '');
-$msgWhatsapp = "Hola " . $ot['ClienteNombre'] . ", te enviamos el Presupuesto formal de tu vehículo " . $ot['Marca'] . " " . $ot['Modelo'] . " (Patente " . $ot['Patente'] . ") del taller " . $nombreEmpresa . ".\n";
-$msgWhatsapp .= "Folio Presupuesto: " . $folio . "\n";
-$msgWhatsapp .= "Total Cotizado: $" . number_format($totalPresupuesto, 0, ',', '.') . " CLP\n";
-if (!empty($presupuesto['TiempoEntrega'])) {
-    $msgWhatsapp .= "Tiempo estimado de entrega: " . $presupuesto['TiempoEntrega'] . "\n";
-}
-$msgWhatsapp .= "Por favor confírmanos si apruebas los trabajos para iniciar la reparación de inmediato. ¡Muchas gracias!";
-$waUrl = "https://wa.me/56" . $telLimpio . "?text=" . urlencode($msgWhatsapp);
+// Preparar mensaje de WhatsApp usando helper centralizado
+require_once __DIR__ . '/../includes/whatsapp_helper.php';
+$msgWhatsapp = mensajePresupuestoWhatsApp($ot, $presupuesto, (float)$totalPresupuesto, $nombreEmpresa);
+$waUrl = generarUrlWhatsapp($ot['ClienteTelefono'] ?? '', $msgWhatsapp);
 ?>
 <style>
   .doc-sheet {
@@ -183,8 +177,8 @@ $waUrl = "https://wa.me/56" . $telLimpio . "?text=" . urlencode($msgWhatsapp);
   </div>
 
   <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-    <?php if (!empty($telLimpio)): ?>
-      <a href="<?= $waUrl ?>" target="_blank" class="btn btn-secondary" style="background: rgba(16, 185, 129, 0.15); border-color: #10b981; color: #34d399; font-size: 0.85rem;" title="Compartir cotización por WhatsApp">
+    <?php if (!empty($waUrl)): ?>
+      <a href="<?= $waUrl ?>" target="_blank" class="btn" style="background: #16a34a; color: #ffffff; font-size: 0.85rem;" title="Compartir cotización por WhatsApp">
         <i class="fa-brands fa-whatsapp"></i> Enviar por WhatsApp
       </a>
     <?php endif; ?>
