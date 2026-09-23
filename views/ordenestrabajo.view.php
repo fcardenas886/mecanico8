@@ -1,7 +1,7 @@
 <?php
 tallerEstiloUI();
 
-// Clasifica cada orden y cuenta por grupo para las pestañas de la vista lista.
+// Clasifica cada orden y cuenta por grupo para las pestañas.
 $filas = [];
 $conteo = ['activas' => 0, 'diagnosticar' => 0, 'presupuestar' => 0, 'esperando' => 0, 'reparacion' => 0, 'retirar' => 0, 'entregadas' => 0, 'todas' => 0];
 foreach ($ordenes as $o) {
@@ -52,7 +52,6 @@ $visibles = array_filter($filas, function ($par) use ($filtro) {
   .ot-mas .links a:hover { text-decoration: underline; }
 </style>
 
-<!-- Barra Superior con Título y Botón de Recepción -->
 <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
   <div>
     <h1 style="font-size: 1.5rem; font-weight: 700;">Órdenes de trabajo</h1>
@@ -89,107 +88,85 @@ $visibles = array_filter($filas, function ($par) use ($filtro) {
   <?php endif; endforeach; ?>
 </div>
 
-  <div class="table-card">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Orden</th>
-          <th>Vehículo y cliente</th>
-          <th>Mecánico</th>
-          <th>Situación</th>
-          <th>Qué sigue</th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php if (empty($visibles)): ?>
-          <tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2.5rem;">
-            <?php if ($conteo['todas'] === 0): ?>
-              Aún no hay órdenes. Empieza con <a href="ordeningreso.php" style="color: #93c5fd;">Recibir un vehículo</a>.
-            <?php else: ?>
-              No hay órdenes en esta categoría.
-            <?php endif; ?>
-          </td></tr>
-        <?php else: ?>
-          <?php foreach ($visibles as [$ot, $inf]):
-            $id = (int)$ot['OrdenTrabajoID'];
-            $tienePresupuesto = !empty($ot['PresupuestoID']) && (int)($ot['CantidadLineasPresupuesto'] ?? 0) > 0;
-            [$txtAccion, $urlAccion, $claseAccion] = $inf['accion'];
-          ?>
-            <tr>
-              <td>
-                <strong><?= htmlspecialchars(formatFolioOT($id)) ?></strong>
-                <div class="ot-sub"><?= date('d/m/Y H:i', strtotime($ot['FechaIngreso'])) ?></div>
-              </td>
-              <td>
-                <div class="ot-vehiculo">
-                  <a href="ficha_vehiculo.php?id=<?= $ot['VehiculoID'] ?>" title="Ver historial del vehículo"><?= htmlspecialchars($ot['Patente']) ?></a>
-                  <?= htmlspecialchars($ot['Marca']) ?> <?= htmlspecialchars($ot['Modelo']) ?>
-                </div>
-                <div class="ot-sub"><?= htmlspecialchars($ot['ClienteNombre']) ?></div>
-              </td>
-              <td>
-                <?php if (!empty($ot['MecanicoNombre'])): ?>
-                  <span style="font-size: 0.85rem; font-weight: 600; color: #38bdf8;">👨‍🔧 <?= htmlspecialchars($ot['MecanicoNombre']) ?></span>
-                <?php else: ?>
-                  <span style="color: var(--text-muted); font-size: 0.82rem; font-style: italic;">Sin asignar</span>
+<div class="table-card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Orden</th>
+        <th>Vehículo y cliente</th>
+        <th>Situación</th>
+        <th>Qué sigue</th>
+      </tr>
+    </thead>
+    <tbody>
+      <?php if (empty($visibles)): ?>
+        <tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 2.5rem;">
+          <?php if ($conteo['todas'] === 0): ?>
+            Aún no hay órdenes. Empieza con <a href="ordeningreso.php" style="color: #93c5fd;">Recibir un vehículo</a>.
+          <?php else: ?>
+            No hay órdenes en esta categoría.
+          <?php endif; ?>
+        </td></tr>
+      <?php else: ?>
+        <?php foreach ($visibles as [$ot, $inf]):
+          $id = (int)$ot['OrdenTrabajoID'];
+          $tienePresupuesto = !empty($ot['PresupuestoID']) && (int)($ot['CantidadLineasPresupuesto'] ?? 0) > 0;
+          [$txtAccion, $urlAccion, $claseAccion] = $inf['accion'];
+        ?>
+          <tr>
+            <td>
+              <strong><?= htmlspecialchars(formatFolioOT($id)) ?></strong>
+              <div class="ot-sub"><?= date('d/m/Y H:i', strtotime($ot['FechaIngreso'])) ?></div>
+            </td>
+            <td>
+              <div class="ot-vehiculo">
+                <a href="ficha_vehiculo.php?id=<?= $ot['VehiculoID'] ?>" title="Ver historial del vehículo"><?= htmlspecialchars($ot['Patente']) ?></a>
+                <?= htmlspecialchars($ot['Marca']) ?> <?= htmlspecialchars($ot['Modelo']) ?>
+              </div>
+              <div class="ot-sub"><?= htmlspecialchars($ot['ClienteNombre']) ?></div>
+            </td>
+            <td>
+              <?= otMiniProgreso($inf) ?>
+              <span class="badge <?= $inf['badge'] ?>"><?= htmlspecialchars($inf['etiqueta']) ?></span>
+              <div class="ot-sub" style="margin-top: 3px;">
+                <?= htmlspecialchars($inf['ayuda']) ?>
+                <?php if ($inf['grupo'] === 'esperando'): ?>
+                  · <strong style="color: #fbbf24;"><?= formatCLP($ot['TotalPresupuesto']) ?></strong>
                 <?php endif; ?>
-              </td>
-              <td>
-                <?= otMiniProgreso($inf) ?>
-                <span class="badge <?= $inf['badge'] ?>"><?= htmlspecialchars($inf['etiqueta']) ?></span>
-                <div class="ot-sub" style="margin-top: 3px;">
-                  <?= htmlspecialchars($inf['ayuda']) ?>
-                  <?php if ($inf['grupo'] === 'esperando'): ?>
-                    · <strong style="color: #fbbf24;"><?= formatCLP($ot['TotalPresupuesto']) ?></strong>
-                  <?php endif; ?>
-                </div>
-              </td>
-              <td>
-                <div class="ot-accion">
-                  <a href="<?= htmlspecialchars($urlAccion) ?>" class="btn <?= $claseAccion ?>" style="padding: 0.45rem 0.9rem; font-size: 0.85rem; font-weight: 700; <?= $claseAccion === 'btn-warning' ? 'background:#f59e0b; color:#000; border:none;' : '' ?>">
-                    <?= htmlspecialchars($txtAccion) ?> <i class="fa-solid fa-arrow-right" style="font-size: 0.75rem;"></i>
+              </div>
+            </td>
+            <td>
+              <div class="ot-accion">
+                <a href="<?= htmlspecialchars($urlAccion) ?>" class="btn <?= $claseAccion ?>" style="padding: 0.45rem 0.9rem; font-size: 0.85rem; font-weight: 700; <?= $claseAccion === 'btn-warning' ? 'background:#f59e0b; color:#000; border:none;' : '' ?>">
+                  <?= htmlspecialchars($txtAccion) ?> <i class="fa-solid fa-arrow-right" style="font-size: 0.75rem;"></i>
+                </a>
+                <?php if ($inf['grupo'] === 'esperando' && !empty($ot['ClienteTelefono'])):
+                  $tel = preg_replace('/\D/', '', $ot['ClienteTelefono']);
+                  $msg = urlencode("Hola {$ot['ClienteNombre']}, te enviamos el presupuesto de tu {$ot['Marca']} {$ot['Modelo']} (patente {$ot['Patente']}) por un total de " . formatCLP($ot['TotalPresupuesto']) . ". ¿Nos autorizas para iniciar los trabajos?");
+                ?>
+                  <a href="https://wa.me/56<?= $tel ?>?text=<?= $msg ?>" target="_blank" class="btn" style="background: #25d366; color: #fff; padding: 0.45rem 0.75rem; font-size: 0.82rem; border: none;" title="Enviar el presupuesto al cliente por WhatsApp">
+                    <i class="fa-brands fa-whatsapp"></i> Enviar
                   </a>
-                  <?php
-                    if ($inf['grupo'] === 'esperando' && !empty($ot['ClienteTelefono'])):
-                      $msgWAPres = mensajePresupuestoWhatsApp($ot, ['TiempoEntrega' => ''], (float)($ot['TotalPresupuesto'] ?? 0), obtenerNombreTaller());
-                      $urlWAPres = generarUrlWhatsapp($ot['ClienteTelefono'], $msgWAPres);
-                  ?>
-                    <?php if ($urlWAPres): ?>
-                      <a href="<?= $urlWAPres ?>" target="_blank" class="btn" style="background: #25d366; color: #fff; padding: 0.45rem 0.75rem; font-size: 0.82rem; border: none;" title="Enviar el presupuesto al cliente por WhatsApp">
-                        <i class="fa-brands fa-whatsapp"></i> Presupuesto
-                      </a>
-                    <?php endif; ?>
-                  <?php elseif ($inf['grupo'] === 'retirar' && !empty($ot['ClienteTelefono'])):
-                      $msgWAListo = mensajeAutoListoWhatsApp($ot, 0, obtenerNombreTaller());
-                      $urlWAListo = generarUrlWhatsapp($ot['ClienteTelefono'], $msgWAListo);
-                  ?>
-                    <?php if ($urlWAListo): ?>
-                      <a href="<?= $urlWAListo ?>" target="_blank" class="btn" style="background: #25d366; color: #fff; padding: 0.45rem 0.75rem; font-size: 0.82rem; border: none;" title="Avisar al cliente que su auto está listo por WhatsApp">
-                        <i class="fa-brands fa-whatsapp"></i> Avisar
-                      </a>
-                    <?php endif; ?>
+                <?php endif; ?>
+              </div>
+              <details class="ot-mas">
+                <summary><i class="fa-solid fa-folder-open"></i> Ver documentos y pasos anteriores</summary>
+                <div class="links">
+                  <a href="comprobante_ot.php?id=<?= $id ?>"><i class="fa-solid fa-file-lines"></i> Comprobante de recepción</a>
+                  <?php if ($inf['paso'] > 2 || $inf['grupo'] === 'entregadas'): ?>
+                    <a href="diagnostico.php?id=<?= $id ?>"><i class="fa-solid fa-stethoscope"></i> Ver diagnóstico</a>
                   <?php endif; ?>
+                  <?php if ($tienePresupuesto): ?>
+                    <a href="presupuesto.php?id=<?= $id ?>"><i class="fa-solid fa-file-invoice-dollar"></i> Ver presupuesto</a>
+                    <a href="comprobante_presupuesto.php?id=<?= $id ?>" target="_blank"><i class="fa-solid fa-file-pdf"></i> Presupuesto para imprimir</a>
+                  <?php endif; ?>
+                  <a href="ficha_vehiculo.php?id=<?= $ot['VehiculoID'] ?>"><i class="fa-solid fa-car-side"></i> Historial del vehículo</a>
                 </div>
-                <details class="ot-mas">
-                  <summary><i class="fa-solid fa-folder-open"></i> Ver documentos y pasos anteriores</summary>
-                  <div class="links">
-                    <a href="comprobante_ot.php?id=<?= $id ?>"><i class="fa-solid fa-file-lines"></i> Comprobante de recepción</a>
-                    <?php if ($inf['paso'] > 2 || $inf['grupo'] === 'entregadas'): ?>
-                      <a href="diagnostico.php?id=<?= $id ?>"><i class="fa-solid fa-stethoscope"></i> Ver diagnóstico</a>
-                    <?php endif; ?>
-                    <?php if ($tienePresupuesto): ?>
-                      <a href="presupuesto.php?id=<?= $id ?>"><i class="fa-solid fa-file-invoice-dollar"></i> Ver presupuesto</a>
-                      <a href="comprobante_presupuesto.php?id=<?= $id ?>" target="_blank"><i class="fa-solid fa-file-pdf"></i> Presupuesto para imprimir</a>
-                    <?php endif; ?>
-                    <a href="sticker_aceite.php?ot=<?= $id ?>" target="_blank"><i class="fa-solid fa-tag"></i> Sticker cambio de aceite</a>
-                    <a href="ficha_vehiculo.php?id=<?= $ot['VehiculoID'] ?>"><i class="fa-solid fa-car-side"></i> Historial del vehículo</a>
-                  </div>
-                </details>
-              </td>
-            </tr>
-          <?php endforeach; ?>
-        <?php endif; ?>
-      </tbody>
-    </table>
-  </div>
-
+              </details>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+      <?php endif; ?>
+    </tbody>
+  </table>
+</div>
