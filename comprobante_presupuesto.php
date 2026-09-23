@@ -55,6 +55,15 @@ foreach ($lineas as $l) {
     }
 }
 
+// Cargar operaciones solicitadas y hallazgos para trazabilidad en el comprobante
+$stmtOp = $pdo->prepare("SELECT * FROM orden_operaciones_solicitadas WHERE OrdenTrabajoID = :ot");
+$stmtOp->execute([':ot' => $otId]);
+$operacionesSolicitadas = $stmtOp->fetchAll();
+
+$stmtDiag = $pdo->prepare("SELECT * FROM diagnosticoot WHERE OrdenTrabajoID = :ot ORDER BY Fecha ASC");
+$stmtDiag->execute([':ot' => $otId]);
+$hallazgos = $stmtDiag->fetchAll();
+
 // Cargar configuraciones del taller
 $configStmt = $pdo->query("SELECT Clave, Valor FROM configuraciones");
 $configs = [];

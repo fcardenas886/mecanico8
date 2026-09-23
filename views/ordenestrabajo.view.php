@@ -140,22 +140,40 @@ $visibles = array_filter($filas, function ($par) use ($filtro) {
                 <a href="<?= htmlspecialchars($urlAccion) ?>" class="btn <?= $claseAccion ?>" style="padding: 0.45rem 0.9rem; font-size: 0.85rem; font-weight: 700; <?= $claseAccion === 'btn-warning' ? 'background:#f59e0b; color:#000; border:none;' : '' ?>">
                   <?= htmlspecialchars($txtAccion) ?> <i class="fa-solid fa-arrow-right" style="font-size: 0.75rem;"></i>
                 </a>
-                <?php if ($inf['grupo'] === 'esperando' && !empty($ot['ClienteTelefono'])):
-                  $tel = preg_replace('/\D/', '', $ot['ClienteTelefono']);
-                  $msg = urlencode("Hola {$ot['ClienteNombre']}, te enviamos el presupuesto de tu {$ot['Marca']} {$ot['Modelo']} (patente {$ot['Patente']}) por un total de " . formatCLP($ot['TotalPresupuesto']) . ". ¿Nos autorizas para iniciar los trabajos?");
-                ?>
-                  <a href="https://wa.me/56<?= $tel ?>?text=<?= $msg ?>" target="_blank" class="btn" style="background: #25d366; color: #fff; padding: 0.45rem 0.75rem; font-size: 0.82rem; border: none;" title="Enviar el presupuesto al cliente por WhatsApp">
-                    <i class="fa-brands fa-whatsapp"></i> Enviar
-                  </a>
-                <?php endif; ?>
-              </div>
-              <details class="ot-mas">
-                <summary><i class="fa-solid fa-folder-open"></i> Ver documentos y pasos anteriores</summary>
-                <div class="links">
-                  <a href="comprobante_ot.php?id=<?= $id ?>"><i class="fa-solid fa-file-lines"></i> Comprobante de recepción</a>
-                  <?php if ($inf['paso'] > 2 || $inf['grupo'] === 'entregadas'): ?>
-                    <a href="diagnostico.php?id=<?= $id ?>"><i class="fa-solid fa-stethoscope"></i> Ver diagnóstico</a>
-                  <?php endif; ?>
+                  <?php
+                    require_once __DIR__ . '/../includes/whatsapp_helper.php';
+                    $nombreTaller = obtenerNombreTaller($pdo ?? null);
+                    $msgWARec = mensajeRecepcionWhatsApp($ot, $nombreTaller);
+                    $urlWARec = generarUrlWhatsapp($ot['ClienteTelefono'] ?? '', $msgWARec);
+
+                    if ($inf['grupo'] === 'diagnosticar'): ?>
+                      <a href="<?= $urlWARec ?>" target="_blank" class="btn" style="background: #25d366; color: #fff; padding: 0.45rem 0.75rem; font-size: 0.82rem; border: none; display: inline-flex; align-items: center; gap: 0.35rem;" title="Enviar comprobante de recepción por WhatsApp">
+                        <i class="fa-brands fa-whatsapp"></i> Ingreso
+                      </a>
+                    <?php elseif ($inf['grupo'] === 'esperando'): 
+                      $msgWAPres = mensajePresupuestoWhatsApp($ot, ['TiempoEntrega' => ''], (float)($ot['TotalPresupuesto'] ?? 0), $nombreTaller);
+                      $urlWAPres = generarUrlWhatsapp($ot['ClienteTelefono'] ?? '', $msgWAPres);
+                    ?>
+                      <a href="<?= $urlWAPres ?>" target="_blank" class="btn" style="background: #25d366; color: #fff; padding: 0.45rem 0.75rem; font-size: 0.82rem; border: none; display: inline-flex; align-items: center; gap: 0.35rem;" title="Enviar el presupuesto al cliente por WhatsApp">
+                        <i class="fa-brands fa-whatsapp"></i> Presupuesto
+                      </a>
+                    <?php elseif ($inf['grupo'] === 'retirar'): 
+                      $msgWAListo = mensajeAutoListoWhatsApp($ot, 0, $nombreTaller);
+                      $urlWAListo = generarUrlWhatsapp($ot['ClienteTelefono'] ?? '', $msgWAListo);
+                    ?>
+                      <a href="<?= $urlWAListo ?>" target="_blank" class="btn" style="background: #25d366; color: #fff; padding: 0.45rem 0.75rem; font-size: 0.82rem; border: none; display: inline-flex; align-items: center; gap: 0.35rem;" title="Avisar al cliente que su auto está listo por WhatsApp">
+                        <i class="fa-brands fa-whatsapp"></i> Avisar
+                      </a>
+                    <?php endif; ?>
+                </div>
+                <details class="ot-mas">
+                  <summary><i class="fa-solid fa-folder-open"></i> Ver documentos y pasos anteriores</summary>
+                  <div class="links">
+                    <a href="comprobante_ot.php?id=<?= $id ?>"><i class="fa-solid fa-file-lines"></i> Comprobante de recepción</a>
+                    <a href="<?= $urlWARec ?>" target="_blank" style="color: #34d399;"><i class="fa-brands fa-whatsapp"></i> Enviar WhatsApp de recepción</a>
+                    <?php if ($inf['paso'] > 2 || $inf['grupo'] === 'entregadas'): ?>
+                      <a href="diagnostico.php?id=<?= $id ?>"><i class="fa-solid fa-stethoscope"></i> Ver diagnóstico</a>
+                    <?php endif; ?>
                   <?php if ($tienePresupuesto): ?>
                     <a href="presupuesto.php?id=<?= $id ?>"><i class="fa-solid fa-file-invoice-dollar"></i> Ver presupuesto</a>
                     <a href="comprobante_presupuesto.php?id=<?= $id ?>" target="_blank"><i class="fa-solid fa-file-pdf"></i> Presupuesto para imprimir</a>

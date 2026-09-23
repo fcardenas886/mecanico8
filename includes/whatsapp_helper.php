@@ -67,7 +67,9 @@ if (!function_exists('normalizarTelefonoChile')) {
 if (!function_exists('generarUrlWhatsapp')) {
     function generarUrlWhatsapp(?string $telefono, string $mensaje): string {
         $tel = normalizarTelefonoChile($telefono);
-        if (empty($tel)) return '';
+        if (empty($tel)) {
+            return 'https://wa.me/?text=' . rawurlencode($mensaje);
+        }
         return 'https://wa.me/' . $tel . '?text=' . rawurlencode($mensaje);
     }
 }

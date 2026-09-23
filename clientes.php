@@ -38,6 +38,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Error al registrar cliente: ' . $e->getMessage();
             }
         }
+    } elseif ($action === 'update_client') {
+        $clienteID = (int)($_POST['cliente_id'] ?? 0);
+        $nombre = trim($_POST['nombre'] ?? '');
+        $rutCuerpo = (int)($_POST['rut_cuerpo'] ?? 0);
+        $rutDv = strtoupper(trim($_POST['rut_dv'] ?? 'K'));
+        $telefono = trim($_POST['telefono'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $limiteCredito = (int)($_POST['limite_credito'] ?? 50000);
+
+        if ($clienteID > 0 && !empty($nombre)) {
+            try {
+                $stmt = $pdo->prepare("
+                    UPDATE clientes 
+                    SET RutCuerpo = :rut, RutDv = :dv, Nombre = :nombre, Telefono = :tel, Email = :email, LimiteCredito = :limite
+                    WHERE ClienteID = :cid
+                ");
+                $stmt->execute([
+                    ':rut' => $rutCuerpo ?: null,
+                    ':dv' => $rutCuerpo ? $rutDv : null,
+                    ':nombre' => $nombre,
+                    ':tel' => $telefono,
+                    ':email' => $email,
+                    ':limite' => $limiteCredito,
+                    ':cid' => $clienteID
+                ]);
+                $message = 'Cliente actualizado exitosamente.';
+            } catch (Exception $e) {
+                $error = 'Error al actualizar cliente: ' . $e->getMessage();
+            }
+        } else {
+            $error = 'El nombre del cliente no puede estar vacío.';
+        }
     } elseif ($action === 'abono') {
         $clienteID = (int)($_POST['cliente_id'] ?? 0);
         $montoAbono = (int)($_POST['monto_abono'] ?? 0);

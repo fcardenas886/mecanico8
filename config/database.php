@@ -1,10 +1,16 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v4.9.3');
+define('APP_VERSION', 'v5.0.0');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v5.0.0' => [
+        'Presupuestos Inteligentes: Historial desplegable de repuestos y servicios previos utilizados en el vehículo con reutilización en 1 clic.',
+        'Brújula de Presupuesto y Semáforo de Cobertura: Indicador visual en tiempo real para verificar que todas las peticiones del cliente y hallazgos técnicos estén contemplados.',
+        'Chequeo de Fluidos Integrado: Detección automática del aceite y filtro de motor exactos con botón de carga en 1 clic.',
+        'Envío por WhatsApp universal: Compartir presupuestos directamente por WhatsApp incluso si el cliente no tiene teléfono registrado previamente.',
+    ],
     'v4.9.3' => [
         'Productos: nuevo campo Descripción (opcional) en la sección de repuesto, que se muestra en la Consulta rápida de repuestos.',
     ],
