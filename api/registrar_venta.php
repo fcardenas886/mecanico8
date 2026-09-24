@@ -160,6 +160,7 @@ try {
 
         $itemsProcesados[] = [
             'esServicio' => false,
+            'sin_combo' => !empty($item['sin_combo']),
             'prod' => $prod,
             'cant' => $cant,
             'factor' => $factor,

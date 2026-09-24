@@ -546,6 +546,7 @@ function calcularCombosCarrito() {
       cart.forEach((item, idx) => {
         if (reclamadas.has(idx) || asignacion.has(idx)) return;
         if ((item.factor || 1) > 1) return; // los packs no se cruzan con combos
+        if (item.sinCombo) return; // precio editado a mano o presupuesto sin combos
 
         const coincide = cupo.ModoSeleccion === 'PRODUCTO_ESPECIFICO'
           ? String(item.ProductoID) === String(cupo.ProductoID)
@@ -1361,6 +1362,7 @@ async function confirmarPagoModal() {
       cantidad: i.cantidad,
       factor: i.factor || 1,
       precio_unitario: i.PrecioVenta,
+      sin_combo: !!i.sinCombo,
       nombre_item: i.Nombre,
       descripcion_pack: i.descPack || ''
     })),
@@ -1574,6 +1576,9 @@ async function cargarCotizacion(id) {
     cart = data.detalles.map(d => ({
       ProductoID: d.ProductoID,
       Nombre: d.Nombre,
+      TipoRepuesto: d.TipoRepuesto || null,
+      PrecioBaseUnitario: parseInt(d.PrecioLista),
+      sinCombo: parseInt(d.PrecioUnitario) !== parseInt(d.PrecioLista),
       PrecioVenta: parseInt(d.PrecioUnitario),
       Stock: parseFloat(d.Stock),
       cantidad: parseFloat(d.Cantidad),
@@ -1612,6 +1617,10 @@ async function cargarPresupuestoOT(otId) {
       tipoLinea: 'Producto',
       ProductoID: d.ProductoID,
       Nombre: d.Nombre,
+      TipoRepuesto: d.TipoRepuesto || null,
+      PrecioBaseUnitario: parseInt(d.PrecioLista),
+      // Sin combo si el presupuesto los desactivó o si el precio se editó a mano (igual que el servidor).
+      sinCombo: data.aplica_combos === false || parseInt(d.PrecioUnitario) !== parseInt(d.PrecioLista),
       PrecioVenta: parseInt(d.PrecioUnitario),
       Stock: parseFloat(d.Stock),
       cantidad: parseFloat(d.Cantidad),

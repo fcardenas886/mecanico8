@@ -85,6 +85,10 @@ function aplicarCombosCarrito(PDO $pdo, array &$itemsProcesados): void
                 if (!isset($infoProducto[$pid])) continue;
                 $info = $infoProducto[$pid];
 
+                // Sin combo: línea marcada así (ej. presupuesto con combos desactivados) o con un precio
+                // distinto al de lista (precio editado a mano = precio final acordado, no se combina).
+                if (!empty($it['sin_combo']) || (int)$it['precio'] !== $info['precioLista']) continue;
+
                 $coincide = $cupo['ModoSeleccion'] === 'PRODUCTO_ESPECIFICO'
                     ? ((int)$cupo['ProductoID'] === $pid)
                     : ($info['tipo'] === $cupo['TipoRepuesto']);
@@ -173,4 +177,43 @@ function aplicarCombosCarrito(PDO $pdo, array &$itemsProcesados): void
             $reclamadas[$idx] = true;
         }
     }
+}
+
+/**
+ * Descuento de combos que le corresponde a un presupuesto, con el mismo motor que cobra la
+ * Caja, para que el presupuesto entregado al cliente diga lo mismo que se va a cobrar.
+ *
+ * @param array $lineas Filas de presupuestodetalle (idealmente ya filtradas a las aprobadas si
+ *   el presupuesto está decidido). Solo los repuestos con ProductoID participan.
+ * @return array ['descuento' => int total, 'combos' => [['nombre' => ..., 'monto' => int], ...]]
+ */
+function calcularCombosPresupuesto(PDO $pdo, array $lineas): array
+{
+    $items = [];
+    foreach ($lineas as $l) {
+        if (($l['TipoLinea'] ?? '') !== 'Repuesto' || empty($l['ProductoID'])) continue;
+        $items[] = [
+            'esServicio' => false,
+            'prod' => ['ProductoID' => (int)$l['ProductoID']],
+            'cant' => (float)$l['Cantidad'],
+            'factor' => 1,
+            'precio' => (int)$l['PrecioUnitario'],
+            'descuento' => 0,
+            'subtotal' => (int)$l['Subtotal'],
+        ];
+    }
+    if (empty($items)) return ['descuento' => 0, 'combos' => []];
+
+    aplicarCombosCarrito($pdo, $items);
+
+    $porCombo = [];
+    $total = 0;
+    foreach ($items as $it) {
+        if (empty($it['combo_nombre'])) continue;
+        $porCombo[$it['combo_nombre']] = ($porCombo[$it['combo_nombre']] ?? 0) + (int)$it['descuento'];
+        $total += (int)$it['descuento'];
+    }
+    $combos = [];
+    foreach ($porCombo as $nombre => $monto) $combos[] = ['nombre' => $nombre, 'monto' => $monto];
+    return ['descuento' => $total, 'combos' => $combos];
 }

@@ -326,6 +326,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $error = 'No se pudo incorporar el ítem del historial.';
             }
+        } elseif ($action === 'editar_precio') {
+            // El precio de una línea se puede ajustar a mano. Un repuesto con precio distinto al de
+            // lista queda fuera de los combos (precio final acordado), en el presupuesto y en la Caja.
+            $lineaId = (int)($_POST['linea_id'] ?? 0);
+            $precio = (int)($_POST['precio'] ?? 0);
+            if ($precio > 0) {
+                $pdo->prepare("
+                    UPDATE presupuestodetalle
+                    SET PrecioUnitario = :precio, Subtotal = ROUND(:precio2 * Cantidad)
+                    WHERE PresupuestoDetalleID = :id AND PresupuestoID = :pid
+                ")->execute([':precio' => $precio, ':precio2' => $precio, ':id' => $lineaId, ':pid' => $presupuesto['PresupuestoID']]);
+                $message = 'Precio actualizado.';
+            } else {
+                $error = 'El precio debe ser mayor a 0.';
+            }
+        } elseif ($action === 'toggle_combos') {
+            $aplica = !empty($_POST['aplica_combos']) ? 1 : 0;
+            $pdo->prepare("UPDATE presupuestos SET AplicaCombos = :a WHERE PresupuestoID = :id")
+                ->execute([':a' => $aplica, ':id' => $presupuesto['PresupuestoID']]);
+            $presupuesto['AplicaCombos'] = $aplica;
+            $message = $aplica ? 'Los combos de Promociones se aplican a este presupuesto.' : 'Este presupuesto va sin descuentos de combos.';
         } elseif ($action === 'eliminar_linea') {
             $lineaId = (int)($_POST['linea_id'] ?? 0);
             $pdo->prepare("DELETE FROM presupuestodetalle WHERE PresupuestoDetalleID = :id AND PresupuestoID = :pid")
@@ -400,7 +421,29 @@ if ($presupuesto) {
 }
 
 $totalAprobado = 0;
-foreach ($lineas as $l) { if ($l['Aprobado']) $totalAprobado += $l['Subtotal']; }
+foreach ($lineas as $l) { if ($l['Aprobado']) $totalAprobado += $l['Subtotal']; }
+
+// Combos de Promociones (ej. 1 Aceite + 1 Filtro): mismo motor que la Caja, para que el presupuesto
+// diga lo mismo que se va a cobrar. Pendiente: sobre todas las líneas; decidido: solo las aprobadas.
+$combosPresupuesto = ['descuento' => 0, 'combos' => []];
+$combosAprobado = ['descuento' => 0, 'combos' => []];
+$aplicaCombos = $presupuesto ? (int)($presupuesto['AplicaCombos'] ?? 1) === 1 : true;
+if ($presupuesto && $aplicaCombos) {
+    $lineasBase = array_filter($lineas, fn($l) => $l['PoliticaCobro'] !== 'SoloSiNoAprueba');
+    $combosPresupuesto = calcularCombosPresupuesto($pdo, $lineasBase);
+    $combosAprobado = calcularCombosPresupuesto($pdo, array_filter($lineas, fn($l) => $l['Aprobado']));
+}
+// Precio de lista actual de cada repuesto, para marcar las líneas cuyo precio se editó a mano.
+$preciosLista = [];
+$idsProd = array_values(array_unique(array_filter(array_map(fn($l) => (int)($l['ProductoID'] ?? 0), $lineas))));
+if (!empty($idsProd)) {
+    $stmtPL = $pdo->prepare('SELECT ProductoID, PrecioVenta FROM productos WHERE ProductoID IN (' . implode(',', array_fill(0, count($idsProd), '?')) . ')');
+    $stmtPL->execute($idsProd);
+    foreach ($stmtPL->fetchAll() as $r) $preciosLista[(int)$r['ProductoID']] = (int)$r['PrecioVenta'];
+}
+$subtotalSinCombos = $total;
+$total -= $combosPresupuesto['descuento'];
+$totalAprobado -= $combosAprobado['descuento'];
 
 // 1. Cargar Operaciones solicitadas por el cliente en Recepción
 $stmtOp = $pdo->prepare("

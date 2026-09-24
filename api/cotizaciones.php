@@ -75,7 +75,7 @@ try {
         }
 
         $stmtD = $pdo->prepare("
-            SELECT cd.*, p.Nombre, p.CodigoBarras, p.Stock,
+            SELECT cd.*, p.Nombre, p.CodigoBarras, p.Stock, p.TipoRepuesto, p.PrecioVenta AS PrecioLista,
                    pr.PromocionID, pr.Tipo AS PromoTipo, pr.CantidadMinima AS PromoCantMin,
                    pr.DescuentoPorcentaje AS PromoDescPorc, pr.PrecioOferta AS PromoPrecioOf
             FROM cotizacionesdetalle cd

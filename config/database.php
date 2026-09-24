@@ -1,10 +1,15 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v5.1.1');
+define('APP_VERSION', 'v5.2.0');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v5.2.0' => [
+        'Presupuesto: ahora aplica los mismos combos de Promociones que la Caja, con el descuento a la vista, para que el presupuesto entregado diga lo mismo que se cobra. Hay un interruptor para aplicarlos o no.',
+        'Presupuesto: el precio de cada línea se puede editar a mano. Un repuesto con el precio editado queda fuera de los combos (es el precio acordado).',
+        'Corrección: al cargar en Caja un presupuesto de OT o una cotización, el combo ahora se ve en pantalla antes de cobrar (antes solo se aplicaba al emitir la venta).',
+    ],
     'v5.1.1' => [
         'Combos: solo la cantidad que pide cada cupo recibe el descuento; si el cliente lleva más unidades, el resto se vende aparte a precio normal (boleta en líneas separadas). Aplica a %, monto fijo y precio cerrado.',
         'Corregida una fuga de dinero en combos de precio cerrado y un caso en que un combo sin descuento real podía cobrar de más.',

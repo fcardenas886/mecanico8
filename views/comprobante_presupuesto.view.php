@@ -397,8 +397,14 @@ function guardarPDF() {
     <table class="doc-totals-table">
       <tr>
         <td style="color: #64748b;">Subtotal Presupuesto:</td>
-        <td style="text-align: right; font-weight: 600;">$<?= number_format($totalPresupuesto, 0, ',', '.') ?></td>
-      </tr>
+        <td style="text-align: right; font-weight: 600;">$<?= number_format($subtotalLista, 0, ',', '.') ?></td>
+      </tr>
+      <?php foreach ($combosComp['combos'] as $cb): ?>
+        <tr>
+          <td style="color: #059669;">🏷️ Descuento combo "<?= htmlspecialchars($cb['nombre']) ?>":</td>
+          <td style="text-align: right; font-weight: 600; color: #059669;">-$<?= number_format($cb['monto'], 0, ',', '.') ?></td>
+        </tr>
+      <?php endforeach; ?>
       <?php if ($presupuesto['DecisionCliente'] !== 'Pendiente' && (int)$totalAprobado !== (int)$totalPresupuesto): ?>
         <tr>
           <td style="color: #059669; font-weight: 700;">Total a pagar:</td>

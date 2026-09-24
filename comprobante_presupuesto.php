@@ -64,6 +64,17 @@ $stmtDiag = $pdo->prepare("SELECT * FROM diagnosticoot WHERE OrdenTrabajoID = :o
 $stmtDiag->execute([':ot' => $otId]);
 $hallazgos = $stmtDiag->fetchAll();
 
+// Combos de Promociones (mismo motor de la Caja): el presupuesto impreso debe decir lo mismo que se cobra.
+// Pendiente: sobre todas las líneas; decidido: solo las aprobadas. Un presupuesto con combos desactivados va sin.
+$subtotalLista = $totalPresupuesto;
+$combosComp = ['descuento' => 0, 'combos' => []];
+if ((int)($presupuesto['AplicaCombos'] ?? 1) === 1) {
+    $combosComp = calcularCombosPresupuesto($pdo, array_filter($lineas, fn($l) => $l['PoliticaCobro'] !== 'SoloSiNoAprueba'));
+    $combosCompAprob = calcularCombosPresupuesto($pdo, array_filter($lineas, fn($l) => $l['Aprobado']));
+    $totalPresupuesto -= $combosComp['descuento'];
+    $totalAprobado -= $combosCompAprob['descuento'];
+}
+
 // Cargar configuraciones del taller
 $configStmt = $pdo->query("SELECT Clave, Valor FROM configuraciones");
 $configs = [];

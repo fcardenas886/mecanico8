@@ -28,7 +28,7 @@ if ($ot['VentaID']) {
     exit;
 }
 
-$stmtP = $pdo->prepare("SELECT PresupuestoID FROM presupuestos WHERE OrdenTrabajoID = :id ORDER BY PresupuestoID DESC LIMIT 1");
+$stmtP = $pdo->prepare("SELECT PresupuestoID, AplicaCombos FROM presupuestos WHERE OrdenTrabajoID = :id ORDER BY PresupuestoID DESC LIMIT 1");
 $stmtP->execute([':id' => $otId]);
 $presupuesto = $stmtP->fetch();
 
@@ -39,7 +39,7 @@ if (!$presupuesto) {
 
 // Repuestos: llevan ProductoID y Stock real, igual que cualquier venta de mostrador.
 $stmtRep = $pdo->prepare("
-    SELECT pd.ProductoID, p.Nombre, pd.PrecioUnitario, p.Stock, pd.Cantidad
+    SELECT pd.ProductoID, p.Nombre, pd.PrecioUnitario, p.Stock, pd.Cantidad, p.TipoRepuesto, p.PrecioVenta AS PrecioLista
     FROM presupuestodetalle pd
     JOIN productos p ON pd.ProductoID = p.ProductoID
     WHERE pd.PresupuestoID = :pid AND pd.TipoLinea = 'Repuesto' AND pd.Aprobado = 1
@@ -66,4 +66,5 @@ echo json_encode([
     'ot' => ['OrdenTrabajoID' => $ot['OrdenTrabajoID'], 'ClienteID' => $ot['ClienteID']],
     'repuestos' => $repuestos,
     'servicios' => $servicios,
+    'aplica_combos' => (int)($presupuesto['AplicaCombos'] ?? 1) === 1,
 ]);

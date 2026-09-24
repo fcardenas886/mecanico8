@@ -642,7 +642,28 @@ $porcentajeCobertura = $totalRequerimientos > 0 ? (int)round(($cubiertosRequerim
                     <?php endif; ?>
                   </td>
                   <td style="text-align: right;"><?= number_format($l['Cantidad'], 0) ?></td>
-                  <td style="text-align: right;"><?= formatCLP($l['PrecioUnitario']) ?></td>
+                  <td style="text-align: right; white-space: nowrap;">
+                    <?php
+                      $listaProd = ($l['TipoLinea'] === 'Repuesto' && !empty($l['ProductoID'])) ? ($preciosLista[(int)$l['ProductoID']] ?? null) : null;
+                      $precioEditado = $listaProd !== null && (int)$listaProd !== (int)$l['PrecioUnitario'];
+                    ?>
+                    <?php if ($pendiente): ?>
+                      <form method="POST" action="presupuesto.php?id=<?= $otId ?>" style="display: inline-flex; align-items: center; gap: 2px;">
+                        <?= csrfField() ?>
+                        <input type="hidden" name="action" value="editar_precio">
+                        <input type="hidden" name="linea_id" value="<?= $l['PresupuestoDetalleID'] ?>">
+                        <span style="color: var(--text-muted);">$</span>
+                        <input type="number" name="precio" value="<?= (int)$l['PrecioUnitario'] ?>" min="1" title="Puedes ajustar el precio de esta línea"
+                               style="width: 90px; text-align: right; background: rgba(15,23,42,0.6); border: 1px solid var(--border-dark); border-radius: 6px; color: #fff; padding: 0.2rem 0.4rem; font-size: 0.85rem;"
+                               onchange="this.form.submit()">
+                      </form>
+                    <?php else: ?>
+                      <?= formatCLP($l['PrecioUnitario']) ?>
+                    <?php endif; ?>
+                    <?php if ($precioEditado): ?>
+                      <div style="font-size: 0.68rem; color: #f59e0b;" title="El precio de lista actual es <?= formatCLP($listaProd) ?>. Con precio editado la línea no entra a los combos.">precio editado (lista <?= formatCLP($listaProd) ?>)</div>
+                    <?php endif; ?>
+                  </td>
                   <td style="text-align: right; font-weight: 700; color: #38bdf8;"><?= formatCLP($l['Subtotal']) ?></td>
                   <?php if ($pendiente): ?>
                     <td style="text-align: center;">
@@ -658,6 +679,21 @@ $porcentajeCobertura = $totalRequerimientos > 0 ? (int)round(($cubiertosRequerim
                   <?php endif; ?>
                 </tr>
               <?php endforeach; ?>
+              <?php if ($combosPresupuesto['descuento'] > 0): ?>
+                <tr>
+                  <td colspan="5" style="text-align: right; color: var(--text-muted);">Subtotal:</td>
+                  <td style="text-align: right;"><?= formatCLP($subtotalSinCombos) ?></td>
+                  <?php if ($pendiente): ?><td></td><?php endif; ?>
+                </tr>
+                <?php foreach ($combosPresupuesto['combos'] as $cb): ?>
+                  <tr>
+                    <td colspan="5" style="text-align: right; color: #34d399;">🏷️ Descuento combo "<?= htmlspecialchars($cb['nombre']) ?>":</td>
+                    <td style="text-align: right; color: #34d399; font-weight: 700;">-<?= formatCLP($cb['monto']) ?></td>
+                    <?php if ($pendiente): ?><td></td><?php endif; ?>
+                  </tr>
+                <?php endforeach; ?>
+              <?php endif; ?>
+
               <tr class="pr-total-row">
                 <td colspan="5" style="text-align: right; font-size: 1.05rem;">TOTAL PRESUPUESTO:</td>
                 <td style="text-align: right; font-size: 1.25rem; color: #fbbf24;"><?= formatCLP($total) ?></td>
@@ -668,6 +704,19 @@ $porcentajeCobertura = $totalRequerimientos > 0 ? (int)round(($cubiertosRequerim
         <?php endif; ?>
       </div>
 
+      <?php if ($pendiente && $presupuesto): ?>
+        <form method="POST" action="presupuesto.php?id=<?= $otId ?>" style="margin: 0.5rem 0 1rem; font-size: 0.85rem;">
+          <?= csrfField() ?>
+          <input type="hidden" name="action" value="toggle_combos">
+          <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" name="aplica_combos" value="1" <?= $aplicaCombos ? 'checked' : '' ?> onchange="this.form.submit()">
+            Aplicar los descuentos de combos de Promociones (los mismos de la Caja) a este presupuesto
+          </label>
+          <div style="color: var(--text-muted); font-size: 0.75rem; margin-left: 1.5rem;">
+            Si lo desmarcas, el presupuesto y el cobro en Caja van sin combos. Un repuesto con el precio editado a mano tampoco entra a combos.
+          </div>
+        </form>
+      <?php endif; ?>
       <!-- FORMULARIOS DE AGREGAR LÍNEAS (SOLO EN MODO PENDIENTE) -->
       <?php if ($pendiente): ?>
         <div class="pr-card no-print" style="margin-top: 1.25rem;" id="formAgregarSeccion">
