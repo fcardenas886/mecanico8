@@ -482,6 +482,7 @@
         <span>Descuento</span>
         <span id="ticketDescuento"></span>
       </div>
+      <div id="ticketComboNota" style="display: none; font-size: 0.72rem; color: #666; margin: -2px 0 4px;"></div>
       <div class="tk-row tk-strong tk-lg">
         <span>TOTAL</span>
         <span id="ticketTotal"></span>
@@ -792,17 +793,32 @@ async function reimprimirTicketVenta(id) {
       `;
     }).join('');
 
-    // Subtotal / Descuento / Total
+    // Subtotal / Descuento / Total. El descuento incluye el global de la venta MÁS lo
+    // que ya viene rebajado en cada línea (promoción individual o combo), que si no se
+    // suma acá queda invisible en el resumen aunque cada línea sí muestre su "Dcto:".
+    const descuentoLineas = data.detalles.reduce((s, i) => s + (i.descuento || 0), 0);
+    const descuentoTotal = descuentoLineas + (v.descuento_global || 0);
     const subRow = document.getElementById('ticketSubtotalRow');
     const descRow = document.getElementById('ticketDescuentoRow');
-    if (v.descuento_global > 0) {
+    if (descuentoTotal > 0) {
       subRow.style.display = 'flex';
-      document.getElementById('ticketSubtotal').textContent = formatPesos(v.total + v.descuento_global);
+      document.getElementById('ticketSubtotal').textContent = formatPesos(v.total + descuentoTotal);
       descRow.style.display = 'flex';
-      document.getElementById('ticketDescuento').textContent = `-${formatPesos(v.descuento_global)}`;
+      document.getElementById('ticketDescuento').textContent = `-${formatPesos(descuentoTotal)}`;
     } else {
       subRow.style.display = 'none';
       descRow.style.display = 'none';
+    }
+
+    // Nombres de los combos aplicados (guardados por línea en detalleventas.ComboAplicado),
+    // para que quede claro a qué corresponde el descuento.
+    const comboNotaEl = document.getElementById('ticketComboNota');
+    const nombresCombo = [...new Set(data.detalles.map(i => i.combo_aplicado).filter(Boolean))];
+    if (nombresCombo.length > 0) {
+      comboNotaEl.textContent = `🏷️ Incluye ${nombresCombo.map(n => `"${n}"`).join(', ')}`;
+      comboNotaEl.style.display = 'block';
+    } else {
+      comboNotaEl.style.display = 'none';
     }
 
     document.getElementById('ticketTotal').textContent = formatPesos(v.total);
