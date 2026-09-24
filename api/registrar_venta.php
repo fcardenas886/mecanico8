@@ -142,12 +142,39 @@ try {
             $descItem = descuentoPromoIndividual($promo, (int)$precioUnitario, (float)$cant);
         }
 
+        // Línea de un presupuesto aprobado: el presupuesto es el que vale. Se cobra exactamente el
+        // precio y el descuento congelados al aprobar (leídos de la base, no del carrito), sin
+        // reevaluar ofertas ni combos de hoy.
+        $congelado = false;
+        $comboCongelado = null;
+        if (!empty($item['presupuesto_detalle_id'])) {
+            $stmtPD = $pdo->prepare("
+                SELECT pd.ProductoID, pd.PrecioUnitario, pd.Cantidad, pd.Aprobado, pd.DescuentoCombo, pd.ComboNombre, pd.DescuentoOferta,
+                       p.DescuentosCongelados, ot.VentaID
+                FROM presupuestodetalle pd
+                JOIN presupuestos p ON pd.PresupuestoID = p.PresupuestoID
+                JOIN ordenestrabajo ot ON p.OrdenTrabajoID = ot.OrdenTrabajoID
+                WHERE pd.PresupuestoDetalleID = :id
+            ");
+            $stmtPD->execute([':id' => (int)$item['presupuesto_detalle_id']]);
+            $pd = $stmtPD->fetch();
+            if (!$pd || (int)$pd['ProductoID'] !== $pid || !$pd['Aprobado'] || !$pd['DescuentosCongelados']
+                || $pd['VentaID'] || $factor > 1 || abs((float)$pd['Cantidad'] - $cant) > 0.0001) {
+                throw new Exception("La línea del presupuesto de '{$prod['Nombre']}' no coincide con lo aprobado o la orden ya fue cobrada. Vuelve a cargar el presupuesto en la caja.");
+            }
+            $precioUnitario = (int)$pd['PrecioUnitario'];
+            $descItem = (int)$pd['DescuentoCombo'] + (int)$pd['DescuentoOferta'];
+            $comboCongelado = ((int)$pd['DescuentoCombo'] > 0) ? $pd['ComboNombre'] : null;
+            $congelado = true;
+        }
+
         $subtotalItem = max(0, (int)round(($cant * $precioUnitario) - $descItem));
         $subtotalBruto += $subtotalItem;
 
         $itemsProcesados[] = [
             'esServicio' => false,
-            'sin_combo' => !empty($item['sin_combo']),
+            'sin_combo' => !empty($item['sin_combo']) || $congelado,
+            'combo_nombre' => $comboCongelado,
             'prod' => $prod,
             'cant' => $cant,
             'factor' => $factor,

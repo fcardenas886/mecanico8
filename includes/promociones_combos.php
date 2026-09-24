@@ -219,7 +219,7 @@ function descuentoPromoIndividual(?array $promo, int $precioUnitario, float $can
  */
 function calcularCombosPresupuesto(PDO $pdo, array $lineas, bool $conCombos = true): array
 {
-    $vacio = ['descuento' => 0, 'combos' => [], 'promos' => []];
+    $vacio = ['descuento' => 0, 'combos' => [], 'promos' => [], 'porLinea' => []];
     $items = [];
     $nombres = [];
     foreach ($lineas as $l) {
@@ -261,15 +261,62 @@ function calcularCombosPresupuesto(PDO $pdo, array $lineas, bool $conCombos = tr
 
     $porCombo = [];
     $porPromo = [];
+    $porLinea = [];
     foreach ($items as $it) {
+        $o = $it['origen'];
+        $porLinea[$o] ??= ['combo' => 0, 'comboNombre' => null, 'oferta' => 0];
         if (!empty($it['combo_nombre'])) {
             $porCombo[$it['combo_nombre']] = ($porCombo[$it['combo_nombre']] ?? 0) + (int)$it['descuento'];
+            $porLinea[$o]['combo'] += (int)$it['descuento'];
+            $porLinea[$o]['comboNombre'] = $it['combo_nombre'];
         } elseif ((int)$it['descuento'] > 0) {
-            $porPromo[$it['origen']] = ($porPromo[$it['origen']] ?? 0) + (int)$it['descuento'];
+            $porPromo[$o] = ($porPromo[$o] ?? 0) + (int)$it['descuento'];
+            $porLinea[$o]['oferta'] += (int)$it['descuento'];
         }
     }
     $res = $vacio;
+    $res['porLinea'] = $porLinea;
     foreach ($porCombo as $nombre => $monto) { $res['combos'][] = ['nombre' => $nombre, 'monto' => $monto]; $res['descuento'] += $monto; }
     foreach ($porPromo as $origen => $monto) { $res['promos'][] = ['nombre' => $nombres[$origen] ?? 'Producto', 'monto' => $monto]; $res['descuento'] += $monto; }
+    return $res;
+}
+
+
+/**
+ * Congela los descuentos de un presupuesto recién aprobado: calcula combos y ofertas sobre las
+ * líneas aprobadas y los guarda línea por línea. Desde ese momento el presupuesto es el que
+ * vale: la Caja cobra exactamente estos montos, aunque después venza una oferta o cambie un precio.
+ * Debe llamarse dentro de la transacción de la decisión, después de marcar las líneas aprobadas.
+ */
+function congelarDescuentosPresupuesto(PDO $pdo, int $presupuestoId, bool $conCombos): void
+{
+    $stmt = $pdo->prepare("SELECT * FROM presupuestodetalle WHERE PresupuestoID = :pid AND Aprobado = 1");
+    $stmt->execute([':pid' => $presupuestoId]);
+    $calc = calcularCombosPresupuesto($pdo, $stmt->fetchAll(), $conCombos);
+
+    $upd = $pdo->prepare("UPDATE presupuestodetalle SET DescuentoCombo = :c, ComboNombre = :n, DescuentoOferta = :o WHERE PresupuestoDetalleID = :id");
+    foreach ($calc['porLinea'] as $lineaId => $d) {
+        $upd->execute([':c' => $d['combo'], ':n' => $d['comboNombre'], ':o' => $d['oferta'], ':id' => $lineaId]);
+    }
+    $pdo->prepare("UPDATE presupuestos SET DescuentosCongelados = 1 WHERE PresupuestoID = :pid")->execute([':pid' => $presupuestoId]);
+}
+
+/**
+ * Descuentos ya congelados de un presupuesto aprobado, en el mismo formato que
+ * calcularCombosPresupuesto (para mostrarlos sin recalcular nada).
+ */
+function descuentosCongeladosPresupuesto(array $lineas): array
+{
+    $res = ['descuento' => 0, 'combos' => [], 'promos' => [], 'porLinea' => []];
+    $porCombo = [];
+    foreach ($lineas as $l) {
+        if (empty($l['Aprobado'])) continue;
+        $c = (int)($l['DescuentoCombo'] ?? 0);
+        $o = (int)($l['DescuentoOferta'] ?? 0);
+        if ($c > 0) $porCombo[$l['ComboNombre'] ?: 'Combo'] = ($porCombo[$l['ComboNombre'] ?: 'Combo'] ?? 0) + $c;
+        if ($o > 0) $res['promos'][] = ['nombre' => $l['Descripcion'], 'monto' => $o];
+        $res['descuento'] += $c + $o;
+    }
+    foreach ($porCombo as $nombre => $monto) $res['combos'][] = ['nombre' => $nombre, 'monto' => $monto];
     return $res;
 }

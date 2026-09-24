@@ -940,12 +940,18 @@ function cambiarCantidad(index, delta) {
 }
 
 function obtenerComboDeItem(item) {
+  if (item.descuentoFijo !== undefined && item.descuentoFijo !== null) {
+    return item.comboFijoNombre ? { monto: item.descuentoFijo, comboNombre: item.comboFijoNombre } : null;
+  }
   const idx = cart.indexOf(item);
   if (idx === -1) return null;
   return calcularCombosCarrito()[idx] || null;
 }
 
 function calcularDescuentoItem(item) {
+  // Línea de un presupuesto aprobado: el descuento ya quedó fijado, no se recalcula.
+  if (item.descuentoFijo !== undefined && item.descuentoFijo !== null) return item.descuentoFijo;
+
   // Un combo (ej. "1 Aceite + 1 Filtro") no se acumula con la promoción individual del
   // producto: si la línea quedó reclamada por un combo, ese descuento manda y se ignora
   // la promoción individual, igual que hace el servidor en includes/promociones_combos.php.
@@ -1363,6 +1369,7 @@ async function confirmarPagoModal() {
       factor: i.factor || 1,
       precio_unitario: i.PrecioVenta,
       sin_combo: !!i.sinCombo,
+      presupuesto_detalle_id: i.presupuestoDetalleId || null,
       nombre_item: i.Nombre,
       descripcion_pack: i.descPack || ''
     })),
@@ -1621,6 +1628,10 @@ async function cargarPresupuestoOT(otId) {
       PrecioBaseUnitario: parseInt(d.PrecioLista),
       // Sin combo si el presupuesto los desactivó o si el precio se editó a mano (igual que el servidor).
       sinCombo: data.aplica_combos === false || parseInt(d.PrecioUnitario) !== parseInt(d.PrecioLista),
+      // Presupuesto aprobado: vale lo que quedó congelado al aprobar, no un recálculo (el servidor lo lee de la base).
+      presupuestoDetalleId: data.congelado ? d.PresupuestoDetalleID : null,
+      descuentoFijo: data.congelado ? (parseInt(d.DescuentoCombo) || 0) + (parseInt(d.DescuentoOferta) || 0) : null,
+      comboFijoNombre: data.congelado && parseInt(d.DescuentoCombo) > 0 ? d.ComboNombre : null,
       PrecioVenta: parseInt(d.PrecioUnitario),
       Stock: parseFloat(d.Stock),
       cantidad: parseFloat(d.Cantidad),

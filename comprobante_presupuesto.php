@@ -70,6 +70,10 @@ $subtotalLista = $totalPresupuesto;
 $aplicaCombosComp = (int)($presupuesto['AplicaCombos'] ?? 1) === 1;
 $combosComp = calcularCombosPresupuesto($pdo, array_filter($lineas, fn($l) => $l['PoliticaCobro'] !== 'SoloSiNoAprueba'), $aplicaCombosComp);
 $combosCompAprob = calcularCombosPresupuesto($pdo, array_filter($lineas, fn($l) => $l['Aprobado']), $aplicaCombosComp);
+// Presupuesto ya aprobado: valen los descuentos congelados al aprobar.
+if ((int)($presupuesto['DescuentosCongelados'] ?? 0) === 1) {
+    $combosComp = $combosCompAprob = descuentosCongeladosPresupuesto($lineas);
+}
 $totalPresupuesto -= $combosComp['descuento'];
 $totalAprobado -= $combosCompAprob['descuento'];
 

@@ -384,7 +384,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ->execute([':ap' => $cobraCondicional, ':pid' => $presupuesto['PresupuestoID']]);
 
                     $pdo->prepare("UPDATE presupuestos SET DecisionCliente = :d, FechaDecision = NOW() WHERE PresupuestoID = :id")
-                        ->execute([':d' => $decision, ':id' => $presupuesto['PresupuestoID']]);
+                        ->execute([':d' => $decision, ':id' => $presupuesto['PresupuestoID']]);
+
+                    // Al aprobar, los descuentos (combos y ofertas) quedan congelados: desde acá el presupuesto
+                    // es el que vale y la Caja cobra exactamente estos montos.
+                    if ($decision !== 'Rechazado') {
+                        congelarDescuentosPresupuesto($pdo, (int)$presupuesto['PresupuestoID'], (int)($presupuesto['AplicaCombos'] ?? 1) === 1);
+                    }
 
                     $estadoOT = $decision === 'Rechazado' ? 'Presupuesto rechazado' : 'Presupuesto aprobado';
                     $pdo->prepare("UPDATE ordenestrabajo SET Estado = :e WHERE OrdenTrabajoID = :id")
@@ -442,6 +448,10 @@ if (!empty($idsProd)) {
     $stmtPL = $pdo->prepare('SELECT ProductoID, PrecioVenta FROM productos WHERE ProductoID IN (' . implode(',', array_fill(0, count($idsProd), '?')) . ')');
     $stmtPL->execute($idsProd);
     foreach ($stmtPL->fetchAll() as $r) $preciosLista[(int)$r['ProductoID']] = (int)$r['PrecioVenta'];
+}
+// Presupuesto ya aprobado: valen los descuentos congelados al aprobar, no un recálculo con las ofertas de hoy.
+if ($presupuesto && (int)($presupuesto['DescuentosCongelados'] ?? 0) === 1) {
+    $combosPresupuesto = $combosAprobado = descuentosCongeladosPresupuesto($lineas);
 }
 $subtotalSinCombos = $total;
 $total -= $combosPresupuesto['descuento'];

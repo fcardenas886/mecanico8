@@ -1,10 +1,15 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v5.2.1');
+define('APP_VERSION', 'v5.3.0');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v5.3.0' => [
+        'El presupuesto es el que vale: al aprobarlo, sus descuentos (combos y ofertas) quedan congelados línea por línea, y la Caja cobra exactamente ese total aunque después venza una oferta, se apague un combo o cambie un precio.',
+        'Un presupuesto aprobado muestra siempre lo que se congeló al aprobar, no un recálculo con las ofertas de hoy. La Caja valida contra el presupuesto (línea, cantidad y que la orden no esté ya cobrada).',
+        'Los presupuestos aprobados antes de este cambio siguen cobrándose como antes.',
+    ],
     'v5.2.1' => [
         'Presupuesto: ahora también incluye las ofertas individuales de cada producto (descuento por % o por volumen), no solo los combos, con el descuento a la vista. El presupuesto, el impreso y la Caja dan el mismo total.',
         'Caja: al cargar un presupuesto de OT, las ofertas individuales de los productos se ven en pantalla antes de cobrar.',
