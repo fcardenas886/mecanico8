@@ -1,10 +1,13 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v5.3.1');
+define('APP_VERSION', 'v5.3.2');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v5.3.2' => [
+        'Boleta/comprobante: ahora detalla los descuentos. Cada producto muestra su propio descuento con el nombre del combo u oferta, y el resumen separa "Combos y ofertas" del "Descuento adicional (%)" que aplica el cajero al final. Igual al reimprimir desde Ventas.',
+    ],
     'v5.3.1' => [
         'Combos: el mismo combo ahora se puede aplicar varias veces en una venta (ej. repuestos para 2 autos: 2 aceites + 2 filtros = 2 packs), tanto en líneas con cantidad 2 como en líneas separadas.',
     ],

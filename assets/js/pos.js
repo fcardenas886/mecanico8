@@ -1474,6 +1474,8 @@ async function confirmarPagoModal() {
     mostrarTicket(dataVenta, cart, total, recibido, vuelto, pagosTicket, {
       subtotal: Math.round(subtotalBruto),
       descuento: Math.round(descPromos) + descGlobal,
+      descLineas: Math.round(descPromos),
+      descGlobal: descGlobal,
     });
 
     // Si el carrito venía de una OT de taller, deja la venta real vinculada a esa OT.
@@ -1779,22 +1781,48 @@ function mostrarTicket(data, items, total, pagado, vuelto, pagos, meta) {
   const detalleEl = document.getElementById('ticketDetalle');
   detalleEl.innerHTML = items.map(i => {
     const lineTotal = Math.round(i.cantidad * i.PrecioVenta);
+    // Descuento propio de la línea (combo u oferta del producto), con su nombre, para que el
+    // cliente vea de dónde sale cada rebaja.
+    const descLinea = Math.round(calcularDescuentoItem(i));
+    let etiqueta = 'Descuento';
+    const comboLinea = obtenerComboDeItem(i);
+    if (comboLinea) etiqueta = `Combo "${comboLinea.comboNombre}"`;
+    else if (i.PromoTipo === 'DESCUENTO_UNIT') etiqueta = `Oferta -${i.PromoDescPorc}%`;
+    else if (i.PromoTipo === 'MULTIBUY') etiqueta = 'Oferta por volumen';
     return `<div class="tk-item-line"><span>${escapeHtml(i.Nombre).substring(0, 24)}</span><span>$${formatNumber(lineTotal)}</span></div>` +
-           `<div class="tk-item-sub">${i.cantidad} x $${formatNumber(i.PrecioVenta)}</div>`;
+           `<div class="tk-item-sub">${i.cantidad} x $${formatNumber(i.PrecioVenta)}</div>` +
+           (descLinea > 0 ? `<div class="tk-item-sub">${escapeHtml(etiqueta)}: -$${formatNumber(descLinea)}</div>` : '');
   }).join('');
 
+  // Resumen: subtotal a precio de lista, descuentos de los productos y descuento adicional
+  // del cajero por separado, para que quede claro cuánto es cada uno.
   const descuento = meta.descuento || 0;
+  const descLineasTotal = meta.descLineas != null ? meta.descLineas : descuento;
+  const descGlobalTotal = meta.descGlobal || 0;
   const subtotal = meta.subtotal != null ? meta.subtotal : total;
   const subRow = document.getElementById('ticketSubtotalRow');
   const descRow = document.getElementById('ticketDescuentoRow');
+  const descGlobalRow = document.getElementById('ticketDescGlobalRow');
   if (descuento > 0) {
     subRow.style.display = 'flex';
     document.getElementById('ticketSubtotal').textContent = `$${formatNumber(subtotal)}`;
-    descRow.style.display = 'flex';
-    document.getElementById('ticketDescuento').textContent = `-$${formatNumber(descuento)}`;
   } else {
     subRow.style.display = 'none';
+  }
+  if (descLineasTotal > 0) {
+    descRow.style.display = 'flex';
+    document.getElementById('ticketDescuento').textContent = `-$${formatNumber(descLineasTotal)}`;
+  } else {
     descRow.style.display = 'none';
+  }
+  if (descGlobalTotal > 0) {
+    const base = Math.max(1, subtotal - descLineasTotal);
+    const pct = Math.round((descGlobalTotal / base) * 1000) / 10;
+    document.getElementById('ticketDescGlobalLabel').textContent = `Descuento adicional (${pct}%)`;
+    document.getElementById('ticketDescGlobal').textContent = `-$${formatNumber(descGlobalTotal)}`;
+    descGlobalRow.style.display = 'flex';
+  } else {
+    descGlobalRow.style.display = 'none';
   }
   document.getElementById('ticketTotal').textContent = `$${formatNumber(total)}`;
 
@@ -1802,12 +1830,8 @@ function mostrarTicket(data, items, total, pagado, vuelto, pagos, meta) {
   // para que el cliente sepa a qué corresponde el descuento en su boleta.
   const comboNotaEl = document.getElementById('ticketComboNota');
   const nombresCombo = [...new Set((data.combos_aplicados || []).map(c => c.combo_nombre))];
-  if (nombresCombo.length > 0) {
-    comboNotaEl.textContent = `🏷️ Incluye ${nombresCombo.map(n => `"${n}"`).join(', ')}`;
-    comboNotaEl.style.display = 'block';
-  } else {
-    comboNotaEl.style.display = 'none';
-  }
+  comboNotaEl.style.display = 'none'; // cada línea ya muestra el nombre de su combo
+  void nombresCombo;
 
   const pagosEl = document.getElementById('ticketPagos');
   const listaPagos = (pagos && pagos.length)

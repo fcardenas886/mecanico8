@@ -482,6 +482,10 @@
         <span>Descuento</span>
         <span id="ticketDescuento"></span>
       </div>
+      <div class="tk-row" id="ticketDescGlobalRow" style="display: none; color: #555;">
+        <span id="ticketDescGlobalLabel">Descuento adicional</span>
+        <span id="ticketDescGlobal"></span>
+      </div>
       <div id="ticketComboNota" style="display: none; font-size: 0.72rem; color: #666; margin: -2px 0 4px;"></div>
       <div class="tk-row tk-strong tk-lg">
         <span>TOTAL</span>
@@ -779,7 +783,8 @@ async function reimprimirTicketVenta(id) {
       const lineTotal = Math.round(i.cantidad * i.precio);
       let promoLabel = '';
       if (i.descuento > 0) {
-        promoLabel = `<div class="tk-item-sub" style="color: #666;">Dcto: -${formatPesos(i.descuento)}</div>`;
+        const nombreDcto = i.combo_aplicado ? `Combo "${escapeStr(i.combo_aplicado)}"` : 'Oferta / descuento';
+        promoLabel = `<div class="tk-item-sub" style="color: #666;">${nombreDcto}: -${formatPesos(i.descuento)}</div>`;
       }
       return `
         <div style="margin-bottom: 0.2rem;">
@@ -800,26 +805,37 @@ async function reimprimirTicketVenta(id) {
     const descuentoTotal = descuentoLineas + (v.descuento_global || 0);
     const subRow = document.getElementById('ticketSubtotalRow');
     const descRow = document.getElementById('ticketDescuentoRow');
+    const descGlobalRow = document.getElementById('ticketDescGlobalRow');
     if (descuentoTotal > 0) {
       subRow.style.display = 'flex';
       document.getElementById('ticketSubtotal').textContent = formatPesos(v.total + descuentoTotal);
-      descRow.style.display = 'flex';
-      document.getElementById('ticketDescuento').textContent = `-${formatPesos(descuentoTotal)}`;
     } else {
       subRow.style.display = 'none';
+    }
+    // Combos y ofertas de los productos, y el descuento adicional del cajero, por separado.
+    if (descuentoLineas > 0) {
+      descRow.style.display = 'flex';
+      descRow.querySelector('span').textContent = 'Combos y ofertas';
+      document.getElementById('ticketDescuento').textContent = `-${formatPesos(descuentoLineas)}`;
+    } else {
       descRow.style.display = 'none';
+    }
+    if ((v.descuento_global || 0) > 0) {
+      const baseDesc = Math.max(1, v.total + descuentoTotal - descuentoLineas);
+      const pct = Math.round((v.descuento_global / baseDesc) * 1000) / 10;
+      document.getElementById('ticketDescGlobalLabel').textContent = `Descuento adicional (${pct}%)`;
+      document.getElementById('ticketDescGlobal').textContent = `-${formatPesos(v.descuento_global)}`;
+      descGlobalRow.style.display = 'flex';
+    } else {
+      descGlobalRow.style.display = 'none';
     }
 
     // Nombres de los combos aplicados (guardados por línea en detalleventas.ComboAplicado),
     // para que quede claro a qué corresponde el descuento.
     const comboNotaEl = document.getElementById('ticketComboNota');
     const nombresCombo = [...new Set(data.detalles.map(i => i.combo_aplicado).filter(Boolean))];
-    if (nombresCombo.length > 0) {
-      comboNotaEl.textContent = `🏷️ Incluye ${nombresCombo.map(n => `"${n}"`).join(', ')}`;
-      comboNotaEl.style.display = 'block';
-    } else {
-      comboNotaEl.style.display = 'none';
-    }
+    comboNotaEl.style.display = 'none'; // cada línea ya muestra el nombre de su combo
+    void nombresCombo;
 
     document.getElementById('ticketTotal').textContent = formatPesos(v.total);
 
