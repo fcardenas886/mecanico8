@@ -17,6 +17,11 @@
 // - Un combo reclama la línea completa del carrito, no una fracción de su cantidad. Si el
 //   cupo pide "≥1" y la línea trae 4 unidades, las 4 entran al combo (nunca cobra de más;
 //   en el peor caso es un poco más generoso de lo estrictamente necesario).
+// - EXCEPCIÓN: con PRECIO_FIJO (precio cerrado del pack) esa regla se invierte, porque un
+//   precio cerrado no escala con la cantidad. Si el cupo pide "≥1 litro" y el cliente lleva
+//   4, reclamar la línea completa dejaría los 4 litros al precio cerrado de 1 (fuga de
+//   dinero). Por eso PRECIO_FIJO exige cantidad EXACTA por cupo; si no calza, ese combo no
+//   se arma para esa línea (los % y montos fijos sí escalan bien y no necesitan esto).
 
 /**
  * Aplica los combos activos sobre las líneas ya armadas de una venta.
@@ -87,7 +92,13 @@ function aplicarCombosCarrito(PDO $pdo, array &$itemsProcesados): void
                     ? ((int)$cupo['ProductoID'] === $pid)
                     : ($info['tipo'] === $cupo['TipoRepuesto']);
                 if (!$coincide) continue;
-                if ((float)$it['cant'] < (float)$cupo['CantidadRequerida']) continue;
+
+                if ($combo['TipoDescuento'] === 'PRECIO_FIJO') {
+                    // Cantidad exacta: un precio cerrado no puede "regalar" el excedente.
+                    if (abs((float)$it['cant'] - (float)$cupo['CantidadRequerida']) > 0.0001) continue;
+                } else {
+                    if ((float)$it['cant'] < (float)$cupo['CantidadRequerida']) continue;
+                }
 
                 $valorLinea = $info['precioLista'] * (float)$it['cant'];
                 if ($valorLinea > $candidatoValor) {

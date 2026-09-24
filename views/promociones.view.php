@@ -270,7 +270,7 @@ function toggleComboDescuento() {
   const hint = document.getElementById('comboValorHint');
   if (tipo === 'PORCENTAJE') hint.textContent = 'Ej: 10 = 10% de descuento en los ítems que arman el combo.';
   else if (tipo === 'MONTO_FIJO') hint.textContent = 'Ej: 4000 = se descuentan $4.000 del total de esos ítems.';
-  else hint.textContent = 'Ej: 39990 = el combo completo queda en $39.990 en total. Úsalo solo con cupos de "Producto puntual", porque el precio de lista varía entre marcas.';
+  else hint.textContent = 'Ej: 39990 = el combo completo queda en $39.990 en total. Úsalo solo con cupos de "Producto puntual", porque el precio de lista varía entre marcas. Ojo: con precio cerrado, la cantidad debe ser EXACTA (si el cupo pide 1 y el cliente lleva 2, no se arma el combo).';
 }
 
 // Arrancar el formulario con 2 cupos vacíos, que es el mínimo.

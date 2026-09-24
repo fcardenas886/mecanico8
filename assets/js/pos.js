@@ -551,7 +551,15 @@ function calcularCombosCarrito() {
           ? String(item.ProductoID) === String(cupo.ProductoID)
           : item.TipoRepuesto === cupo.TipoRepuesto;
         if (!coincide) return;
-        if (item.cantidad < parseFloat(cupo.CantidadRequerida)) return;
+
+        // PRECIO_FIJO exige cantidad exacta: un precio cerrado no escala con la cantidad,
+        // así que "llevar de más" no puede quedar regalado dentro del mismo precio (mismo
+        // criterio que el servidor en includes/promociones_combos.php).
+        if (combo.TipoDescuento === 'PRECIO_FIJO') {
+          if (Math.abs(item.cantidad - parseFloat(cupo.CantidadRequerida)) > 0.0001) return;
+        } else if (item.cantidad < parseFloat(cupo.CantidadRequerida)) {
+          return;
+        }
 
         const valorLinea = (item.PrecioBaseUnitario || item.PrecioVenta) * item.cantidad;
         if (valorLinea > mejorValor) { mejorValor = valorLinea; mejorIdx = idx; }
