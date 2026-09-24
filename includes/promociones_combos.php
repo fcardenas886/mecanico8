@@ -180,20 +180,56 @@ function aplicarCombosCarrito(PDO $pdo, array &$itemsProcesados): void
 }
 
 /**
- * Descuento de combos que le corresponde a un presupuesto, con el mismo motor que cobra la
- * Caja, para que el presupuesto entregado al cliente diga lo mismo que se va a cobrar.
- *
- * @param array $lineas Filas de presupuestodetalle (idealmente ya filtradas a las aprobadas si
- *   el presupuesto está decidido). Solo los repuestos con ProductoID participan.
- * @return array ['descuento' => int total, 'combos' => [['nombre' => ..., 'monto' => int], ...]]
+ * Descuento de la promoción individual de un producto (DESCUENTO_UNIT o MULTIBUY) sobre una
+ * línea de producto simple. Es la fórmula única: la usan tanto la Caja (api/registrar_venta.php)
+ * como el presupuesto, para que ambos den exactamente el mismo número.
  */
-function calcularCombosPresupuesto(PDO $pdo, array $lineas): array
+function descuentoPromoIndividual(?array $promo, int $precioUnitario, float $cant): int
 {
+    if (!$promo) return 0;
+    if ($promo['Tipo'] === 'DESCUENTO_UNIT') {
+        $descUnit = (int)round($precioUnitario * ((float)$promo['DescuentoPorcentaje'] / 100));
+        return (int)round($cant * $descUnit);
+    }
+    if ($promo['Tipo'] === 'MULTIBUY') {
+        $cantMin = (int)$promo['CantidadMinima'];
+        $precioOf = (int)$promo['PrecioOferta'];
+        if ($cantMin > 0 && $cant >= $cantMin) {
+            $packs = (int)floor($cant / $cantMin);
+            $resto = $cant % $cantMin;
+            $subtotalConPromo = ($packs * $precioOf) + ($resto * $precioUnitario);
+            $subtotalNormal = $cant * $precioUnitario;
+            return (int)max(0, $subtotalNormal - $subtotalConPromo);
+        }
+    }
+    return 0;
+}
+
+/**
+ * Descuentos que le corresponden a un presupuesto, con los mismos motores que cobra la Caja
+ * (promoción individual de cada producto + combos), para que el presupuesto entregado al cliente
+ * diga lo mismo que se va a cobrar.
+ *
+ * @param array $lineas Filas de presupuestodetalle (ya filtradas a las aprobadas si el presupuesto
+ *   está decidido). Solo los repuestos con ProductoID participan.
+ * @param bool $conCombos false = el presupuesto desactivó los combos (las promociones individuales
+ *   de cada producto igual se aplican, como en la Caja).
+ * @return array ['descuento' => total (promos + combos), 'combos' => [['nombre','monto']],
+ *   'promos' => [['nombre','monto']]]
+ */
+function calcularCombosPresupuesto(PDO $pdo, array $lineas, bool $conCombos = true): array
+{
+    $vacio = ['descuento' => 0, 'combos' => [], 'promos' => []];
     $items = [];
+    $nombres = [];
     foreach ($lineas as $l) {
         if (($l['TipoLinea'] ?? '') !== 'Repuesto' || empty($l['ProductoID'])) continue;
+        $id = (int)$l['PresupuestoDetalleID'];
+        $nombres[$id] = $l['Descripcion'];
         $items[] = [
             'esServicio' => false,
+            'sin_combo' => !$conCombos,
+            'origen' => $id,
             'prod' => ['ProductoID' => (int)$l['ProductoID']],
             'cant' => (float)$l['Cantidad'],
             'factor' => 1,
@@ -202,18 +238,38 @@ function calcularCombosPresupuesto(PDO $pdo, array $lineas): array
             'subtotal' => (int)$l['Subtotal'],
         ];
     }
-    if (empty($items)) return ['descuento' => 0, 'combos' => []];
+    if (empty($items)) return $vacio;
+
+    // Promoción individual vigente de cada producto, igual que la busca la Caja.
+    $ids = array_values(array_unique(array_map(fn($i) => $i['prod']['ProductoID'], $items)));
+    $stmt = $pdo->prepare("
+        SELECT ProductoID, Tipo, CantidadMinima, DescuentoPorcentaje, PrecioOferta FROM promociones
+        WHERE ProductoID IN (" . implode(',', array_fill(0, count($ids), '?')) . ")
+          AND Activa = TRUE AND FechaInicio <= NOW() AND FechaFin >= NOW()
+    ");
+    $stmt->execute($ids);
+    $promos = [];
+    foreach ($stmt->fetchAll() as $p) { $promos[(int)$p['ProductoID']] ??= $p; }
+
+    foreach ($items as &$it) {
+        $it['descuento'] = descuentoPromoIndividual($promos[$it['prod']['ProductoID']] ?? null, $it['precio'], $it['cant']);
+        $it['subtotal'] = max(0, (int)round($it['cant'] * $it['precio']) - $it['descuento']);
+    }
+    unset($it);
 
     aplicarCombosCarrito($pdo, $items);
 
     $porCombo = [];
-    $total = 0;
+    $porPromo = [];
     foreach ($items as $it) {
-        if (empty($it['combo_nombre'])) continue;
-        $porCombo[$it['combo_nombre']] = ($porCombo[$it['combo_nombre']] ?? 0) + (int)$it['descuento'];
-        $total += (int)$it['descuento'];
+        if (!empty($it['combo_nombre'])) {
+            $porCombo[$it['combo_nombre']] = ($porCombo[$it['combo_nombre']] ?? 0) + (int)$it['descuento'];
+        } elseif ((int)$it['descuento'] > 0) {
+            $porPromo[$it['origen']] = ($porPromo[$it['origen']] ?? 0) + (int)$it['descuento'];
+        }
     }
-    $combos = [];
-    foreach ($porCombo as $nombre => $monto) $combos[] = ['nombre' => $nombre, 'monto' => $monto];
-    return ['descuento' => $total, 'combos' => $combos];
+    $res = $vacio;
+    foreach ($porCombo as $nombre => $monto) { $res['combos'][] = ['nombre' => $nombre, 'monto' => $monto]; $res['descuento'] += $monto; }
+    foreach ($porPromo as $origen => $monto) { $res['promos'][] = ['nombre' => $nombres[$origen] ?? 'Producto', 'monto' => $monto]; $res['descuento'] += $monto; }
+    return $res;
 }

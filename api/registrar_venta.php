@@ -139,20 +139,7 @@ try {
         $descItem = 0;
 
         if ($promo && $factor <= 1) {
-            if ($promo['Tipo'] === 'DESCUENTO_UNIT') {
-                $descUnit = (int)round($precioUnitario * ((float)$promo['DescuentoPorcentaje'] / 100));
-                $descItem = (int)round($cant * $descUnit);
-            } elseif ($promo['Tipo'] === 'MULTIBUY') {
-                $cantMin = (int)$promo['CantidadMinima'];
-                $precioOf = (int)$promo['PrecioOferta'];
-                if ($cant >= $cantMin) {
-                    $packs = (int)floor($cant / $cantMin);
-                    $resto = $cant % $cantMin;
-                    $subtotalConPromo = ($packs * $precioOf) + ($resto * $precioUnitario);
-                    $subtotalNormal = $cant * $precioUnitario;
-                    $descItem = max(0, $subtotalNormal - $subtotalConPromo);
-                }
-            }
+            $descItem = descuentoPromoIndividual($promo, (int)$precioUnitario, (float)$cant);
         }
 
         $subtotalItem = max(0, (int)round(($cant * $precioUnitario) - $descItem));

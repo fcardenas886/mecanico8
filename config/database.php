@@ -1,10 +1,14 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v5.2.0');
+define('APP_VERSION', 'v5.2.1');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v5.2.1' => [
+        'Presupuesto: ahora también incluye las ofertas individuales de cada producto (descuento por % o por volumen), no solo los combos, con el descuento a la vista. El presupuesto, el impreso y la Caja dan el mismo total.',
+        'Caja: al cargar un presupuesto de OT, las ofertas individuales de los productos se ven en pantalla antes de cobrar.',
+    ],
     'v5.2.0' => [
         'Presupuesto: ahora aplica los mismos combos de Promociones que la Caja, con el descuento a la vista, para que el presupuesto entregado diga lo mismo que se cobra. Hay un interruptor para aplicarlos o no.',
         'Presupuesto: el precio de cada línea se puede editar a mano. Un repuesto con el precio editado queda fuera de los combos (es el precio acordado).',

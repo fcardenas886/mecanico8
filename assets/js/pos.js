@@ -1624,11 +1624,12 @@ async function cargarPresupuestoOT(otId) {
       PrecioVenta: parseInt(d.PrecioUnitario),
       Stock: parseFloat(d.Stock),
       cantidad: parseFloat(d.Cantidad),
-      PromocionID: null,
-      PromoTipo: null,
-      PromoCantMin: 0,
-      PromoDescPorc: 0,
-      PromoPrecioOf: 0
+      // Promoción individual vigente del producto: la Caja la aplica al cobrar, así que se muestra igual.
+      PromocionID: d.PromocionID || null,
+      PromoTipo: d.PromoTipo || null,
+      PromoCantMin: parseFloat(d.PromoCantMin) || 0,
+      PromoDescPorc: parseFloat(d.PromoDescPorc) || 0,
+      PromoPrecioOf: parseInt(d.PromoPrecioOf) || 0
     }));
 
     const servicios = (data.servicios || []).map(d => ({

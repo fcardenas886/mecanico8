@@ -39,9 +39,13 @@ if (!$presupuesto) {
 
 // Repuestos: llevan ProductoID y Stock real, igual que cualquier venta de mostrador.
 $stmtRep = $pdo->prepare("
-    SELECT pd.ProductoID, p.Nombre, pd.PrecioUnitario, p.Stock, pd.Cantidad, p.TipoRepuesto, p.PrecioVenta AS PrecioLista
+    SELECT pd.ProductoID, p.Nombre, pd.PrecioUnitario, p.Stock, pd.Cantidad, p.TipoRepuesto, p.PrecioVenta AS PrecioLista,
+           pr.PromocionID, pr.Tipo AS PromoTipo, pr.CantidadMinima AS PromoCantMin,
+           pr.DescuentoPorcentaje AS PromoDescPorc, pr.PrecioOferta AS PromoPrecioOf
     FROM presupuestodetalle pd
     JOIN productos p ON pd.ProductoID = p.ProductoID
+    LEFT JOIN promociones pr ON p.ProductoID = pr.ProductoID
+         AND pr.Activa = TRUE AND pr.FechaInicio <= NOW() AND pr.FechaFin >= NOW()
     WHERE pd.PresupuestoID = :pid AND pd.TipoLinea = 'Repuesto' AND pd.Aprobado = 1
 ");
 $stmtRep->execute([':pid' => $presupuesto['PresupuestoID']]);

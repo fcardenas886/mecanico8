@@ -428,10 +428,12 @@ foreach ($lineas as $l) { if ($l['Aprobado']) $totalAprobado += $l['Subtotal']; 
 $combosPresupuesto = ['descuento' => 0, 'combos' => []];
 $combosAprobado = ['descuento' => 0, 'combos' => []];
 $aplicaCombos = $presupuesto ? (int)($presupuesto['AplicaCombos'] ?? 1) === 1 : true;
-if ($presupuesto && $aplicaCombos) {
+if ($presupuesto) {
+    // Las promociones individuales de cada producto se aplican siempre (como en la Caja);
+    // el interruptor solo controla los combos.
     $lineasBase = array_filter($lineas, fn($l) => $l['PoliticaCobro'] !== 'SoloSiNoAprueba');
-    $combosPresupuesto = calcularCombosPresupuesto($pdo, $lineasBase);
-    $combosAprobado = calcularCombosPresupuesto($pdo, array_filter($lineas, fn($l) => $l['Aprobado']));
+    $combosPresupuesto = calcularCombosPresupuesto($pdo, $lineasBase, $aplicaCombos);
+    $combosAprobado = calcularCombosPresupuesto($pdo, array_filter($lineas, fn($l) => $l['Aprobado']), $aplicaCombos);
 }
 // Precio de lista actual de cada repuesto, para marcar las líneas cuyo precio se editó a mano.
 $preciosLista = [];

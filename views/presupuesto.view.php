@@ -685,6 +685,13 @@ $porcentajeCobertura = $totalRequerimientos > 0 ? (int)round(($cubiertosRequerim
                   <td style="text-align: right;"><?= formatCLP($subtotalSinCombos) ?></td>
                   <?php if ($pendiente): ?><td></td><?php endif; ?>
                 </tr>
+                <?php foreach ($combosPresupuesto['promos'] as $pm): ?>
+                  <tr>
+                    <td colspan="5" style="text-align: right; color: #34d399;">🏷️ Oferta en "<?= htmlspecialchars($pm['nombre']) ?>":</td>
+                    <td style="text-align: right; color: #34d399; font-weight: 700;">-<?= formatCLP($pm['monto']) ?></td>
+                    <?php if ($pendiente): ?><td></td><?php endif; ?>
+                  </tr>
+                <?php endforeach; ?>
                 <?php foreach ($combosPresupuesto['combos'] as $cb): ?>
                   <tr>
                     <td colspan="5" style="text-align: right; color: #34d399;">🏷️ Descuento combo "<?= htmlspecialchars($cb['nombre']) ?>":</td>

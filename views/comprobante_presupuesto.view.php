@@ -399,6 +399,12 @@ function guardarPDF() {
         <td style="color: #64748b;">Subtotal Presupuesto:</td>
         <td style="text-align: right; font-weight: 600;">$<?= number_format($subtotalLista, 0, ',', '.') ?></td>
       </tr>
+      <?php foreach ($combosComp['promos'] as $pm): ?>
+        <tr>
+          <td style="color: #059669;">🏷️ Oferta en "<?= htmlspecialchars($pm['nombre']) ?>":</td>
+          <td style="text-align: right; font-weight: 600; color: #059669;">-$<?= number_format($pm['monto'], 0, ',', '.') ?></td>
+        </tr>
+      <?php endforeach; ?>
       <?php foreach ($combosComp['combos'] as $cb): ?>
         <tr>
           <td style="color: #059669;">🏷️ Descuento combo "<?= htmlspecialchars($cb['nombre']) ?>":</td>
