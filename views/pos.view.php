@@ -519,6 +519,7 @@
       <div class="tk-sep"></div>
       <div class="tk-row" id="ticketSubtotalRow" style="display: none;"><span>Subtotal</span><span id="ticketSubtotal"></span></div>
       <div class="tk-row" id="ticketDescuentoRow" style="display: none;"><span id="ticketDescuentoLabel">Combos y ofertas</span><span id="ticketDescuento"></span></div>
+      <div id="ticketPacks"></div>
       <div class="tk-row" id="ticketDescGlobalRow" style="display: none;"><span id="ticketDescGlobalLabel">Descuento adicional</span><span id="ticketDescGlobal"></span></div>
       <div id="ticketComboNota" style="display: none; font-size: 0.72rem; color: var(--text-muted); margin: -2px 0 4px;"></div>
       <div class="tk-row tk-strong tk-lg"><span>TOTAL</span><span id="ticketTotal"></span></div>

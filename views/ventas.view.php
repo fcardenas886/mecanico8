@@ -482,6 +482,7 @@
         <span>Descuento</span>
         <span id="ticketDescuento"></span>
       </div>
+      <div id="ticketPacks"></div>
       <div class="tk-row" id="ticketDescGlobalRow" style="display: none; color: #555;">
         <span id="ticketDescGlobalLabel">Descuento adicional</span>
         <span id="ticketDescGlobal"></span>
@@ -779,18 +780,26 @@ async function reimprimirTicketVenta(id) {
 
     // Ítems
     const detalleEl = document.getElementById('ticketDetalle');
+    // Los combos se muestran como un descuento del pack al final del ticket (no repartidos en cada
+    // producto, lo que confunde). Las ofertas propias de un producto sí quedan bajo su línea.
+    const packsV = {};
+    let descOfertasV = 0;
     detalleEl.innerHTML = data.detalles.map(i => {
       const lineTotal = Math.round(i.cantidad * i.precio);
       let promoLabel = '';
       if (i.descuento > 0) {
-        const nombreDcto = i.combo_aplicado ? `Combo "${escapeStr(i.combo_aplicado)}"` : 'Oferta / descuento';
-        promoLabel = `<div class="tk-item-sub" style="color: #666;">${nombreDcto}: -${formatPesos(i.descuento)}</div>`;
+        if (i.combo_aplicado) {
+          packsV[i.combo_aplicado] = (packsV[i.combo_aplicado] || 0) + i.descuento;
+        } else {
+          descOfertasV += i.descuento;
+          promoLabel = `<div class="tk-item-sub" style="color: #666;">Oferta: -${formatPesos(i.descuento)}</div>`;
+        }
       }
       return `
         <div style="margin-bottom: 0.2rem;">
           <div class="tk-item-line">
             <span>${escapeStr(i.nombre).substring(0, 24)}</span>
-            <span>${formatPesos(i.subtotal)}</span>
+            <span>${formatPesos(lineTotal)}</span>
           </div>
           <div class="tk-item-sub">${i.cantidad} x ${formatPesos(i.precio)}</div>
           ${promoLabel}
@@ -798,9 +807,8 @@ async function reimprimirTicketVenta(id) {
       `;
     }).join('');
 
-    // Subtotal / Descuento / Total. El descuento incluye el global de la venta MÁS lo
-    // que ya viene rebajado en cada línea (promoción individual o combo), que si no se
-    // suma acá queda invisible en el resumen aunque cada línea sí muestre su "Dcto:".
+    // Subtotal a precio de lista, ofertas de productos, descuento de cada pack y descuento
+    // adicional del cajero, cada uno por separado.
     const descuentoLineas = data.detalles.reduce((s, i) => s + (i.descuento || 0), 0);
     const descuentoTotal = descuentoLineas + (v.descuento_global || 0);
     const subRow = document.getElementById('ticketSubtotalRow');
@@ -812,14 +820,16 @@ async function reimprimirTicketVenta(id) {
     } else {
       subRow.style.display = 'none';
     }
-    // Combos y ofertas de los productos, y el descuento adicional del cajero, por separado.
-    if (descuentoLineas > 0) {
+    if (descOfertasV > 0) {
       descRow.style.display = 'flex';
-      descRow.querySelector('span').textContent = 'Combos y ofertas';
-      document.getElementById('ticketDescuento').textContent = `-${formatPesos(descuentoLineas)}`;
+      descRow.querySelector('span').textContent = 'Ofertas en productos';
+      document.getElementById('ticketDescuento').textContent = `-${formatPesos(descOfertasV)}`;
     } else {
       descRow.style.display = 'none';
     }
+    document.getElementById('ticketPacks').innerHTML = Object.entries(packsV).filter(([, m]) => m > 0).map(([nombre, monto]) =>
+      `<div class="tk-row"><span>Descuento pack "${escapeStr(nombre)}"</span><span>-${formatPesos(monto)}</span></div>`
+    ).join('');
     if ((v.descuento_global || 0) > 0) {
       const baseDesc = Math.max(1, v.total + descuentoTotal - descuentoLineas);
       const pct = Math.round((v.descuento_global / baseDesc) * 1000) / 10;
@@ -829,7 +839,6 @@ async function reimprimirTicketVenta(id) {
     } else {
       descGlobalRow.style.display = 'none';
     }
-
     // Nombres de los combos aplicados (guardados por línea en detalleventas.ComboAplicado),
     // para que quede claro a qué corresponde el descuento.
     const comboNotaEl = document.getElementById('ticketComboNota');

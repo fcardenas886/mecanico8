@@ -1779,44 +1779,54 @@ function mostrarTicket(data, items, total, pagado, vuelto, pagos, meta) {
   }
 
   const detalleEl = document.getElementById('ticketDetalle');
+  // Los combos se muestran como un descuento del pack al final del ticket (no repartidos en cada
+  // producto, lo que confunde). Las ofertas propias de un producto sí quedan bajo su línea.
+  const packs = {};
+  let descOfertas = 0;
   detalleEl.innerHTML = items.map(i => {
     const lineTotal = Math.round(i.cantidad * i.PrecioVenta);
-    // Descuento propio de la línea (combo u oferta del producto), con su nombre, para que el
-    // cliente vea de dónde sale cada rebaja.
     const descLinea = Math.round(calcularDescuentoItem(i));
-    let etiqueta = 'Descuento';
     const comboLinea = obtenerComboDeItem(i);
-    if (comboLinea) etiqueta = `Combo "${comboLinea.comboNombre}"`;
-    else if (i.PromoTipo === 'DESCUENTO_UNIT') etiqueta = `Oferta -${i.PromoDescPorc}%`;
-    else if (i.PromoTipo === 'MULTIBUY') etiqueta = 'Oferta por volumen';
+    let subLinea = '';
+    if (comboLinea) {
+      packs[comboLinea.comboNombre] = (packs[comboLinea.comboNombre] || 0) + descLinea;
+    } else if (descLinea > 0) {
+      descOfertas += descLinea;
+      const etiqueta = i.PromoTipo === 'DESCUENTO_UNIT' ? `Oferta -${i.PromoDescPorc}%` : (i.PromoTipo === 'MULTIBUY' ? 'Oferta por volumen' : 'Oferta');
+      subLinea = `<div class="tk-item-sub">${escapeHtml(etiqueta)}: -$${formatNumber(descLinea)}</div>`;
+    }
     return `<div class="tk-item-line"><span>${escapeHtml(i.Nombre).substring(0, 24)}</span><span>$${formatNumber(lineTotal)}</span></div>` +
-           `<div class="tk-item-sub">${i.cantidad} x $${formatNumber(i.PrecioVenta)}</div>` +
-           (descLinea > 0 ? `<div class="tk-item-sub">${escapeHtml(etiqueta)}: -$${formatNumber(descLinea)}</div>` : '');
+           `<div class="tk-item-sub">${i.cantidad} x $${formatNumber(i.PrecioVenta)}</div>` + subLinea;
   }).join('');
 
-  // Resumen: subtotal a precio de lista, descuentos de los productos y descuento adicional
-  // del cajero por separado, para que quede claro cuánto es cada uno.
+  // Resumen: subtotal a precio de lista, ofertas de productos, descuento de cada pack y descuento
+  // adicional del cajero, cada uno por separado.
   const descuento = meta.descuento || 0;
-  const descLineasTotal = meta.descLineas != null ? meta.descLineas : descuento;
   const descGlobalTotal = meta.descGlobal || 0;
+  const descPacksTotal = Object.values(packs).reduce((s, v) => s + v, 0);
   const subtotal = meta.subtotal != null ? meta.subtotal : total;
   const subRow = document.getElementById('ticketSubtotalRow');
   const descRow = document.getElementById('ticketDescuentoRow');
   const descGlobalRow = document.getElementById('ticketDescGlobalRow');
+  const packsEl = document.getElementById('ticketPacks');
   if (descuento > 0) {
     subRow.style.display = 'flex';
     document.getElementById('ticketSubtotal').textContent = `$${formatNumber(subtotal)}`;
   } else {
     subRow.style.display = 'none';
   }
-  if (descLineasTotal > 0) {
+  if (descOfertas > 0) {
     descRow.style.display = 'flex';
-    document.getElementById('ticketDescuento').textContent = `-$${formatNumber(descLineasTotal)}`;
+    document.getElementById('ticketDescuentoLabel').textContent = 'Ofertas en productos';
+    document.getElementById('ticketDescuento').textContent = `-$${formatNumber(descOfertas)}`;
   } else {
     descRow.style.display = 'none';
   }
+  packsEl.innerHTML = Object.entries(packs).filter(([, m]) => m > 0).map(([nombre, monto]) =>
+    `<div class="tk-row"><span>Descuento pack "${escapeHtml(nombre)}"</span><span>-$${formatNumber(monto)}</span></div>`
+  ).join('');
   if (descGlobalTotal > 0) {
-    const base = Math.max(1, subtotal - descLineasTotal);
+    const base = Math.max(1, subtotal - descOfertas - descPacksTotal);
     const pct = Math.round((descGlobalTotal / base) * 1000) / 10;
     document.getElementById('ticketDescGlobalLabel').textContent = `Descuento adicional (${pct}%)`;
     document.getElementById('ticketDescGlobal').textContent = `-$${formatNumber(descGlobalTotal)}`;

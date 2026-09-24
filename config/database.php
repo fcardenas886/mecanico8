@@ -1,10 +1,13 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v5.3.2');
+define('APP_VERSION', 'v5.3.3');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v5.3.3' => [
+        'Boleta: el descuento de un combo ahora se muestra al final como "Descuento pack «nombre»", no repartido en cada producto (los productos quedan a precio de lista y no confunde). Las ofertas propias de un producto siguen bajo su línea.',
+    ],
     'v5.3.2' => [
         'Boleta/comprobante: ahora detalla los descuentos. Cada producto muestra su propio descuento con el nombre del combo u oferta, y el resumen separa "Combos y ofertas" del "Descuento adicional (%)" que aplica el cajero al final. Igual al reimprimir desde Ventas.',
     ],
