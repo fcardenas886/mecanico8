@@ -84,19 +84,20 @@ try {
     $stmtUpdStock = $pdo->prepare("UPDATE productos SET Stock = Stock + :cant WHERE ProductoID = :pid");
     $stmtKardex = $pdo->prepare("
         INSERT INTO kardex (ProductoID, TipoTransaccion, VentaID, CantidadEntrada, StockSaldo, ValorUnitario)
-        SELECT :pid, 'ANULACION_VENTA', :vid, :cant, (Stock + :cant2), :val FROM productos WHERE ProductoID = :pid2
+        SELECT :pid, 'ANULACION_VENTA', :vid, :cant, Stock, :val FROM productos WHERE ProductoID = :pid2
     ");
 
     foreach ($detalles as $d) {
+        if (empty($d['ProductoID'])) continue; // Líneas de servicio no tocan kardex ni productos
+
+        $stmtUpdStock->execute([':cant' => $d['Cantidad'], ':pid' => $d['ProductoID']]);
         $stmtKardex->execute([
             ':pid' => $d['ProductoID'],
             ':pid2' => $d['ProductoID'],
             ':vid' => $ventaID,
             ':cant' => $d['Cantidad'],
-            ':cant2' => $d['Cantidad'],
             ':val' => $d['PrecioUnitario']
         ]);
-        $stmtUpdStock->execute([':cant' => $d['Cantidad'], ':pid' => $d['ProductoID']]);
     }
 
     // 3. Registrar en AuditoriaEventos si existe la tabla

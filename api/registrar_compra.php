@@ -94,16 +94,18 @@ try {
     ");
 
     $productosRetorno = [];
+    $stockSaldoCorriente = [];
 
     foreach ($itemsProcesados as $item) {
         $p = $item['prod'];
+        $pid = (int)$p['ProductoID'];
         $cant = $item['cant'];
         $costo = $item['costo'];
 
         // Guardar detalle
         $stmtDC->execute([
             ':cid' => $compraID,
-            ':pid' => $p['ProductoID'],
+            ':pid' => $pid,
             ':cant' => $cant,
             ':costo' => $costo,
             ':subtotal' => $item['subtotal']
@@ -113,13 +115,18 @@ try {
         $stmtUpdStock->execute([
             ':cant' => $cant,
             ':costo' => $costo,
-            ':pid' => $p['ProductoID']
+            ':pid' => $pid
         ]);
 
-        // Registrar en Kardex
-        $nuevoStock = $p['Stock'] + $cant;
+        // Registrar en Kardex con saldo corriente continuo
+        if (!isset($stockSaldoCorriente[$pid])) {
+            $stockSaldoCorriente[$pid] = (float)$p['Stock'];
+        }
+        $stockSaldoCorriente[$pid] += $cant;
+        $nuevoStock = $stockSaldoCorriente[$pid];
+
         $stmtKardex->execute([
-            ':pid' => $p['ProductoID'],
+            ':pid' => $pid,
             ':cid' => $compraID,
             ':cant' => $cant,
             ':saldo' => $nuevoStock,

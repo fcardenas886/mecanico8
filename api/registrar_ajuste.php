@@ -94,6 +94,16 @@ try {
                 ':pid2' => $productoID
             ]);
         } else {
+            $stmtCheck = $pdo->prepare("SELECT Nombre, Stock FROM productos WHERE ProductoID = :pid FOR UPDATE");
+            $stmtCheck->execute([':pid' => $productoID]);
+            $pCheck = $stmtCheck->fetch();
+            if (!$pCheck) {
+                throw new Exception("El producto ID $productoID no existe.");
+            }
+            if ((float)$pCheck['Stock'] < $cantidad) {
+                throw new Exception("Stock insuficiente para '{$pCheck['Nombre']}'. Disponible: {$pCheck['Stock']}, a descontar: $cantidad.");
+            }
+
             $stmtSubStock->execute([':cant' => $cantidad, ':pid' => $productoID]);
             $stmtKardexSalida->execute([
                 ':pid' => $productoID,

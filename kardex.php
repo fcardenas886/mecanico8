@@ -5,7 +5,12 @@ $pdo = getDB();
 
 $productoID = (int)($_GET['producto_id'] ?? 0);
 
+$productoInfo = null;
 if ($productoID > 0) {
+    $stmtPInfo = $pdo->prepare("SELECT ProductoID, Nombre, Stock, StockMinimo, PrecioVenta, CostoCompra FROM productos WHERE ProductoID = :pid");
+    $stmtPInfo->execute([':pid' => $productoID]);
+    $productoInfo = $stmtPInfo->fetch();
+
     $stmt = $pdo->prepare("
         SELECT k.*, p.Nombre AS ProductoName, p.CodigoBarras 
         FROM kardex k
