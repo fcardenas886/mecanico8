@@ -11,7 +11,7 @@ if ($productoID > 0) {
         FROM kardex k
         JOIN productos p ON k.ProductoID = p.ProductoID
         WHERE k.ProductoID = :pid
-        ORDER BY k.KardexID DESC
+        ORDER BY k.FechaMovimiento DESC, k.KardexID DESC
     ");
     $stmt->execute([':pid' => $productoID]);
 } else {
@@ -19,7 +19,7 @@ if ($productoID > 0) {
         SELECT k.*, p.Nombre AS ProductoName, p.CodigoBarras 
         FROM kardex k
         JOIN productos p ON k.ProductoID = p.ProductoID
-        ORDER BY k.KardexID DESC LIMIT 100
+        ORDER BY k.FechaMovimiento DESC, k.KardexID DESC LIMIT 100
     ");
 }
 $kardexList = $stmt->fetchAll();

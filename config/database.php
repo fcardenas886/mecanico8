@@ -1,10 +1,13 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v5.3.5');
+define('APP_VERSION', 'v5.3.6');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v5.3.6' => [
+        'Kardex: los productos ahora nacen con su movimiento de "saldo inicial" (antes el stock inicial se cargaba sin dejar registro y el Kardex no explicaba de dónde salía). Se agregó el saldo inicial que faltaba en los productos ya existentes, y el Kardex se ordena por fecha.',
+    ],
     'v5.3.5' => [
         'Devoluciones: soporte completo para productos con líneas partidas por combo o ventas con múltiples packs. El cálculo de unidades disponibles y reembolso proporcional agrupa todas las presentaciones del producto sin bloquear unidades.',
         'Kardex: cálculo continuo del saldo (StockSaldo) cuando una venta contiene múltiples líneas o packs del mismo producto.',

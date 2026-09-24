@@ -90,6 +90,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             ':tiporep' => $tipoRepuesto, ':marcarep' => $marcaRepuesto, ':oem' => $parteOEM,
                             ':alt' => $parteAlt, ':visc' => $viscosidad, ':descr' => $descripcion
                         ]);
+                        // El stock con que nace el producto queda en el Kardex como saldo inicial; sin este movimiento
+                        // el historial no explica de dónde salió el stock.
+                        $nuevoId = (int)$pdo->lastInsertId();
+                        if ($nuevoId > 0 && (float)$stock > 0) {
+                            $pdo->prepare("
+                                INSERT INTO kardex (ProductoID, TipoTransaccion, CantidadEntrada, StockSaldo, ValorUnitario)
+                                VALUES (:pid, 'INICIAL', :cant, :saldo, :costo)
+                            ")->execute([':pid' => $nuevoId, ':cant' => $stock, ':saldo' => $stock, ':costo' => $costoCompra]);
+                        }
                     }
                     $message = 'Producto guardado exitosamente.';
                 } catch (Exception $e) {
