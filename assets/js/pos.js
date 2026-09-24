@@ -533,66 +533,69 @@ async function cargarCombosActivos() {
 // con la promoción individual del producto. Devuelve { idxDescuento: {monto, comboNombre} }.
 function calcularCombosCarrito() {
   const resultado = {};
-  const reclamadas = new Set();
+  // Cantidad de cada línea que todavía no entró a un combo. El servidor parte las líneas con
+  // más cantidad y el sobrante queda libre para otro pack; acá se refleja igual sin tocar el carrito.
+  const restante = cart.map(item => item.cantidad);
 
   for (const combo of combosCache) {
-    const asignacion = new Map();
-    let exito = true;
+    // El mismo combo puede armarse varias veces (ej. repuestos para 2 autos: 2 aceites + 2 filtros).
+    for (let vuelta = 0; vuelta < 50; vuelta++) {
+      const asignacion = new Map();
+      let exito = true;
 
-    for (const cupo of combo.cupos) {
-      let mejorIdx = null;
-      let mejorValor = -1;
+      for (const cupo of combo.cupos) {
+        const requerida = parseFloat(cupo.CantidadRequerida);
+        let mejorIdx = null;
+        let mejorValor = -1;
 
-      cart.forEach((item, idx) => {
-        if (reclamadas.has(idx) || asignacion.has(idx)) return;
-        if ((item.factor || 1) > 1) return; // los packs no se cruzan con combos
-        if (item.sinCombo) return; // precio editado a mano o presupuesto sin combos
+        cart.forEach((item, idx) => {
+          if (asignacion.has(idx)) return;
+          if ((item.factor || 1) > 1) return; // los packs no se cruzan con combos
+          if (item.sinCombo) return; // precio editado a mano o presupuesto sin combos
 
-        const coincide = cupo.ModoSeleccion === 'PRODUCTO_ESPECIFICO'
-          ? String(item.ProductoID) === String(cupo.ProductoID)
-          : item.TipoRepuesto === cupo.TipoRepuesto;
-        if (!coincide) return;
-        if (item.cantidad < parseFloat(cupo.CantidadRequerida)) return;
+          const coincide = cupo.ModoSeleccion === 'PRODUCTO_ESPECIFICO'
+            ? String(item.ProductoID) === String(cupo.ProductoID)
+            : item.TipoRepuesto === cupo.TipoRepuesto;
+          if (!coincide) return;
+          if (restante[idx] < requerida - 0.0001) return;
 
-        const valorLinea = (item.PrecioBaseUnitario || item.PrecioVenta) * item.cantidad;
-        if (valorLinea > mejorValor) { mejorValor = valorLinea; mejorIdx = idx; }
+          const valorLinea = (item.PrecioBaseUnitario || item.PrecioVenta) * restante[idx];
+          if (valorLinea > mejorValor) { mejorValor = valorLinea; mejorIdx = idx; }
+        });
+
+        if (mejorIdx === null) { exito = false; break; }
+        asignacion.set(mejorIdx, requerida);
+      }
+
+      if (!exito || asignacion.size === 0) break;
+
+      // Solo la cantidad exacta de cada cupo entra al combo; el resto se vende a precio normal.
+      let valorBase = 0;
+      asignacion.forEach((requerida, idx) => {
+        valorBase += (cart[idx].PrecioBaseUnitario || cart[idx].PrecioVenta) * requerida;
       });
+      if (valorBase <= 0) break;
 
-      if (mejorIdx === null) { exito = false; break; }
-      asignacion.set(mejorIdx, parseFloat(cupo.CantidadRequerida));
+      let descuentoCombo = 0;
+      const valor = parseFloat(combo.ValorDescuento);
+      if (combo.TipoDescuento === 'PORCENTAJE') descuentoCombo = Math.round(valorBase * Math.min(100, Math.max(0, valor)) / 100);
+      else if (combo.TipoDescuento === 'MONTO_FIJO') descuentoCombo = Math.min(valorBase, Math.round(valor));
+      else descuentoCombo = Math.max(0, valorBase - Math.round(valor));
+      if (descuentoCombo <= 0) break;
+
+      const idxs = Array.from(asignacion.keys());
+      let repartido = 0;
+      idxs.forEach((idx, n) => {
+        const requerida = asignacion.get(idx);
+        const subtotalLista = (cart[idx].PrecioBaseUnitario || cart[idx].PrecioVenta) * requerida;
+        const esUltimo = n === idxs.length - 1;
+        const share = esUltimo ? (descuentoCombo - repartido) : Math.round(descuentoCombo * (subtotalLista / valorBase));
+        repartido += share;
+        restante[idx] -= requerida;
+        const previo = resultado[idx];
+        resultado[idx] = { monto: (previo ? previo.monto : 0) + share, comboNombre: previo ? previo.comboNombre : combo.Nombre };
+      });
     }
-
-    if (!exito || asignacion.size === 0) continue;
-
-    // Solo la cantidad exacta de cada cupo entra al combo; si la línea trae más, el resto se
-    // vende aparte a precio normal. El servidor lo parte en dos líneas de verdad; acá solo se
-    // refleja en el descuento mostrado (una sola fila en el carrito, sin tocar el carrito real).
-    let valorBase = 0;
-    asignacion.forEach((requerida, idx) => {
-      const cant = Math.min(requerida, cart[idx].cantidad);
-      valorBase += (cart[idx].PrecioBaseUnitario || cart[idx].PrecioVenta) * cant;
-    });
-    if (valorBase <= 0) continue;
-
-    let descuentoCombo = 0;
-    const valor = parseFloat(combo.ValorDescuento);
-    if (combo.TipoDescuento === 'PORCENTAJE') descuentoCombo = Math.round(valorBase * Math.min(100, Math.max(0, valor)) / 100);
-    else if (combo.TipoDescuento === 'MONTO_FIJO') descuentoCombo = Math.min(valorBase, Math.round(valor));
-    else descuentoCombo = Math.max(0, valorBase - Math.round(valor));
-    if (descuentoCombo <= 0) continue;
-
-    const idxs = Array.from(asignacion.keys());
-    let repartido = 0;
-    idxs.forEach((idx, n) => {
-      const requerida = asignacion.get(idx);
-      const cantParaShare = Math.min(requerida, cart[idx].cantidad);
-      const subtotalLista = (cart[idx].PrecioBaseUnitario || cart[idx].PrecioVenta) * cantParaShare;
-      const esUltimo = n === idxs.length - 1;
-      const share = esUltimo ? (descuentoCombo - repartido) : Math.round(descuentoCombo * (subtotalLista / valorBase));
-      repartido += share;
-      resultado[idx] = { monto: share, comboNombre: combo.Nombre };
-      reclamadas.add(idx);
-    });
   }
 
   return resultado;

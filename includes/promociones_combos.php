@@ -70,111 +70,117 @@ function aplicarCombosCarrito(PDO $pdo, array &$itemsProcesados): void
         $cupos = $stmtItemsCombo->fetchAll();
         if (empty($cupos)) continue;
 
-        $asignacionCombo = []; // idx de $itemsProcesados => cantidad que pide ese cupo (no siempre toda la línea)
-        $exito = true;
+        // El mismo combo puede armarse varias veces en una venta (ej. repuestos para 2 autos: 2 aceites +
+        // 2 filtros = 2 packs). Cada vuelta arma un pack con líneas todavía no reclamadas; las líneas con más
+        // cantidad se parten (ver más abajo), así el sobrante queda disponible para la vuelta siguiente.
+        // Se corta apenas no se puede armar otro pack (o por seguridad a las 50 vueltas).
+        for ($vuelta = 0; $vuelta < 50; $vuelta++) {
+            $asignacionCombo = []; // idx de $itemsProcesados => cantidad que pide ese cupo (no siempre toda la línea)
+            $exito = true;
 
-        foreach ($cupos as $cupo) {
-            $candidatoIdx = null;
-            $candidatoValor = -1;
+            foreach ($cupos as $cupo) {
+                $candidatoIdx = null;
+                $candidatoValor = -1;
 
-            foreach ($itemsProcesados as $idx => $it) {
-                if (!empty($it['esServicio']) || (float)($it['factor'] ?? 1) > 1.0) continue;
-                if (isset($reclamadas[$idx]) || isset($asignacionCombo[$idx])) continue;
+                foreach ($itemsProcesados as $idx => $it) {
+                    if (!empty($it['esServicio']) || (float)($it['factor'] ?? 1) > 1.0) continue;
+                    if (isset($reclamadas[$idx]) || isset($asignacionCombo[$idx])) continue;
 
-                $pid = (int)$it['prod']['ProductoID'];
-                if (!isset($infoProducto[$pid])) continue;
-                $info = $infoProducto[$pid];
+                    $pid = (int)$it['prod']['ProductoID'];
+                    if (!isset($infoProducto[$pid])) continue;
+                    $info = $infoProducto[$pid];
 
-                // Sin combo: línea marcada así (ej. presupuesto con combos desactivados) o con un precio
-                // distinto al de lista (precio editado a mano = precio final acordado, no se combina).
-                if (!empty($it['sin_combo']) || (int)$it['precio'] !== $info['precioLista']) continue;
+                    // Sin combo: línea marcada así (ej. presupuesto con combos desactivados) o con un precio
+                    // distinto al de lista (precio editado a mano = precio final acordado, no se combina).
+                    if (!empty($it['sin_combo']) || (int)$it['precio'] !== $info['precioLista']) continue;
 
-                $coincide = $cupo['ModoSeleccion'] === 'PRODUCTO_ESPECIFICO'
-                    ? ((int)$cupo['ProductoID'] === $pid)
-                    : ($info['tipo'] === $cupo['TipoRepuesto']);
-                if (!$coincide) continue;
-                if ((float)$it['cant'] < (float)$cupo['CantidadRequerida']) continue;
+                    $coincide = $cupo['ModoSeleccion'] === 'PRODUCTO_ESPECIFICO'
+                        ? ((int)$cupo['ProductoID'] === $pid)
+                        : ($info['tipo'] === $cupo['TipoRepuesto']);
+                    if (!$coincide) continue;
+                    if ((float)$it['cant'] < (float)$cupo['CantidadRequerida']) continue;
 
-                $valorLinea = $info['precioLista'] * (float)$it['cant'];
-                if ($valorLinea > $candidatoValor) {
-                    $candidatoValor = $valorLinea;
-                    $candidatoIdx = $idx;
+                    $valorLinea = $info['precioLista'] * (float)$it['cant'];
+                    if ($valorLinea > $candidatoValor) {
+                        $candidatoValor = $valorLinea;
+                        $candidatoIdx = $idx;
+                    }
                 }
+
+                if ($candidatoIdx === null) { $exito = false; break; }
+                $asignacionCombo[$candidatoIdx] = (float)$cupo['CantidadRequerida'];
             }
 
-            if ($candidatoIdx === null) { $exito = false; break; }
-            $asignacionCombo[$candidatoIdx] = (float)$cupo['CantidadRequerida'];
-        }
+            if (!$exito || empty($asignacionCombo)) break;
 
-        if (!$exito || empty($asignacionCombo)) continue;
+            // 4. Calcular cuánto descuenta el combo sobre la cantidad exacta de cada cupo (no sobre
+            //    toda la línea). Todavía no se toca nada: si el combo no rinde descuento (ej. un
+            //    precio cerrado mayor al de lista), se descarta sin haber partido ninguna línea.
+            $valorBase = 0;
+            foreach ($asignacionCombo as $idx => $requerida) {
+                $pid = (int)$itemsProcesados[$idx]['prod']['ProductoID'];
+                $valorBase += $infoProducto[$pid]['precioLista'] * $requerida;
+            }
+            if ($valorBase <= 0) break;
 
-        // 4. Calcular cuánto descuenta el combo sobre la cantidad exacta de cada cupo (no sobre
-        //    toda la línea). Todavía no se toca nada: si el combo no rinde descuento (ej. un
-        //    precio cerrado mayor al de lista), se descarta sin haber partido ninguna línea.
-        $valorBase = 0;
-        foreach ($asignacionCombo as $idx => $requerida) {
-            $pid = (int)$itemsProcesados[$idx]['prod']['ProductoID'];
-            $valorBase += $infoProducto[$pid]['precioLista'] * $requerida;
-        }
-        if ($valorBase <= 0) continue;
+            $tipo = $combo['TipoDescuento'];
+            $valor = (float)$combo['ValorDescuento'];
+            if ($tipo === 'PORCENTAJE') {
+                $descuentoCombo = (int)round($valorBase * min(100, max(0, $valor)) / 100);
+            } elseif ($tipo === 'MONTO_FIJO') {
+                $descuentoCombo = (int)min($valorBase, round($valor));
+            } else { // PRECIO_FIJO: el valor es el precio final que debe quedar el combo completo
+                $descuentoCombo = (int)max(0, $valorBase - round($valor));
+            }
+            if ($descuentoCombo <= 0) break;
 
-        $tipo = $combo['TipoDescuento'];
-        $valor = (float)$combo['ValorDescuento'];
-        if ($tipo === 'PORCENTAJE') {
-            $descuentoCombo = (int)round($valorBase * min(100, max(0, $valor)) / 100);
-        } elseif ($tipo === 'MONTO_FIJO') {
-            $descuentoCombo = (int)min($valorBase, round($valor));
-        } else { // PRECIO_FIJO: el valor es el precio final que debe quedar el combo completo
-            $descuentoCombo = (int)max(0, $valorBase - round($valor));
-        }
-        if ($descuentoCombo <= 0) continue;
+            // 5. Ahora sí: partir en dos las líneas que traen más cantidad de la que pide su cupo.
+            //    La cantidad exacta se va al combo; el resto queda como línea aparte a precio normal
+            //    (con la misma tasa por unidad que ya tenía esa línea, por si venía con una
+            //    promoción individual, para no perderla en el sobrante).
+            foreach ($asignacionCombo as $idx => $requerida) {
+                $cantLinea = (float)$itemsProcesados[$idx]['cant'];
+                $sobrante = $cantLinea - $requerida;
+                if ($sobrante <= 0.0001) continue;
 
-        // 5. Ahora sí: partir en dos las líneas que traen más cantidad de la que pide su cupo.
-        //    La cantidad exacta se va al combo; el resto queda como línea aparte a precio normal
-        //    (con la misma tasa por unidad que ya tenía esa línea, por si venía con una
-        //    promoción individual, para no perderla en el sobrante).
-        foreach ($asignacionCombo as $idx => $requerida) {
-            $cantLinea = (float)$itemsProcesados[$idx]['cant'];
-            $sobrante = $cantLinea - $requerida;
-            if ($sobrante <= 0.0001) continue;
+                $original = $itemsProcesados[$idx];
+                $tasaSubtotal = $original['cant'] > 0 ? $original['subtotal'] / $original['cant'] : $original['precio'];
+                $tasaDescuento = $original['cant'] > 0 ? $original['descuento'] / $original['cant'] : 0;
 
-            $original = $itemsProcesados[$idx];
-            $tasaSubtotal = $original['cant'] > 0 ? $original['subtotal'] / $original['cant'] : $original['precio'];
-            $tasaDescuento = $original['cant'] > 0 ? $original['descuento'] / $original['cant'] : 0;
+                $lineaSobrante = $original;
+                $lineaSobrante['cant'] = $sobrante;
+                $lineaSobrante['descuento'] = (int)round($tasaDescuento * $sobrante);
+                $lineaSobrante['subtotal'] = max(0, (int)round($tasaSubtotal * $sobrante));
+                unset($lineaSobrante['combo_nombre']);
+                $itemsProcesados[] = $lineaSobrante;
 
-            $lineaSobrante = $original;
-            $lineaSobrante['cant'] = $sobrante;
-            $lineaSobrante['descuento'] = (int)round($tasaDescuento * $sobrante);
-            $lineaSobrante['subtotal'] = max(0, (int)round($tasaSubtotal * $sobrante));
-            unset($lineaSobrante['combo_nombre']);
-            $itemsProcesados[] = $lineaSobrante;
+                // La línea original se reduce a la cantidad exacta que pide el cupo; su precio
+                // y subtotal se recalculan justo abajo desde el precio de lista.
+                $itemsProcesados[$idx]['cant'] = $requerida;
+            }
 
-            // La línea original se reduce a la cantidad exacta que pide el cupo; su precio
-            // y subtotal se recalculan justo abajo desde el precio de lista.
-            $itemsProcesados[$idx]['cant'] = $requerida;
-        }
+            // 6. Recalcular las líneas reclamadas desde el precio de lista (sin descuento
+            //    individual) y repartir el descuento del combo proporcional al valor de cada una.
+            $idxs = array_keys($asignacionCombo);
+            $repartido = 0;
+            foreach ($idxs as $n => $idx) {
+                $pid = (int)$itemsProcesados[$idx]['prod']['ProductoID'];
+                $precioLista = $infoProducto[$pid]['precioLista'];
+                $subtotalLista = (int)round($precioLista * (float)$itemsProcesados[$idx]['cant']);
 
-        // 6. Recalcular las líneas reclamadas desde el precio de lista (sin descuento
-        //    individual) y repartir el descuento del combo proporcional al valor de cada una.
-        $idxs = array_keys($asignacionCombo);
-        $repartido = 0;
-        foreach ($idxs as $n => $idx) {
-            $pid = (int)$itemsProcesados[$idx]['prod']['ProductoID'];
-            $precioLista = $infoProducto[$pid]['precioLista'];
-            $subtotalLista = (int)round($precioLista * (float)$itemsProcesados[$idx]['cant']);
+                $esUltimo = ($n === count($idxs) - 1);
+                $shareDescuento = $esUltimo
+                    ? ($descuentoCombo - $repartido)
+                    : (int)round($descuentoCombo * ($subtotalLista / $valorBase));
+                $repartido += $shareDescuento;
 
-            $esUltimo = ($n === count($idxs) - 1);
-            $shareDescuento = $esUltimo
-                ? ($descuentoCombo - $repartido)
-                : (int)round($descuentoCombo * ($subtotalLista / $valorBase));
-            $repartido += $shareDescuento;
+                $itemsProcesados[$idx]['precio'] = $precioLista;
+                $itemsProcesados[$idx]['descuento'] = $shareDescuento;
+                $itemsProcesados[$idx]['subtotal'] = max(0, $subtotalLista - $shareDescuento);
+                $itemsProcesados[$idx]['combo_nombre'] = $combo['Nombre'];
 
-            $itemsProcesados[$idx]['precio'] = $precioLista;
-            $itemsProcesados[$idx]['descuento'] = $shareDescuento;
-            $itemsProcesados[$idx]['subtotal'] = max(0, $subtotalLista - $shareDescuento);
-            $itemsProcesados[$idx]['combo_nombre'] = $combo['Nombre'];
-
-            $reclamadas[$idx] = true;
+                $reclamadas[$idx] = true;
+            }
         }
     }
 }

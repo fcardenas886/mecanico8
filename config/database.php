@@ -1,10 +1,13 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v5.3.0');
+define('APP_VERSION', 'v5.3.1');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v5.3.1' => [
+        'Combos: el mismo combo ahora se puede aplicar varias veces en una venta (ej. repuestos para 2 autos: 2 aceites + 2 filtros = 2 packs), tanto en líneas con cantidad 2 como en líneas separadas.',
+    ],
     'v5.3.0' => [
         'El presupuesto es el que vale: al aprobarlo, sus descuentos (combos y ofertas) quedan congelados línea por línea, y la Caja cobra exactamente ese total aunque después venza una oferta, se apague un combo o cambie un precio.',
         'Un presupuesto aprobado muestra siempre lo que se congeló al aprobar, no un recálculo con las ofertas de hoy. La Caja valida contra el presupuesto (línea, cantidad y que la orden no esté ya cobrada).',
