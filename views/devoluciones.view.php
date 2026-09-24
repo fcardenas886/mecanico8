@@ -283,16 +283,53 @@ async function buscarBoletaDevolucion() {
       throw new Error('La boleta ingresada ya se encuentra anulada.');
     }
 
-    if (data.detalles.length === 0) {
-      throw new Error('La boleta no registra ningún producto.');
+    ventaEnDevolucion = ventaId;
+
+    // Agrupar por producto_id para que productos con líneas partidas (combos o packs)
+    // se consoliden en una sola opción con su cantidad total comprada y disponible real.
+    const productosAgrupados = {};
+    data.detalles.forEach(i => {
+      const pid = i.producto_id;
+      if (!pid) return; // ignorar servicios sin producto
+      if (!productosAgrupados[pid]) {
+        productosAgrupados[pid] = {
+          producto_id: pid,
+          nombre: i.nombre,
+          cantidad: 0,
+          subtotal: 0,
+          ya_devuelto: parseFloat(i.ya_devuelto) || 0,
+          combos: [],
+        };
+      }
+      productosAgrupados[pid].cantidad += parseFloat(i.cantidad) || 0;
+      productosAgrupados[pid].subtotal += (i.subtotal != null ? parseInt(i.subtotal) : Math.round((parseFloat(i.cantidad) || 0) * (parseInt(i.precio) || 0)));
+      if (i.combo_aplicado && !productosAgrupados[pid].combos.includes(i.combo_aplicado)) {
+        productosAgrupados[pid].combos.push(i.combo_aplicado);
+      }
+    });
+
+    detallesVentaDevolucion = Object.values(productosAgrupados).map(p => {
+      const disponible = Math.max(0, p.cantidad - p.ya_devuelto);
+      const precioEfectivo = p.cantidad > 0 ? Math.round(p.subtotal / p.cantidad) : 0;
+      return {
+        producto_id: p.producto_id,
+        nombre: p.nombre,
+        cantidad: p.cantidad,
+        ya_devuelto: p.ya_devuelto,
+        disponible: disponible,
+        precio: precioEfectivo,
+        combo_aplicado: p.combos.join(', ')
+      };
+    });
+
+    if (detallesVentaDevolucion.length === 0) {
+      throw new Error('La boleta no registra ningún producto con inventario para devolver.');
     }
 
-    if (data.detalles.every(i => i.disponible <= 0)) {
+    if (detallesVentaDevolucion.every(i => i.disponible <= 0)) {
       throw new Error('Esta boleta ya no tiene productos disponibles para devolver (todo fue devuelto anteriormente).');
     }
 
-    ventaEnDevolucion = ventaId;
-    detallesVentaDevolucion = data.detalles;
     itemsDevolucion = [];
 
     // Poblar select. Los productos ya devueltos por completo se muestran deshabilitados,
@@ -335,7 +372,7 @@ function actualizarInfoProductoDev() {
   const alertaEl = document.getElementById('devComboAlerta');
   if (comboNombre) {
     document.getElementById('devComboAlertaTexto').textContent =
-      `Este producto se vendió como parte del combo "${comboNombre}". El reembolso corresponde a lo realmente pagado (con el descuento del combo ya aplicado), no al precio de lista.`;
+      `Este producto incluye unidades vendidas como parte del combo "${comboNombre}". El reembolso corresponde a lo realmente pagado (${fmtDev(parseInt(option.getAttribute('data-precio')))} c/u), no al precio de lista.`;
     alertaEl.style.display = 'block';
   } else {
     alertaEl.style.display = 'none';

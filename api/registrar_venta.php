@@ -325,6 +325,8 @@ try {
         VALUES (:pid, 'VENTA', :vid, :cant_fisica, :saldo, :val)
     ");
 
+    $stockSaldoCorriente = [];
+
     foreach ($itemsProcesados as $item) {
         if (!empty($item['esServicio'])) {
             // Mano de obra / terceros: sin producto ni stock detrás, no toca kardex.
@@ -345,13 +347,14 @@ try {
         }
 
         $p = $item['prod'];
+        $pid = (int)$p['ProductoID'];
         $cant = $item['cant'];
         $factor = $item['factor'];
         $unidadesFisicas = $cant * $factor;
 
         $stmtDetalle->execute([
             ':vid' => $ventaID,
-            ':pid' => $p['ProductoID'],
+            ':pid' => $pid,
             ':nombre_item' => $item['nombre_item'],
             ':cant' => $cant,
             ':factor' => $factor,
@@ -363,11 +366,16 @@ try {
             ':combo' => $item['combo_nombre'] ?? null
         ]);
 
-        $stmtUpdStock->execute([':cant_fisica' => $unidadesFisicas, ':pid' => $p['ProductoID']]);
+        $stmtUpdStock->execute([':cant_fisica' => $unidadesFisicas, ':pid' => $pid]);
 
-        $nuevoStock = $p['Stock'] - $unidadesFisicas;
+        if (!isset($stockSaldoCorriente[$pid])) {
+            $stockSaldoCorriente[$pid] = (float)$p['Stock'];
+        }
+        $stockSaldoCorriente[$pid] -= $unidadesFisicas;
+        $nuevoStock = $stockSaldoCorriente[$pid];
+
         $stmtKardex->execute([
-            ':pid' => $p['ProductoID'],
+            ':pid' => $pid,
             ':vid' => $ventaID,
             ':cant_fisica' => $unidadesFisicas,
             ':saldo' => $nuevoStock,

@@ -666,7 +666,7 @@ async function verDetalleVenta(id) {
         <tr>
           <td>
             <div style="font-weight: 600;">${escapeStr(item.nombre)}</div>
-            ${item.codigo_barra ? `<div style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace;">EAN: ${escapeStr(item.codigo_barra)}</div>` : ''}
+            ${(item.codigo_barra || item.codigo_barras) ? `<div style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace;">EAN: ${escapeStr(item.codigo_barra || item.codigo_barras)}</div>` : ''}
           </td>
           <td style="text-align: center; font-weight: 700;">${item.cantidad}</td>
           <td style="text-align: right;">${formatPesos(item.precio)}</td>

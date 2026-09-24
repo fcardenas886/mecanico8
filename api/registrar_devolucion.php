@@ -50,9 +50,18 @@ try {
     }
 
     $stmtFindP = $pdo->prepare("SELECT ProductoID FROM productos WHERE ProductoID = :id OR CodigoBarras = :barcode LIMIT 1");
-    $stmtDetalleVenta = $pdo->prepare("SELECT PrecioUnitario, Cantidad, Subtotal FROM detalleventas WHERE VentaID = :vid AND ProductoID = :pid");
+    // Agrupar por producto en la venta para contemplar líneas partidas (combos o packs)
+    $stmtDetalleVenta = $pdo->prepare("
+        SELECT SUM(Cantidad) AS CantidadTotal, 
+               SUM(Subtotal) AS SubtotalTotal, 
+               MAX(PrecioUnitario) AS PrecioUnitario
+        FROM detalleventas 
+        WHERE VentaID = :vid AND ProductoID = :pid
+    ");
     $stmtYaDev = $pdo->prepare("
-        SELECT COALESCE(SUM(dd.Cantidad), 0) FROM detalledevoluciones dd
+        SELECT COALESCE(SUM(dd.Cantidad), 0) AS CantidadYaDevuelta,
+               COALESCE(SUM(dd.MontoDevuelto), 0) AS MontoYaDevuelto
+        FROM detalledevoluciones dd
         JOIN devoluciones d ON dd.DevolucionID = d.DevolucionID
         WHERE d.VentaID = :vid AND dd.ProductoID = :pid
         FOR UPDATE
@@ -70,24 +79,33 @@ try {
 
         $stmtDetalleVenta->execute([':vid' => $ventaID, ':pid' => $productoID]);
         $detalleVenta = $stmtDetalleVenta->fetch();
+        $cantidadComprada = (float)($detalleVenta['CantidadTotal'] ?? 0);
+        $subtotalComprado = (int)($detalleVenta['SubtotalTotal'] ?? 0);
         $precioUnitario = (int)($detalleVenta['PrecioUnitario'] ?? 0);
-        if (!$detalleVenta || $precioUnitario <= 0) {
+
+        if (!$detalleVenta || $cantidadComprada <= 0) {
             throw new Exception("El producto ID $productoID no pertenece a la venta #$ventaID.");
         }
 
         $stmtYaDev->execute([':vid' => $ventaID, ':pid' => $productoID]);
-        $yaDevuelto = (float)$stmtYaDev->fetchColumn();
-        $disponible = (float)$detalleVenta['Cantidad'] - $yaDevuelto;
+        $devInfo = $stmtYaDev->fetch();
+        $yaDevuelto = (float)($devInfo['CantidadYaDevuelta'] ?? 0);
+        $montoYaDevuelto = (int)($devInfo['MontoYaDevuelto'] ?? 0);
+        $disponible = max(0.0, $cantidadComprada - $yaDevuelto);
 
-        if ($cantidad > $disponible) {
+        if ($cantidad > ($disponible + 0.0001)) {
             throw new Exception("Solo quedan $disponible unidades disponibles para devolver del producto ID $productoID en la venta #$ventaID.");
         }
 
-        // Reembolsar lo realmente pagado por unidad (Subtotal/Cantidad), no el precio de
-        // lista: si el producto tenía una promoción activa, PrecioUnitario no refleja
-        // el descuento que ya se aplicó al cobrar.
-        $precioEfectivo = (float)$detalleVenta['Subtotal'] / (float)$detalleVenta['Cantidad'];
-        $montoItem = (int)round($cantidad * $precioEfectivo);
+        // Reembolsar lo realmente pagado por unidad (Subtotal total / Cantidad total).
+        // Si se devuelve todo lo que resta disponible, se devuelve exactamente el saldo
+        // restante para evitar descuadres de redondeo por centavos.
+        if (abs($cantidad - $disponible) < 0.0001) {
+            $montoItem = max(0, $subtotalComprado - $montoYaDevuelto);
+        } else {
+            $precioEfectivo = $subtotalComprado / $cantidadComprada;
+            $montoItem = (int)round($cantidad * $precioEfectivo);
+        }
         $montoDevueltoTotal += $montoItem;
 
         $itemsProcesados[] = [
