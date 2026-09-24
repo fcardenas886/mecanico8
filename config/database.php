@@ -1,10 +1,13 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v5.0.0');
+define('APP_VERSION', 'v5.0.1');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v5.0.1' => [
+        'Márgenes: se corrigió el cálculo en Compras, Actualizar precios, Reportes de utilidades e Inventario para que sea sobre el costo (recargo), no sobre el precio de venta. Ej: costo $1.000 y venta $1.300 ahora muestra 30%, no 23,1%.',
+    ],
     'v5.0.0' => [
         'Presupuestos Inteligentes: Historial desplegable de repuestos y servicios previos utilizados en el vehículo con reutilización en 1 clic.',
         'Brújula de Presupuesto y Semáforo de Cobertura: Indicador visual en tiempo real para verificar que todas las peticiones del cliente y hallazgos técnicos estén contemplados.',

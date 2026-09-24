@@ -592,7 +592,7 @@
         <?php foreach ($categoriasInventario as $ci): ?>
           <?php 
             $margenCat = $ci['ValorVenta'] - $ci['ValorCosto'];
-            $pctCat = $ci['ValorVenta'] > 0 ? round(($margenCat / $ci['ValorVenta']) * 100, 1) : 0;
+            $pctCat = $ci['ValorCosto'] > 0 ? round(($margenCat / $ci['ValorCosto']) * 100, 1) : 0;
           ?>
           <tr>
             <td><strong style="color: var(--text-main);"><?= htmlspecialchars($ci['Categoria']) ?></strong></td>
@@ -775,7 +775,7 @@
       <i class="fa-solid fa-sack-dollar" style="color: var(--primary);"></i> Márgenes de Ganancia Real y Rentabilidad
     </h2>
     <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0.2rem 0 0 0;">
-      Cálculo de ganancia neta comparando el Precio de Venta facturado vs. Costo de Compra de cada artículo.
+      Margen sobre el costo: cuánto se ganó respecto a lo que costó cada artículo vendido.
     </p>
   </div>
 
@@ -825,8 +825,10 @@
           <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">No hay ventas registradas en el período seleccionado.</td></tr>
         <?php else: ?>
           <?php foreach ($reporteUtilidades as $row): ?>
-            <?php 
-              $margen = $row['TotalVentas'] > 0 ? round(($row['UtilidadEstimada'] / $row['TotalVentas']) * 100, 1) : 0;
+            <?php
+              // Margen sobre el costo (recargo), igual que en Compras y Actualizar precios.
+              // Los servicios se registran con costo $0: se marcan aparte, no aplica recargo.
+              $margen = $row['TotalCosto'] > 0 ? round(($row['UtilidadEstimada'] / $row['TotalCosto']) * 100, 1) : null;
             ?>
             <tr>
               <td style="font-weight: 600; color: #fff;"><?= htmlspecialchars($row['Producto']) ?></td>
@@ -835,7 +837,7 @@
               <td style="text-align: right; font-family: monospace;"><?= formatCLP($row['TotalVentas']) ?></td>
               <td style="text-align: right; color: var(--text-muted); font-family: monospace;"><?= formatCLP($row['TotalCosto']) ?></td>
               <td style="text-align: right; font-weight: 700; color: var(--success); font-family: monospace;"><?= formatCLP($row['UtilidadEstimada']) ?></td>
-              <td style="text-align: right;"><span class="badge badge-success"><?= $margen ?>%</span></td>
+              <td style="text-align: right;"><?= $margen === null ? '<span class="badge" title="Sin costo registrado (ej. servicio o mano de obra)">Sin costo</span>' : '<span class="badge badge-success">' . $margen . '%</span>' ?></td>
             </tr>
           <?php endforeach; ?>
         <?php endif; ?>

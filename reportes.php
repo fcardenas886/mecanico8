@@ -257,8 +257,9 @@ if ($tab === 'inventario') {
     ");
     $kpiInventario = $stmtInvGlobal->fetch(PDO::FETCH_ASSOC);
     $margenPotencialTotal = $kpiInventario['ValorTotalVenta'] - $kpiInventario['ValorTotalCosto'];
-    $margenPotencialPorc = $kpiInventario['ValorTotalVenta'] > 0 
-        ? round(($margenPotencialTotal / $kpiInventario['ValorTotalVenta']) * 100, 1) 
+    // Margen sobre el costo (recargo), igual que en Compras, Actualizar precios y Utilidades.
+    $margenPotencialPorc = $kpiInventario['ValorTotalCosto'] > 0
+        ? round(($margenPotencialTotal / $kpiInventario['ValorTotalCosto']) * 100, 1)
         : 0;
 
     // Desglose por Categoría
@@ -645,7 +646,7 @@ if ($esExport) {
 
         fputcsv($out, ['Producto', 'Categoria', 'Unidades Vendidas', 'Venta Total ($)', 'Costo Total ($)', 'Utilidad ($)', 'Margen %'], $delimiter);
         foreach ($reporteUtilidades as $ru) {
-            $mPorc = $ru['TotalVentas'] > 0 ? round(($ru['UtilidadEstimada'] / $ru['TotalVentas']) * 100, 1) : 0;
+            $mPorc = $ru['TotalCosto'] > 0 ? round(($ru['UtilidadEstimada'] / $ru['TotalCosto']) * 100, 1) : 0;
             fputcsv($out, [
                 $ru['Producto'],
                 $ru['Categoria'] ?: 'General',

@@ -180,7 +180,7 @@
         <i class="fa-solid fa-tags"></i> Ajustar Precios de Venta (Fase 2 de 2)
       </h2>
       <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
-        Revisa los costos nuevos y ajusta el **Precio de Venta** al público. El margen de utilidad (%) se recalculará dinámicamente en tiempo real al tipear.
+        Revisa los costos nuevos y ajusta el **Precio de Venta** al público. El margen de utilidad (%) sobre el costo se recalculará dinámicamente en tiempo real al tipear.
       </p>
 
       <div style="max-height: 280px; overflow-y: auto; border: 1px solid var(--border-dark); border-radius: 8px; margin-bottom: 1.5rem;">
@@ -476,8 +476,8 @@ function cargarGrillaFase2() {
   let html = '';
 
   productosCompraFase2.forEach(prod => {
-    // Calcular el margen inicial con el precio actual
-    const margin = prod.PrecioVentaActual > 0 ? Math.round(((prod.PrecioVentaActual - prod.CostoCompra) / prod.PrecioVentaActual) * 100) : 0;
+    // Calcular el margen inicial con el precio actual (sobre el costo, no sobre la venta)
+    const margin = prod.CostoCompra > 0 ? Math.round(((prod.PrecioVentaActual - prod.CostoCompra) / prod.CostoCompra) * 100) : 0;
     const badgeColor = margin >= 20 ? '#10b981' : (margin >= 5 ? '#f59e0b' : '#ef4444');
 
     html += `
@@ -508,7 +508,7 @@ function recalcularMargenItem(pid, costo) {
   const label = document.getElementById(`lblMargin_${pid}`);
   
   const pv = parseInt(input.value) || 0;
-  const margin = pv > 0 ? Math.round(((pv - costo) / pv) * 100) : -100;
+  const margin = costo > 0 ? Math.round(((pv - costo) / costo) * 100) : -100;
   
   label.textContent = margin + '%';
   const badgeColor = margin >= 20 ? '#10b981' : (margin >= 5 ? '#f59e0b' : '#ef4444');

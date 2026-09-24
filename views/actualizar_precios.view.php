@@ -5,7 +5,7 @@
       <span class="badge badge-primary" style="font-size: 0.75rem; vertical-align: middle;">v3.3.0</span>
     </h1>
     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0.25rem 0 0 0;">
-      Escanea códigos de barra o busca productos para ajustar precios y costos en lote con cálculo de margen en vivo.
+      Escanea códigos de barra o busca productos para ajustar precios y costos en lote con cálculo de margen en vivo (sobre el costo).
     </p>
   </div>
   <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
@@ -502,8 +502,9 @@ async function agregarItemABatch(producto, renderInmediato = true) {
 }
 
 function calcularMargen(precioVenta, costo) {
-  if (!precioVenta || precioVenta <= 0) return 0;
-  const margen = ((precioVenta - costo) / precioVenta) * 100;
+  // Margen sobre el costo (recargo): cuánto se gana respecto a lo que costó, no respecto a lo cobrado.
+  if (!costo || costo <= 0) return 0;
+  const margen = ((precioVenta - costo) / costo) * 100;
   return Math.round(margen * 10) / 10;
 }
 

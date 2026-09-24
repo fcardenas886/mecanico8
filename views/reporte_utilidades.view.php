@@ -1,7 +1,7 @@
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
   <div>
     <h1 style="font-size: 1.5rem; font-weight: 700;">Reporte de Utilidades y Márgenes de Ganancia</h1>
-    <p style="color: var(--text-muted); font-size: 0.9rem;">Cálculo de margen neto comparando Precio de Venta vs. Costo de Compra</p>
+    <p style="color: var(--text-muted); font-size: 0.9rem;">Margen sobre el costo: cuánto se ganó respecto a lo que costó cada producto vendido</p>
   </div>
 
   <form method="GET" action="reporte_utilidades.php" style="display: flex; gap: 0.5rem; align-items: center;">
@@ -59,8 +59,10 @@
         <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">No hay ventas registradas en el período seleccionado.</td></tr>
       <?php else: ?>
         <?php foreach ($reporte as $row): ?>
-          <?php 
-            $margen = $row['TotalVentas'] > 0 ? round(($row['UtilidadEstimada'] / $row['TotalVentas']) * 100, 1) : 0;
+          <?php
+            // Margen sobre el costo (recargo), igual que en Compras y Actualizar precios.
+            // Los servicios se registran con costo $0 (no aplica recargo): se marcan aparte.
+            $margen = $row['TotalCosto'] > 0 ? round(($row['UtilidadEstimada'] / $row['TotalCosto']) * 100, 1) : null;
           ?>
           <tr>
             <td style="font-weight: 600; color: #fff;"><?= htmlspecialchars($row['Producto']) ?></td>
@@ -69,7 +71,7 @@
             <td><?= formatCLP($row['TotalVentas']) ?></td>
             <td style="color: var(--text-muted);"><?= formatCLP($row['TotalCosto']) ?></td>
             <td style="font-weight: 700; color: var(--success);"><?= formatCLP($row['UtilidadEstimada']) ?></td>
-            <td><span class="badge badge-success"><?= $margen ?>%</span></td>
+            <td><?= $margen === null ? '<span class="badge" title="Sin costo registrado (ej. servicio o mano de obra)">Sin costo</span>' : '<span class="badge badge-success">' . $margen . '%</span>' ?></td>
           </tr>
         <?php endforeach; ?>
       <?php endif; ?>
