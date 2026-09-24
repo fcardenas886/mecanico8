@@ -782,31 +782,40 @@ async function reimprimirTicketVenta(id) {
     const detalleEl = document.getElementById('ticketDetalle');
     // Los combos se muestran como un descuento del pack al final del ticket (no repartidos en cada
     // producto, lo que confunde). Las ofertas propias de un producto sí quedan bajo su línea.
+    // La venta guarda cada pack en líneas separadas (para el stock y las devoluciones); en el
+    // ticket se juntan por producto y precio, como las vería el cliente (Aceite x2, Filtro x2).
     const packsV = {};
     let descOfertasV = 0;
-    detalleEl.innerHTML = data.detalles.map(i => {
-      const lineTotal = Math.round(i.cantidad * i.precio);
-      let promoLabel = '';
+    const lineasTicket = [];
+    const porClave = {};
+    data.detalles.forEach(i => {
       if (i.descuento > 0) {
-        if (i.combo_aplicado) {
-          packsV[i.combo_aplicado] = (packsV[i.combo_aplicado] || 0) + i.descuento;
-        } else {
-          descOfertasV += i.descuento;
-          promoLabel = `<div class="tk-item-sub" style="color: #666;">Oferta: -${formatPesos(i.descuento)}</div>`;
-        }
+        if (i.combo_aplicado) packsV[i.combo_aplicado] = (packsV[i.combo_aplicado] || 0) + i.descuento;
+        else descOfertasV += i.descuento;
       }
+      const clave = `${i.producto_id || 'S'}|${i.nombre}|${i.precio}`;
+      if (!porClave[clave]) {
+        porClave[clave] = { nombre: i.nombre, precio: i.precio, cantidad: 0, oferta: 0 };
+        lineasTicket.push(porClave[clave]);
+      }
+      porClave[clave].cantidad += i.cantidad;
+      if (i.descuento > 0 && !i.combo_aplicado) porClave[clave].oferta += i.descuento;
+    });
+    detalleEl.innerHTML = lineasTicket.map(l => {
+      const lineTotal = Math.round(l.cantidad * l.precio);
+      const promoLabel = l.oferta > 0
+        ? `<div class="tk-item-sub" style="color: #666;">Oferta: -${formatPesos(l.oferta)}</div>` : '';
       return `
         <div style="margin-bottom: 0.2rem;">
           <div class="tk-item-line">
-            <span>${escapeStr(i.nombre).substring(0, 24)}</span>
+            <span>${escapeStr(l.nombre).substring(0, 24)}</span>
             <span>${formatPesos(lineTotal)}</span>
           </div>
-          <div class="tk-item-sub">${i.cantidad} x ${formatPesos(i.precio)}</div>
+          <div class="tk-item-sub">${l.cantidad} x ${formatPesos(l.precio)}</div>
           ${promoLabel}
         </div>
       `;
     }).join('');
-
     // Subtotal a precio de lista, ofertas de productos, descuento de cada pack y descuento
     // adicional del cajero, cada uno por separado.
     const descuentoLineas = data.detalles.reduce((s, i) => s + (i.descuento || 0), 0);
