@@ -14,14 +14,14 @@
 //   mayor valor de lista, para que el ahorro mostrado sea el más atractivo posible.
 // - Solo se evalúan líneas de producto simple (factor de conversión = 1, sin código de
 //   pack). Los packs ya tienen su propio precio especial y no se cruzan con combos.
-// - Un combo reclama la línea completa del carrito, no una fracción de su cantidad. Si el
-//   cupo pide "≥1" y la línea trae 4 unidades, las 4 entran al combo (nunca cobra de más;
-//   en el peor caso es un poco más generoso de lo estrictamente necesario).
-// - EXCEPCIÓN: con PRECIO_FIJO (precio cerrado del pack) esa regla se invierte, porque un
-//   precio cerrado no escala con la cantidad. Si el cupo pide "≥1 litro" y el cliente lleva
-//   4, reclamar la línea completa dejaría los 4 litros al precio cerrado de 1 (fuga de
-//   dinero). Por eso PRECIO_FIJO exige cantidad EXACTA por cupo; si no calza, ese combo no
-//   se arma para esa línea (los % y montos fijos sí escalan bien y no necesitan esto).
+// - Con PORCENTAJE y MONTO_FIJO, un combo reclama la línea completa del carrito, no una
+//   fracción de su cantidad: si el cupo pide "≥1" y la línea trae 4 unidades, las 4 entran
+//   al combo (nunca cobra de más; en el peor caso es un poco más generoso de lo necesario).
+//   Es seguro porque ese descuento escala con la cantidad, no hay fuga posible.
+// - Con PRECIO_FIJO (precio cerrado del pack) eso NO es seguro: un precio cerrado no escala
+//   con la cantidad, así que si el cupo pide "1 litro" y el cliente lleva 4, la línea se
+//   PARTE en dos: 1 unidad se cobra al precio cerrado del combo, y las 3 restantes se venden
+//   aparte a precio normal (quedan como una línea extra en la boleta).
 
 /**
  * Aplica los combos activos sobre las líneas ya armadas de una venta.
@@ -73,7 +73,7 @@ function aplicarCombosCarrito(PDO $pdo, array &$itemsProcesados): void
         $cupos = $stmtItemsCombo->fetchAll();
         if (empty($cupos)) continue;
 
-        $asignacionCombo = []; // idx de $itemsProcesados => true, solo si el combo completo se logra armar
+        $asignacionCombo = []; // idx de $itemsProcesados => cantidad que pide ese cupo (no siempre toda la línea)
         $exito = true;
 
         foreach ($cupos as $cupo) {
@@ -92,13 +92,7 @@ function aplicarCombosCarrito(PDO $pdo, array &$itemsProcesados): void
                     ? ((int)$cupo['ProductoID'] === $pid)
                     : ($info['tipo'] === $cupo['TipoRepuesto']);
                 if (!$coincide) continue;
-
-                if ($combo['TipoDescuento'] === 'PRECIO_FIJO') {
-                    // Cantidad exacta: un precio cerrado no puede "regalar" el excedente.
-                    if (abs((float)$it['cant'] - (float)$cupo['CantidadRequerida']) > 0.0001) continue;
-                } else {
-                    if ((float)$it['cant'] < (float)$cupo['CantidadRequerida']) continue;
-                }
+                if ((float)$it['cant'] < (float)$cupo['CantidadRequerida']) continue;
 
                 $valorLinea = $info['precioLista'] * (float)$it['cant'];
                 if ($valorLinea > $candidatoValor) {
@@ -108,12 +102,39 @@ function aplicarCombosCarrito(PDO $pdo, array &$itemsProcesados): void
             }
 
             if ($candidatoIdx === null) { $exito = false; break; }
-            $asignacionCombo[$candidatoIdx] = true;
+            $asignacionCombo[$candidatoIdx] = (float)$cupo['CantidadRequerida'];
         }
 
         if (!$exito || empty($asignacionCombo)) continue;
 
-        // 4. Recalcular esas líneas desde el precio de lista (sin descuento individual)
+        // 4. Con PRECIO_FIJO, partir en dos las líneas que traen más cantidad de la que pide
+        //    su cupo: la cantidad exacta se va al combo, el resto queda como línea aparte a
+        //    precio normal (con la misma tasa por unidad que ya tenía esa línea, por si venía
+        //    con una promoción individual, para no perderla en el sobrante).
+        if ($combo['TipoDescuento'] === 'PRECIO_FIJO') {
+            foreach ($asignacionCombo as $idx => $requerida) {
+                $cantLinea = (float)$itemsProcesados[$idx]['cant'];
+                $sobrante = $cantLinea - $requerida;
+                if ($sobrante <= 0.0001) continue;
+
+                $original = $itemsProcesados[$idx];
+                $tasaSubtotal = $original['cant'] > 0 ? $original['subtotal'] / $original['cant'] : $original['precio'];
+                $tasaDescuento = $original['cant'] > 0 ? $original['descuento'] / $original['cant'] : 0;
+
+                $lineaSobrante = $original;
+                $lineaSobrante['cant'] = $sobrante;
+                $lineaSobrante['descuento'] = (int)round($tasaDescuento * $sobrante);
+                $lineaSobrante['subtotal'] = max(0, (int)round($tasaSubtotal * $sobrante));
+                unset($lineaSobrante['combo_nombre']);
+                $itemsProcesados[] = $lineaSobrante;
+
+                // La línea original se reduce a la cantidad exacta que pide el cupo; su precio
+                // y subtotal se recalculan más abajo desde el precio de lista.
+                $itemsProcesados[$idx]['cant'] = $requerida;
+            }
+        }
+
+        // 5. Recalcular esas líneas desde el precio de lista (sin descuento individual)
         //    y repartir el descuento del combo proporcional al valor de cada una.
         $valorBase = 0;
         foreach (array_keys($asignacionCombo) as $idx) {
