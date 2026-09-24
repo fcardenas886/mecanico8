@@ -96,7 +96,7 @@
   <p style="padding: 0 1.25rem 0.75rem; margin: 0; font-size: 0.82rem; color: var(--text-muted);">
     En vez de un producto, cada cupo pide un <strong>tipo de repuesto</strong> (Aceite, Filtro de Aceite...) o un producto puntual.
     Así, una sola regla "1 Aceite + 1 Filtro de Aceite" se aplica sola a cualquier marca que el cliente lleve, sin crear una promoción por cada combinación.
-    Se aplica automático en la Caja y no se acumula con el descuento individual del producto.
+    Se aplica automático en la Caja y no se acumula con el descuento individual del producto. Solo descuenta la cantidad que pide cada cupo: si el cliente lleva más, el resto se vende aparte a precio normal.
   </p>
 
   <table class="table">
@@ -270,7 +270,7 @@ function toggleComboDescuento() {
   const hint = document.getElementById('comboValorHint');
   if (tipo === 'PORCENTAJE') hint.textContent = 'Ej: 10 = 10% de descuento en los ítems que arman el combo.';
   else if (tipo === 'MONTO_FIJO') hint.textContent = 'Ej: 4000 = se descuentan $4.000 del total de esos ítems.';
-  else hint.textContent = 'Ej: 39990 = el combo completo queda en $39.990 en total. Úsalo solo con cupos de "Producto puntual", porque el precio de lista varía entre marcas. Ojo: con precio cerrado, la cantidad debe ser EXACTA (si el cupo pide 1 y el cliente lleva 2, no se arma el combo).';
+  else hint.textContent = 'Ej: 39990 = el combo completo queda en $39.990 en total. Úsalo solo con cupos de "Producto puntual", porque el precio de lista varía entre marcas. Si el cliente lleva más unidades de las que pide el cupo, solo esa cantidad queda al precio cerrado; el resto va a precio normal.';
 }
 
 // Arrancar el formulario con 2 cupos vacíos, que es el mínimo.

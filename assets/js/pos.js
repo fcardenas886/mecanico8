@@ -563,13 +563,12 @@ function calcularCombosCarrito() {
 
     if (!exito || asignacion.size === 0) continue;
 
-    // PRECIO_FIJO no escala con la cantidad: si la línea trae más de lo que pide el cupo,
-    // solo la cantidad exacta entra al valor base (el resto se vende aparte a precio normal
-    // — el servidor lo parte en dos líneas de verdad; acá solo se refleja en el descuento
-    // mostrado, sin tocar el carrito real).
+    // Solo la cantidad exacta de cada cupo entra al combo; si la línea trae más, el resto se
+    // vende aparte a precio normal. El servidor lo parte en dos líneas de verdad; acá solo se
+    // refleja en el descuento mostrado (una sola fila en el carrito, sin tocar el carrito real).
     let valorBase = 0;
     asignacion.forEach((requerida, idx) => {
-      const cant = combo.TipoDescuento === 'PRECIO_FIJO' ? Math.min(requerida, cart[idx].cantidad) : cart[idx].cantidad;
+      const cant = Math.min(requerida, cart[idx].cantidad);
       valorBase += (cart[idx].PrecioBaseUnitario || cart[idx].PrecioVenta) * cant;
     });
     if (valorBase <= 0) continue;
@@ -585,7 +584,7 @@ function calcularCombosCarrito() {
     let repartido = 0;
     idxs.forEach((idx, n) => {
       const requerida = asignacion.get(idx);
-      const cantParaShare = combo.TipoDescuento === 'PRECIO_FIJO' ? Math.min(requerida, cart[idx].cantidad) : cart[idx].cantidad;
+      const cantParaShare = Math.min(requerida, cart[idx].cantidad);
       const subtotalLista = (cart[idx].PrecioBaseUnitario || cart[idx].PrecioVenta) * cantParaShare;
       const esUltimo = n === idxs.length - 1;
       const share = esUltimo ? (descuentoCombo - repartido) : Math.round(descuentoCombo * (subtotalLista / valorBase));
