@@ -1,6 +1,7 @@
 // Lógica del Punto de Venta (POS) en JavaScript Vanilla con Modal Avanzado FormPagoPOS
 let cart = [];
 let productosCache = [];
+let combosCache = []; // combos vigentes con sus cupos, para la vista previa en el carrito
 let metodoSeleccionadoModal = 'Efectivo';
 let valeAplicado = null; // { codigo, disponible }
 let cotizacionActiva = null; // CotizacionID si la venta actual salió de una cotización
@@ -514,7 +515,84 @@ async function vaciarCarritoPos() {
   toast('Venta en proceso cancelada y carrito vaciado.', 'info');
 }
 
+// Vista previa de combos en el carrito (ej. "1 Aceite + 1 Filtro de Aceite"). El cobro
+// real siempre lo calcula y revalida el servidor (includes/promociones_combos.php); esto
+// solo evita que el cajero tenga que adivinar por qué salió más barato.
+async function cargarCombosActivos() {
+  try {
+    const res = await fetch('api/combos_activos.php');
+    const data = await res.json();
+    if (data.success) combosCache = data.combos;
+  } catch (e) {
+    combosCache = [];
+  }
+}
+
+// Misma lógica que el servidor: reparte el descuento del combo entre las líneas que
+// arman cada cupo (la de mayor valor de lista si hay varias candidatas), sin acumular
+// con la promoción individual del producto. Devuelve { idxDescuento: {monto, comboNombre} }.
+function calcularCombosCarrito() {
+  const resultado = {};
+  const reclamadas = new Set();
+
+  for (const combo of combosCache) {
+    const asignacion = new Map();
+    let exito = true;
+
+    for (const cupo of combo.cupos) {
+      let mejorIdx = null;
+      let mejorValor = -1;
+
+      cart.forEach((item, idx) => {
+        if (reclamadas.has(idx) || asignacion.has(idx)) return;
+        if ((item.factor || 1) > 1) return; // los packs no se cruzan con combos
+
+        const coincide = cupo.ModoSeleccion === 'PRODUCTO_ESPECIFICO'
+          ? String(item.ProductoID) === String(cupo.ProductoID)
+          : item.TipoRepuesto === cupo.TipoRepuesto;
+        if (!coincide) return;
+        if (item.cantidad < parseFloat(cupo.CantidadRequerida)) return;
+
+        const valorLinea = (item.PrecioBaseUnitario || item.PrecioVenta) * item.cantidad;
+        if (valorLinea > mejorValor) { mejorValor = valorLinea; mejorIdx = idx; }
+      });
+
+      if (mejorIdx === null) { exito = false; break; }
+      asignacion.set(mejorIdx, true);
+    }
+
+    if (!exito || asignacion.size === 0) continue;
+
+    let valorBase = 0;
+    asignacion.forEach((_, idx) => {
+      valorBase += (cart[idx].PrecioBaseUnitario || cart[idx].PrecioVenta) * cart[idx].cantidad;
+    });
+    if (valorBase <= 0) continue;
+
+    let descuentoCombo = 0;
+    const valor = parseFloat(combo.ValorDescuento);
+    if (combo.TipoDescuento === 'PORCENTAJE') descuentoCombo = Math.round(valorBase * Math.min(100, Math.max(0, valor)) / 100);
+    else if (combo.TipoDescuento === 'MONTO_FIJO') descuentoCombo = Math.min(valorBase, Math.round(valor));
+    else descuentoCombo = Math.max(0, valorBase - Math.round(valor));
+    if (descuentoCombo <= 0) continue;
+
+    const idxs = Array.from(asignacion.keys());
+    let repartido = 0;
+    idxs.forEach((idx, n) => {
+      const subtotalLista = (cart[idx].PrecioBaseUnitario || cart[idx].PrecioVenta) * cart[idx].cantidad;
+      const esUltimo = n === idxs.length - 1;
+      const share = esUltimo ? (descuentoCombo - repartido) : Math.round(descuentoCombo * (subtotalLista / valorBase));
+      repartido += share;
+      resultado[idx] = { monto: share, comboNombre: combo.Nombre };
+      reclamadas.add(idx);
+    });
+  }
+
+  return resultado;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  cargarCombosActivos();
   const searchInput = document.getElementById('posSearch');
   const superSearchInput = document.getElementById('posSearchSuper');
 
@@ -775,6 +853,7 @@ function agregarAlCarrito(producto, cantidad = 1, factor = 1, precioPack = null,
       ProductoID: producto.ProductoID,
       CodigoBarras: codigoUsado,
       CodigoPLU: producto.CodigoPLU || '',
+      TipoRepuesto: producto.TipoRepuesto || null,
       Nombre: nombreFinal,
       NombreBase: producto.Nombre,
       PrecioBaseUnitario: precioBaseUnitario,
@@ -853,9 +932,21 @@ function cambiarCantidad(index, delta) {
   renderCart();
 }
 
+function obtenerComboDeItem(item) {
+  const idx = cart.indexOf(item);
+  if (idx === -1) return null;
+  return calcularCombosCarrito()[idx] || null;
+}
+
 function calcularDescuentoItem(item) {
+  // Un combo (ej. "1 Aceite + 1 Filtro") no se acumula con la promoción individual del
+  // producto: si la línea quedó reclamada por un combo, ese descuento manda y se ignora
+  // la promoción individual, igual que hace el servidor en includes/promociones_combos.php.
+  const combo = obtenerComboDeItem(item);
+  if (combo) return combo.monto;
+
   if (!item.PromocionID || !item.PromoTipo) return 0;
-  
+
   if (item.PromoTipo === 'DESCUENTO_UNIT') {
     const descUnit = Math.round(item.PrecioVenta * (item.PromoDescPorc / 100));
     return Math.round(item.cantidad * descUnit);
@@ -901,10 +992,13 @@ function renderCart() {
         const desc = calcularDescuentoItem(item);
         const subtotalFinal = subtotalNormal - desc;
 
+        const comboItem = obtenerComboDeItem(item);
         let promoBadgeHtml = '';
         let oldPriceHtml = '';
 
-        if (desc > 0) {
+        if (comboItem) {
+          promoBadgeHtml = `<span class="promo-badge promo-badge--pack" title="${escapeHtml(comboItem.comboNombre)}">🏷️ ${escapeHtml(comboItem.comboNombre)}</span>`;
+        } else if (desc > 0) {
           if (item.PromoTipo === 'DESCUENTO_UNIT') {
             promoBadgeHtml = `<span class="promo-badge">-${item.PromoDescPorc}% Dcto</span>`;
           } else if (item.PromoTipo === 'MULTIBUY') {
@@ -960,8 +1054,11 @@ function renderCart() {
         const desc = calcularDescuentoItem(item);
         const subtotalFinal = subtotalNormal - desc;
 
+        const comboItemSuper = obtenerComboDeItem(item);
         let promoCellHtml = '<span style="color: var(--text-muted);">&minus;</span>';
-        if (desc > 0) {
+        if (comboItemSuper) {
+          promoCellHtml = `<span class="promo-badge promo-badge--pack" title="${escapeHtml(comboItemSuper.comboNombre)}">🏷️ Combo (-$${formatNumber(desc)})</span>`;
+        } else if (desc > 0) {
           if (item.PromoTipo === 'DESCUENTO_UNIT') {
             promoCellHtml = `<span class="promo-badge">-${item.PromoDescPorc}% ($${formatNumber(desc)})</span>`;
           } else if (item.PromoTipo === 'MULTIBUY') {
@@ -1670,6 +1767,17 @@ function mostrarTicket(data, items, total, pagado, vuelto, pagos, meta) {
     descRow.style.display = 'none';
   }
   document.getElementById('ticketTotal').textContent = `$${formatNumber(total)}`;
+
+  // Nombres de los combos que realmente aplicó el servidor (fuente autoritativa),
+  // para que el cliente sepa a qué corresponde el descuento en su boleta.
+  const comboNotaEl = document.getElementById('ticketComboNota');
+  const nombresCombo = [...new Set((data.combos_aplicados || []).map(c => c.combo_nombre))];
+  if (nombresCombo.length > 0) {
+    comboNotaEl.textContent = `🏷️ Incluye ${nombresCombo.map(n => `"${n}"`).join(', ')}`;
+    comboNotaEl.style.display = 'block';
+  } else {
+    comboNotaEl.style.display = 'none';
+  }
 
   const pagosEl = document.getElementById('ticketPagos');
   const listaPagos = (pagos && pagos.length)

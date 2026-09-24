@@ -171,6 +171,12 @@ try {
         ];
     }
 
+    // Combos (ej. "1 Aceite + 1 Filtro de Aceite"): se evalúan y aplican en el servidor,
+    // nunca en base a lo que haya calculado el carrito. Puede modificar 'descuento' y
+    // 'subtotal' de las líneas reclamadas, así que el bruto se recalcula después.
+    aplicarCombosCarrito($pdo, $itemsProcesados);
+    $subtotalBruto = array_sum(array_column($itemsProcesados, 'subtotal'));
+
     $montoTotal = max(0, $subtotalBruto - $descuentoGlobal);
 
     // Un Vale de Devolución (Nota de Crédito / Cambio de Mercadería) reduce el total
@@ -293,8 +299,8 @@ try {
 
     // 3. Insertar DetalleVentas, Actualizar Stock y Kardex
     $stmtDetalle = $pdo->prepare("
-        INSERT INTO detalleventas (VentaID, ProductoID, NombreItem, Cantidad, FactorConversion, PrecioUnitario, CostoUnitario, Descuento, EsAfecto, Subtotal)
-        VALUES (:vid, :pid, :nombre_item, :cant, :factor, :precio, :costo, :desc, :afecto, :subtotal)
+        INSERT INTO detalleventas (VentaID, ProductoID, NombreItem, Cantidad, FactorConversion, PrecioUnitario, CostoUnitario, Descuento, EsAfecto, Subtotal, ComboAplicado)
+        VALUES (:vid, :pid, :nombre_item, :cant, :factor, :precio, :costo, :desc, :afecto, :subtotal, :combo)
     ");
     
     $stmtUpdStock = $pdo->prepare("UPDATE productos SET Stock = Stock - :cant_fisica WHERE ProductoID = :pid");
@@ -317,7 +323,8 @@ try {
                 ':costo' => $item['costo'],
                 ':desc' => $item['descuento'],
                 ':afecto' => true,
-                ':subtotal' => $item['subtotal']
+                ':subtotal' => $item['subtotal'],
+                ':combo' => null
             ]);
             continue;
         }
@@ -337,7 +344,8 @@ try {
             ':costo' => $item['costo'],
             ':desc' => $item['descuento'],
             ':afecto' => $p['EsAfecto'],
-            ':subtotal' => $item['subtotal']
+            ':subtotal' => $item['subtotal'],
+            ':combo' => $item['combo_nombre'] ?? null
         ]);
 
         $stmtUpdStock->execute([':cant_fisica' => $unidadesFisicas, ':pid' => $p['ProductoID']]);
@@ -479,13 +487,27 @@ try {
         }
     }
 
+    // Combos realmente aplicados (calculados por el servidor), para que el ticket
+    // no tenga que adivinar: por producto, cuánto se descontó y de qué combo vino.
+    $combosAplicados = [];
+    foreach ($itemsProcesados as $item) {
+        if (!empty($item['combo_nombre'])) {
+            $combosAplicados[] = [
+                'producto_id' => $item['prod']['ProductoID'] ?? null,
+                'combo_nombre' => $item['combo_nombre'],
+                'descuento' => $item['descuento'],
+            ];
+        }
+    }
+
     $resPayload = [
         'success' => true,
         'venta_id' => $ventaID,
         'total' => $montoTotal,
         'vuelto' => $vuelto,
         'puntos_ganados' => $puntosGanados,
-        'fecha' => date('d/m/Y H:i:s')
+        'fecha' => date('d/m/Y H:i:s'),
+        'combos_aplicados' => $combosAplicados,
     ];
 
     if ($dteResponse) {

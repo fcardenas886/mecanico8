@@ -143,6 +143,9 @@
             <i class="fa-solid fa-plus"></i> Agregar
           </button>
         </div>
+        <div id="devComboAlerta" style="display: none; margin-top: 0.75rem; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; border-radius: 8px; padding: 0.6rem 0.85rem; font-size: 0.8rem;">
+          <i class="fa-solid fa-triangle-exclamation"></i> <span id="devComboAlertaTexto"></span>
+        </div>
       </div>
 
       <!-- Grilla de productos a devolver -->
@@ -295,8 +298,8 @@ async function buscarBoletaDevolucion() {
     // Poblar select. Los productos ya devueltos por completo se muestran deshabilitados,
     // para que quede claro por qué no se pueden elegir en vez de dejarlo ambiguo.
     selectEl.innerHTML = detallesVentaDevolucion.map(i => `
-      <option value="${i.producto_id}" data-disponible="${i.disponible}" data-precio="${i.precio}" ${i.disponible <= 0 ? 'disabled' : ''}>
-        ${i.nombre} (Comprado: ${i.cantidad}${i.ya_devuelto > 0 ? `, ya devuelto: ${i.ya_devuelto}` : ''} - Disponible: ${i.disponible})
+      <option value="${i.producto_id}" data-disponible="${i.disponible}" data-precio="${i.precio}" data-combo="${i.combo_aplicado ? i.combo_aplicado.replace(/"/g, '&quot;') : ''}" ${i.disponible <= 0 ? 'disabled' : ''}>
+        ${i.combo_aplicado ? '🏷️ ' : ''}${i.nombre} (Comprado: ${i.cantidad}${i.ya_devuelto > 0 ? `, ya devuelto: ${i.ya_devuelto}` : ''} - Disponible: ${i.disponible})
       </option>
     `).join('');
 
@@ -325,6 +328,18 @@ function actualizarInfoProductoDev() {
   document.getElementById('devCantidadInput').max = restante;
   document.getElementById('devCantidadInput').value = restante > 0 ? restante : '';
   document.getElementById('devMaxCantLabel').textContent = `Máx. disponible: ${restante}`;
+
+  // Aviso: este producto se vendió como parte de un combo, así que el precio que se
+  // reembolsa (data-precio, ya con el descuento del combo repartido) es menor al de lista.
+  const comboNombre = option.getAttribute('data-combo');
+  const alertaEl = document.getElementById('devComboAlerta');
+  if (comboNombre) {
+    document.getElementById('devComboAlertaTexto').textContent =
+      `Este producto se vendió como parte del combo "${comboNombre}". El reembolso corresponde a lo realmente pagado (con el descuento del combo ya aplicado), no al precio de lista.`;
+    alertaEl.style.display = 'block';
+  } else {
+    alertaEl.style.display = 'none';
+  }
 }
 
 function agregarProductoADevolucion() {

@@ -43,7 +43,7 @@ try {
     // 2. Obtener detalle de productos vendidos y cantidad ya devuelta
     $stmtD = $pdo->prepare("
         SELECT dv.ProductoID, dv.Cantidad, dv.FactorConversion, dv.PrecioUnitario, dv.CostoUnitario, dv.Descuento, dv.Subtotal, dv.EsAfecto,
-               COALESCE(dv.NombreItem, p.Nombre) AS Nombre, p.CodigoBarras,
+               dv.ComboAplicado, COALESCE(dv.NombreItem, p.Nombre) AS Nombre, p.CodigoBarras,
                COALESCE((
                    SELECT SUM(dd.Cantidad)
                    FROM detalledevoluciones dd
@@ -224,7 +224,8 @@ try {
                 'costo' => (int)$d['CostoUnitario'],
                 'descuento' => (int)$d['Descuento'],
                 'subtotal' => (int)$d['Subtotal'],
-                'es_afecto' => (bool)$d['EsAfecto']
+                'es_afecto' => (bool)$d['EsAfecto'],
+                'combo_aplicado' => $d['ComboAplicado']
             ];
         }, $detalles)
     ]);

@@ -1,10 +1,15 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v5.0.1');
+define('APP_VERSION', 'v5.1.0');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v5.1.0' => [
+        'Nuevo: Combos por tipo de repuesto en Promociones (ej. "1 Aceite + 1 Filtro de Aceite"), con descuento en % o monto fijo. Se aplican solos a cualquier marca que el cliente lleve, sin crear una promoción por cada combinación.',
+        'El combo se detecta y muestra en la Caja antes de cobrar, y no se acumula con el descuento individual del producto.',
+        'El descuento del combo se reparte proporcional entre los productos, para que una devolución parcial reembolse lo realmente pagado, no el precio de lista. Devoluciones avisa cuando un producto vendido fue parte de un combo.',
+    ],
     'v5.0.1' => [
         'Márgenes: se corrigió el cálculo en Compras, Actualizar precios, Reportes de utilidades e Inventario para que sea sobre el costo (recargo), no sobre el precio de venta. Ej: costo $1.000 y venta $1.300 ahora muestra 30%, no 23,1%.',
     ],
