@@ -1,10 +1,17 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v5.3.7');
+define('APP_VERSION', 'v5.4.0');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v5.4.0' => [
+        'Presupuesto rediseñado a pantalla completa: tarjeta informativa compacta arriba con lo que pidió el cliente y los hallazgos del mecánico, y abajo la tabla de presupuesto agrupada en Mano de obra, Repuestos y Terceros.',
+        'Agregar repuesto, servicio o mano de obra libre en tres formularios simples (la lista de repuestos se filtra por nombre, marca o N° de parte), más sugerencias de un clic con lo que ya se usó en ese auto o en su modelo.',
+        'Aprobación parcial: el cliente puede aprobar solo algunos ítems, marcándolos en la tabla.',
+        'Precio y cantidad se editan directo en la tabla, y el total se actualiza al instante con combos y ofertas incluidos (antes se mostraba sin descuentos hasta recargar).',
+        'Si se agrega un repuesto o servicio que ya está, se suma la cantidad en vez de duplicar la línea. Cabecera fija, botones de WhatsApp y PDF accesibles arriba y abajo junto al total, auto-guardado en tiempo real y plazo de entrega con respaldo formal (a contar de recepción de repuestos y aprobación).',
+    ],
     'v5.3.7' => [
         'Diagnóstico simplificado: retiro de la cuadrícula de chequeo de niveles y fluidos a petición del cliente, manteniendo la caja de Observaciones de Estación de Servicio.',
     ],

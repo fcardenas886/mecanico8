@@ -429,7 +429,7 @@ function guardarPDF() {
   <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.85rem 1rem; font-size: 0.8rem; color: #475569; margin-bottom: 2rem;">
     <?php if (!empty($presupuesto['TiempoEntrega'])): ?>
       <div style="margin-bottom: 0.4rem;">
-        <strong>Tiempo estimado de entrega:</strong> <?= htmlspecialchars($presupuesto['TiempoEntrega']) ?> (a contar de la recepción de repuestos y aprobación formal).
+        <strong>Tiempo estimado de entrega:</strong> <?= htmlspecialchars(!str_contains(mb_strtolower($presupuesto['TiempoEntrega']), 'a contar') ? trim($presupuesto['TiempoEntrega']) . ' (a contar de la recepción de repuestos y aprobación formal).' : trim($presupuesto['TiempoEntrega'])) ?>
       </div>
     <?php endif; ?>
     <div>

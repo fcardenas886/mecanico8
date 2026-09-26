@@ -86,7 +86,9 @@ if (!function_exists('mensajePresupuestoWhatsApp')) {
         $msg .= "💰 *Monto Total:* $" . number_format($totalPresupuesto, 0, ',', '.') . " CLP\n";
 
         if (!empty($presupuesto['TiempoEntrega'])) {
-            $msg .= "⏱️ *Tiempo estimado de entrega:* " . $presupuesto['TiempoEntrega'] . "\n";
+            $tiempo = trim($presupuesto['TiempoEntrega']);
+            $sufijo = !str_contains(mb_strtolower($tiempo), 'a contar') ? ' (a contar de la recepción de repuestos y aprobación formal)' : '';
+            $msg .= "⏱️ *Tiempo estimado de entrega:* {$tiempo}{$sufijo}\n";
         }
 
         $msg .= "\nPuedes responder a este mensaje indicándonos si *apruebas* los trabajos para dar inicio a la reparación de inmediato. ¡Muchas gracias!";
