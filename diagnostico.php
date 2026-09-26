@@ -65,74 +65,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->prepare("DELETE FROM diagnosticoot WHERE DiagnosticoID = :id AND OrdenTrabajoID = :ot")
             ->execute([':id' => $diagId, ':ot' => $otId]);
         $message = 'Hallazgo eliminado.';
-    } elseif ($action === 'guardar_estacion' || $action === 'guardar_y_cotizar_fluidos' || $action === 'cargar_fluidos_presupuesto') {
-        if ($action === 'guardar_estacion' || $action === 'guardar_y_cotizar_fluidos') {
-            $est = $_POST['estacion'] ?? [];
-            $motorNivel = in_array($est['motor_nivel'] ?? '', ['Normal', 'Bajo', 'No revisado'], true) ? $est['motor_nivel'] : 'Normal';
-            $motorCambio = !empty($est['motor_cambio']) ? 1 : 0;
-            $filtroCambio = !empty($est['filtro_cambio']) ? 1 : 0;
-            $dhNivel = in_array($est['dh_nivel'] ?? '', ['Normal', 'Bajo', 'No aplica'], true) ? $est['dh_nivel'] : 'Normal';
-            $cajaNivel = in_array($est['caja_nivel'] ?? '', ['Normal', 'Bajo', 'No revisado'], true) ? $est['caja_nivel'] : 'Normal';
-            $cajaCambio = !empty($est['caja_cambio']) ? 1 : 0;
-            $frenosNivel = in_array($est['frenos_nivel'] ?? '', ['Normal', 'Bajo', 'Contaminado'], true) ? $est['frenos_nivel'] : 'Normal';
-            $frenosCambio = !empty($est['frenos_cambio']) ? 1 : 0;
-            $radiadorNivel = in_array($est['radiador_nivel'] ?? '', ['Normal', 'Bajo', 'No revisado'], true) ? $est['radiador_nivel'] : 'Normal';
-            $radiadorAnticong = !empty($est['radiador_anticongelante']) ? 1 : 0;
-            $lavVidrioCarga = !empty($est['lav_vidrio_carga']) ? 1 : 0;
-            $lavadoCarroceria = in_array($est['lavado_carroceria'] ?? '', ['No', 'Basico', 'Completo'], true) ? $est['lavado_carroceria'] : 'No';
-            $obsEstacion = trim($est['observaciones'] ?? '');
-            
-            $aceiteKm = (int)($est['aceite_intervalo_km'] ?? 10000);
-            if ($aceiteKm <= 0) $aceiteKm = 10000;
-            $aceiteMeses = (int)($est['aceite_intervalo_meses'] ?? 6);
-            if ($aceiteMeses <= 0) $aceiteMeses = 6;
-
-            $frenosKm = (int)($est['frenos_intervalo_km'] ?? 25000);
-            if ($frenosKm <= 0) $frenosKm = 25000;
-            $frenosMeses = (int)($est['frenos_intervalo_meses'] ?? 12);
-            if ($frenosMeses <= 0) $frenosMeses = 12;
-
-            $stmtEst = $pdo->prepare("
-                INSERT INTO estacionservicio_ot
-                    (OrdenTrabajoID, MotorNivel, MotorCambio, FiltroCambio, AceiteIntervaloKm, AceiteIntervaloMeses,
-                     DHNivel, CajaNivel, CajaCambio, FrenosNivel, FrenosCambio, FrenosIntervaloKm, FrenosIntervaloMeses,
-                     RadiadorNivel, RadiadorAnticongelante, LavVidrioCarga, LavadoCarroceria, Observaciones)
-                VALUES
-                    (:ot, :mniv, :mcamb, :fcamb, :akm, :ames,
-                     :dhniv, :cniv, :ccamb, :fniv, :fcamb2, :fkm, :fmes,
-                     :rniv, :rantic, :lvcarga, :lav, :obs)
-                ON DUPLICATE KEY UPDATE
-                    MotorNivel = VALUES(MotorNivel),
-                    MotorCambio = VALUES(MotorCambio),
-                    FiltroCambio = VALUES(FiltroCambio),
-                    AceiteIntervaloKm = VALUES(AceiteIntervaloKm),
-                    AceiteIntervaloMeses = VALUES(AceiteIntervaloMeses),
-                    DHNivel = VALUES(DHNivel),
-                    CajaNivel = VALUES(CajaNivel),
-                    CajaCambio = VALUES(CajaCambio),
-                    FrenosNivel = VALUES(FrenosNivel),
-                    FrenosCambio = VALUES(FrenosCambio),
-                    FrenosIntervaloKm = VALUES(FrenosIntervaloKm),
-                    FrenosIntervaloMeses = VALUES(FrenosIntervaloMeses),
-                    RadiadorNivel = VALUES(RadiadorNivel),
-                    RadiadorAnticongelante = VALUES(RadiadorAnticongelante),
-                    LavVidrioCarga = VALUES(LavVidrioCarga),
-                    LavadoCarroceria = VALUES(LavadoCarroceria),
-                    Observaciones = VALUES(Observaciones)
-            ");
-            $stmtEst->execute([
-                ':ot' => $otId,
-                ':mniv' => $motorNivel, ':mcamb' => $motorCambio, ':fcamb' => $filtroCambio,
-                ':akm' => $aceiteKm, ':ames' => $aceiteMeses,
-                ':dhniv' => $dhNivel, ':cniv' => $cajaNivel, ':ccamb' => $cajaCambio,
-                ':fniv' => $frenosNivel, ':fcamb2' => $frenosCambio,
-                ':fkm' => $frenosKm, ':fmes' => $frenosMeses,
-                ':rniv' => $radiadorNivel, ':rantic' => $radiadorAnticong,
-                ':lvcarga' => $lavVidrioCarga, ':lav' => $lavadoCarroceria,
-                ':obs' => $obsEstacion ?: null
-            ]);
-            $message = 'Chequeo de niveles y fluidos guardado correctamente.';
-        }
+    } elseif ($action === 'guardar_estacion') {
+        $est = $_POST['estacion'] ?? [];
+        $obsEstacion = trim($est['observaciones'] ?? '');
+        $stmtEst = $pdo->prepare("
+            INSERT INTO estacionservicio_ot (OrdenTrabajoID, Observaciones)
+            VALUES (:ot, :obs)
+            ON DUPLICATE KEY UPDATE Observaciones = VALUES(Observaciones)
+        ");
+        $stmtEst->execute([':ot' => $otId, ':obs' => $obsEstacion ?: null]);
+        $message = 'Observaciones de estación de servicio guardadas correctamente.';
 
         // Si se solicitó cargar al presupuesto
         if ($action === 'guardar_y_cotizar_fluidos' || $action === 'cargar_fluidos_presupuesto') {

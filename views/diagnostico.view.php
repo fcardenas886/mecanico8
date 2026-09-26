@@ -111,8 +111,37 @@ $badgeClase = [
       <?php endif; ?>
     </div>
   </div>
-</div>
+<!-- Observaciones de Estación de Servicio -->
+<div class="dg-section">
+  <div style="margin-bottom: 0.6rem;">
+    <h2 style="font-size: 0.95rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+      <i class="fa-solid fa-clipboard-list" style="color: #38bdf8;"></i> Observaciones de Estación de Servicio
+    </h2>
+    <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.2rem 0 0 0;">
+      Anotaciones de la inspección inicial o detalles técnicos generales del vehículo.
+    </p>
+  </div>
 
+  <?php if (!$esCerrado): ?>
+    <form method="POST" action="diagnostico.php?id=<?= $otId ?>" style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap;">
+      <?= csrfField() ?>
+      <div style="flex: 1; min-width: 260px;">
+        <input type="text" name="estacion[observaciones]" class="form-control" placeholder="Ej: Fuga leve en manguera superior de radiador, aceite motor degradado..." value="<?= htmlspecialchars($estacion['Observaciones'] ?? '') ?>">
+      </div>
+      <button type="submit" name="action" value="guardar_estacion" class="btn btn-secondary">
+        <i class="fa-solid fa-floppy-disk"></i> Guardar Observación
+      </button>
+    </form>
+  <?php else: ?>
+    <?php if (!empty($estacion['Observaciones'])): ?>
+      <div style="font-size: 0.85rem; color: #cbd5e1; background: rgba(255,255,255,0.02); padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--border-dark);">
+        <?= htmlspecialchars($estacion['Observaciones']) ?>
+      </div>
+    <?php else: ?>
+      <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0; font-style: italic;">Sin observaciones registradas.</p>
+    <?php endif; ?>
+  <?php endif; ?>
+</div>
 
 <?php if (in_array($ot['Estado'], ['Diagnosticado', 'Diagnóstico no aplica'], true)): ?>
   <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid var(--success); color: #34d399; padding: 0.85rem 1rem; border-radius: 8px; margin-bottom: 1.25rem;">
