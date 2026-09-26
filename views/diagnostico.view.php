@@ -16,10 +16,15 @@ $badgeClase = [
   .dg-section { background: var(--card-bg); border: 1px solid var(--border-dark); border-radius: var(--radius); padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
   .dg-area-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin: 1rem 0 0.5rem; letter-spacing: 0.03em; }
   .dg-area-title:first-child { margin-top: 0; }
-  .dg-hallazgo { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; padding: 0.6rem 0; border-bottom: 1px dashed var(--border-dark); font-size: 0.88rem; }
+  .dg-hallazgo { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; padding: 0.6rem 0; border-bottom: 1px dashed var(--border-dark); font-size: 0.88rem; transition: background 0.3s ease; }
   .dg-hallazgo:last-child { border-bottom: none; }
   .dg-hallazgo .meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem; }
   .dg-empty { color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; }
+  @keyframes dgHighlight {
+    0% { background: rgba(59, 130, 246, 0.25); border-radius: 6px; padding-left: 0.5rem; padding-right: 0.5rem; }
+    100% { background: transparent; }
+  }
+  .dg-hallazgo-nuevo { animation: dgHighlight 2.5s ease-out; }
   
   .dg-info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1.25rem; }
   .dg-info-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border-dark); border-radius: 8px; padding: 1rem; }
@@ -111,27 +116,28 @@ $badgeClase = [
       <?php endif; ?>
     </div>
   </div>
-<!-- Observaciones de Estación de Servicio -->
+</div>
+
+<!-- Observaciones Generales de Inspección -->
 <div class="dg-section">
-  <div style="margin-bottom: 0.6rem;">
-    <h2 style="font-size: 0.95rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
-      <i class="fa-solid fa-clipboard-list" style="color: #38bdf8;"></i> Observaciones de Estación de Servicio
-    </h2>
-    <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.2rem 0 0 0;">
-      Anotaciones de la inspección inicial o detalles técnicos generales del vehículo.
-    </p>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+    <div>
+      <h2 style="font-size: 0.95rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+        <i class="fa-solid fa-clipboard-list" style="color: #38bdf8;"></i> Observaciones de Estación de Servicio / Inspección
+      </h2>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.2rem 0 0 0;">
+        Anotaciones de la inspección inicial o detalles técnicos generales del vehículo.
+      </p>
+    </div>
+    <span id="obs-status" style="font-size: 0.78rem; font-weight: 600; color: #34d399; display: none;">
+      <i class="fa-solid fa-check"></i> Guardado automáticamente
+    </span>
   </div>
 
   <?php if (!$esCerrado): ?>
-    <form method="POST" action="diagnostico.php?id=<?= $otId ?>" style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap;">
-      <?= csrfField() ?>
-      <div style="flex: 1; min-width: 260px;">
-        <input type="text" name="estacion[observaciones]" class="form-control" placeholder="Ej: Fuga leve en manguera superior de radiador, aceite motor degradado..." value="<?= htmlspecialchars($estacion['Observaciones'] ?? '') ?>">
-      </div>
-      <button type="submit" name="action" value="guardar_estacion" class="btn btn-secondary">
-        <i class="fa-solid fa-floppy-disk"></i> Guardar Observación
-      </button>
-    </form>
+    <div style="position: relative;">
+      <input type="text" id="input-obs-estacion" class="form-control" placeholder="Ej: Fuga leve en manguera superior de radiador, aceite motor degradado..." value="<?= htmlspecialchars($estacion['Observaciones'] ?? '') ?>" autocomplete="off">
+    </div>
   <?php else: ?>
     <?php if (!empty($estacion['Observaciones'])): ?>
       <div style="font-size: 0.85rem; color: #cbd5e1; background: rgba(255,255,255,0.02); padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--border-dark);">
@@ -157,60 +163,94 @@ $badgeClase = [
   </div>
 <?php endif; ?>
 
-<!-- Hallazgos por Área Técnica -->
-<div class="dg-section">
-  <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 1rem;">Hallazgos del mecánico</h2>
-
-  <?php foreach (['Mecánica', 'Electricidad', 'Carrocería'] as $area): ?>
-    <div class="dg-area-title"><?= $area ?></div>
-    <?php if (empty($hallazgosPorArea[$area])): ?>
-      <div class="dg-empty">Sin hallazgos registrados en esta área.</div>
-    <?php else: ?>
-      <?php foreach ($hallazgosPorArea[$area] as $h): ?>
-        <div class="dg-hallazgo">
-          <div>
-            <div><?= htmlspecialchars($h['Hallazgo']) ?></div>
-            <div class="meta"><?= htmlspecialchars($h['UsuarioNombre']) ?> — <?= date('d/m/Y H:i', strtotime($h['Fecha'])) ?></div>
-          </div>
-          <?php if (!$esCerrado): ?>
-            <form method="POST" action="diagnostico.php?id=<?= $otId ?>" onsubmit="return confirm('¿Eliminar este hallazgo?');">
-              <?= csrfField() ?>
-              <input type="hidden" name="action" value="eliminar_hallazgo">
-              <input type="hidden" name="diagnostico_id" value="<?= $h['DiagnosticoID'] ?>">
-              <button type="submit" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Eliminar">
-                <i class="fa-solid fa-trash"></i>
-              </button>
-            </form>
-          <?php endif; ?>
-        </div>
-      <?php endforeach; ?>
-    <?php endif; ?>
-  <?php endforeach; ?>
-</div>
-
 <?php if (!$esCerrado): ?>
-  <!-- Formulario para agregar hallazgo -->
-  <div class="dg-section">
-    <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 1rem;">Agregar Nuevo Hallazgo</h2>
-    <form method="POST" action="diagnostico.php?id=<?= $otId ?>" style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap;">
+  <!-- Formulario para agregar hallazgo (ARRIBA, para registrar cómodamente sin saltar la pantalla) -->
+  <div class="dg-section" id="seccion-hallazgos">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+      <h2 style="font-size: 1rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+        <i class="fa-solid fa-plus-circle" style="color: var(--primary);"></i> Agregar Nuevo Hallazgo
+      </h2>
+      <span style="font-size: 0.8rem; color: var(--text-muted);">
+        <i class="fa-solid fa-keyboard"></i> Presiona Enter para agregar de corrido
+      </span>
+    </div>
+
+    <form id="form-add-hallazgo" method="POST" action="diagnostico.php?id=<?= $otId ?>#seccion-hallazgos" style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap;">
       <?= csrfField() ?>
       <input type="hidden" name="action" value="add_hallazgo">
-      <div style="min-width: 180px;">
+      <div style="min-width: 170px;">
         <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">ÁREA</label>
-        <select name="area" class="form-control">
-          <option value="Mecánica">Mecánica</option>
-          <option value="Electricidad">Electricidad</option>
-          <option value="Carrocería">Carrocería</option>
+        <select name="area" id="select-area" class="form-control">
+          <option value="Mecánica">🔧 Mecánica</option>
+          <option value="Electricidad">⚡ Electricidad</option>
+          <option value="Carrocería">🚗 Carrocería</option>
         </select>
       </div>
       <div style="flex: 1; min-width: 280px;">
         <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">HALLAZGO TÉCNICO / DIAGNÓSTICO</label>
-        <input type="text" name="hallazgo" class="form-control" placeholder="Ej: Fuga de aceite por retén de cigüeñal, pastillas delanteras al 10%..." required>
+        <input type="text" name="hallazgo" id="input-hallazgo" class="form-control" placeholder="Ej: Fuga de aceite por retén de cigüeñal, pastillas delanteras al 10%..." autocomplete="off" required>
       </div>
-      <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Agregar Hallazgo</button>
+      <button type="submit" id="btn-submit-hallazgo" class="btn btn-primary">
+        <i class="fa-solid fa-plus"></i> Agregar Hallazgo
+      </button>
     </form>
+    <div id="dg-feedback-msg" style="display: none; margin-top: 0.6rem; font-size: 0.82rem; font-weight: 600;"></div>
+  </div>
+<?php endif; ?>
+
+<!-- Hallazgos por Área Técnica (ABAJO del formulario) -->
+<div class="dg-section" id="seccion-lista-hallazgos">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+    <h2 style="font-size: 1rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+      <i class="fa-solid fa-stethoscope" style="color: #a78bfa;"></i> Hallazgos del mecánico
+    </h2>
+    <span id="badge-total-hallazgos" class="badge badge-secondary" style="font-size: 0.75rem;">
+      <?= count($hallazgos) ?> <?= count($hallazgos) === 1 ? 'hallazgo registrado' : 'hallazgos registrados' ?>
+    </span>
   </div>
 
+  <?php 
+  $areaInfo = [
+    'Mecánica' => ['icono' => 'fa-solid fa-wrench', 'color' => '#60a5fa'],
+    'Electricidad' => ['icono' => 'fa-solid fa-bolt', 'color' => '#fbbf24'],
+    'Carrocería' => ['icono' => 'fa-solid fa-car-side', 'color' => '#34d399']
+  ];
+  foreach (['Mecánica', 'Electricidad', 'Carrocería'] as $area): 
+    $areaKeyMap = ['Mecánica' => 'mecanica', 'Electricidad' => 'electricidad', 'Carrocería' => 'carroceria'];
+    $areaKey = $areaKeyMap[$area] ?? strtolower($area);
+    $info = $areaInfo[$area];
+  ?>
+    <div class="dg-area-title" style="display: flex; align-items: center; gap: 0.4rem;">
+      <i class="<?= $info['icono'] ?>" style="color: <?= $info['color'] ?>;"></i> <?= $area ?>
+    </div>
+    <div id="area-list-<?= $areaKey ?>" class="dg-area-list" style="margin-bottom: 0.75rem;">
+      <?php if (empty($hallazgosPorArea[$area])): ?>
+        <div class="dg-empty">Sin hallazgos registrados en esta área.</div>
+      <?php else: ?>
+        <?php foreach ($hallazgosPorArea[$area] as $h): ?>
+          <div class="dg-hallazgo" id="hallazgo-<?= $h['DiagnosticoID'] ?>">
+            <div>
+              <div style="font-weight: 500; color: #f1f5f9;"><?= htmlspecialchars($h['Hallazgo']) ?></div>
+              <div class="meta"><?= htmlspecialchars($h['UsuarioNombre']) ?> — <?= date('d/m/Y H:i', strtotime($h['Fecha'])) ?></div>
+            </div>
+            <?php if (!$esCerrado): ?>
+              <form method="POST" action="diagnostico.php?id=<?= $otId ?>#seccion-hallazgos" class="form-eliminar-hallazgo" onsubmit="return confirm('¿Eliminar este hallazgo?');">
+                <?= csrfField() ?>
+                <input type="hidden" name="action" value="eliminar_hallazgo">
+                <input type="hidden" name="diagnostico_id" value="<?= $h['DiagnosticoID'] ?>">
+                <button type="submit" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Eliminar">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </form>
+            <?php endif; ?>
+          </div>
+        <?php endforeach; ?>
+      <?php endif; ?>
+    </div>
+  <?php endforeach; ?>
+</div>
+
+<?php if (!$esCerrado): ?>
   <!-- Cierre de Diagnóstico -->
   <div class="dg-section" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
     <div>
@@ -218,20 +258,226 @@ $badgeClase = [
       <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Cuando termines la evaluación técnica, cierra el diagnóstico para valorizar en el Presupuesto.</p>
     </div>
     <div style="display: flex; gap: 0.5rem;">
-      <form method="POST" action="diagnostico.php?id=<?= $otId ?>" style="display: inline;">
+      <form method="POST" action="diagnostico.php?id=<?= $otId ?>" class="form-cierre-diagnostico" style="display: inline;">
         <?= csrfField() ?>
         <input type="hidden" name="action" value="omitir">
+        <input type="hidden" name="observaciones" class="hidden-cierre-obs">
         <button type="submit" class="btn btn-secondary" title="Si el cliente vino por algo puntual y no requiere diagnóstico técnico">
           Omitir diagnóstico (Pedido puntual)
         </button>
       </form>
-      <form method="POST" action="diagnostico.php?id=<?= $otId ?>" style="display: inline;">
+      <form method="POST" action="diagnostico.php?id=<?= $otId ?>" class="form-cierre-diagnostico" style="display: inline;">
         <?= csrfField() ?>
         <input type="hidden" name="action" value="finalizar">
+        <input type="hidden" name="observaciones" class="hidden-cierre-obs">
         <button type="submit" class="btn btn-primary">
           <i class="fa-solid fa-circle-check"></i> Finalizar Diagnóstico
         </button>
       </form>
     </div>
   </div>
+
+  <script>
+  (function() {
+    const csrfVal = '<?= htmlspecialchars(csrfToken()) ?>';
+
+    function escapeHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    function mostrarFeedback(msg, esError = false) {
+      const el = document.getElementById('dg-feedback-msg');
+      if (!el) return;
+      el.textContent = msg;
+      el.style.color = esError ? '#f87171' : '#34d399';
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 4000);
+    }
+
+    function actualizarContador() {
+      const total = document.querySelectorAll('.dg-hallazgo').length;
+      const badge = document.getElementById('badge-total-hallazgos');
+      if (badge) {
+        badge.textContent = total + (total === 1 ? ' hallazgo registrado' : ' hallazgos registrados');
+      }
+    }
+
+    // Auto-guardado de Observaciones de Inspección
+    const inputObs = document.getElementById('input-obs-estacion');
+    if (inputObs) {
+      let ultimaObsGuardada = inputObs.value.trim();
+
+      async function guardarObservacionAsync() {
+        const val = inputObs.value.trim();
+        if (val === ultimaObsGuardada) return;
+
+        const statusEl = document.getElementById('obs-status');
+        if (statusEl) {
+          statusEl.style.color = 'var(--text-muted)';
+          statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+          statusEl.style.display = 'inline-block';
+        }
+
+        const fd = new FormData();
+        fd.append('action', 'guardar_estacion');
+        fd.append('observaciones', val);
+        fd.append('csrf_token', csrfVal);
+        fd.append('ajax', '1');
+
+        try {
+          const resp = await fetch('diagnostico.php?id=<?= $otId ?>', {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: fd
+          });
+          const data = await resp.json();
+          if (data.success) {
+            ultimaObsGuardada = val;
+            if (statusEl) {
+              statusEl.style.color = '#34d399';
+              statusEl.innerHTML = '<i class="fa-solid fa-check"></i> Guardado automáticamente';
+              setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
+            }
+          }
+        } catch (e) {
+          if (statusEl) {
+            statusEl.style.color = '#f87171';
+            statusEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Error al guardar';
+          }
+        }
+      }
+
+      inputObs.addEventListener('blur', guardarObservacionAsync);
+      inputObs.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          inputObs.blur();
+        }
+      });
+
+      // Blindaje: antes de enviar Finalizar u Omitir diagnóstico, inyectar el valor actual de observaciones
+      document.querySelectorAll('.form-cierre-diagnostico').forEach(f => {
+        f.addEventListener('submit', function() {
+          const hiddenField = f.querySelector('.hidden-cierre-obs');
+          if (hiddenField && inputObs) {
+            hiddenField.value = inputObs.value.trim();
+          }
+        });
+      });
+    }
+
+    function attachEliminarEvent(form) {
+      if (!form) return;
+      form.addEventListener('submit', async function(e) {
+        if (!confirm('¿Eliminar este hallazgo?')) {
+          e.preventDefault();
+          return;
+        }
+        e.preventDefault();
+        const formData = new FormData(form);
+        formData.append('ajax', '1');
+        const hallazgoRow = form.closest('.dg-hallazgo');
+        const container = hallazgoRow ? hallazgoRow.closest('.dg-area-list') : null;
+
+        try {
+          const resp = await fetch(form.action, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: formData
+          });
+          const data = await resp.json();
+          if (data.success) {
+            if (hallazgoRow) hallazgoRow.remove();
+            if (container && container.querySelectorAll('.dg-hallazgo').length === 0) {
+              container.innerHTML = '<div class="dg-empty">Sin hallazgos registrados en esta área.</div>';
+            }
+            actualizarContador();
+            mostrarFeedback('Hallazgo eliminado correctamente.');
+          } else {
+            alert(data.error || 'No se pudo eliminar el hallazgo.');
+          }
+        } catch (err) {
+          form.submit();
+        }
+      });
+    }
+
+    // Vincular formularios de eliminación existentes
+    document.querySelectorAll('.form-eliminar-hallazgo').forEach(attachEliminarEvent);
+
+    // Formulario de agregar hallazgo
+    const formAdd = document.getElementById('form-add-hallazgo');
+    if (formAdd) {
+      const input = document.getElementById('input-hallazgo');
+      const btn = document.getElementById('btn-submit-hallazgo');
+
+      formAdd.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const hallazgoTexto = (input.value || '').trim();
+        if (!hallazgoTexto) {
+          input.focus();
+          return;
+        }
+
+        const originalBtnHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Agregando...';
+
+        const formData = new FormData(formAdd);
+        formData.append('ajax', '1');
+
+        try {
+          const resp = await fetch(formAdd.action, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: formData
+          });
+          const data = await resp.json();
+
+          if (data.success && data.item) {
+            const listContainer = document.getElementById('area-list-' + data.item.area_key);
+            if (listContainer) {
+              const emptyMsg = listContainer.querySelector('.dg-empty');
+              if (emptyMsg) emptyMsg.remove();
+
+              const row = document.createElement('div');
+              row.className = 'dg-hallazgo dg-hallazgo-nuevo';
+              row.id = 'hallazgo-' + data.item.id;
+              row.innerHTML = `
+                <div>
+                  <div style="font-weight: 500; color: #f1f5f9;">${escapeHtml(data.item.hallazgo)}</div>
+                  <div class="meta">${escapeHtml(data.item.usuario)} — ${escapeHtml(data.item.fecha)} <span class="badge badge-success" style="font-size: 0.65rem; margin-left: 0.35rem;">Recién agregado</span></div>
+                </div>
+                <form method="POST" action="diagnostico.php?id=<?= $otId ?>#seccion-hallazgos" class="form-eliminar-hallazgo">
+                  <input type="hidden" name="csrf_token" value="${escapeHtml(csrfVal)}">
+                  <input type="hidden" name="action" value="eliminar_hallazgo">
+                  <input type="hidden" name="diagnostico_id" value="${data.item.id}">
+                  <button type="submit" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Eliminar">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </form>
+              `;
+              listContainer.appendChild(row);
+              attachEliminarEvent(row.querySelector('.form-eliminar-hallazgo'));
+            }
+
+            actualizarContador();
+            mostrarFeedback('✓ Hallazgo guardado en ' + data.item.area + '.');
+            input.value = '';
+            input.focus();
+          } else {
+            mostrarFeedback(data.error || 'Error al guardar hallazgo.', true);
+          }
+        } catch (err) {
+          formAdd.submit();
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = originalBtnHtml;
+        }
+      });
+    }
+  })();
+  </script>
 <?php endif; ?>

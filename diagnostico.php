@@ -1,5 +1,6 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/auth.php';
+requireLogin();
 
 $pdo = getDB();
 $user = currentUser();
@@ -26,6 +27,7 @@ if (!$ot) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifyCsrf();
     $action = $_POST['action'] ?? '';
+    $isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') || isset($_POST['ajax']);
 
     if ($action === 'add_hallazgo') {
         $area = $_POST['area'] ?? 'Mecánica';
@@ -37,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     VALUES (:ot, :area, :hallazgo, :uid)
                 ");
                 $stmt->execute([':ot' => $otId, ':area' => $area, ':hallazgo' => $hallazgo, ':uid' => $user['id']]);
+                $nuevoId = (int)$pdo->lastInsertId();
 
                 if ($ot['Estado'] === 'Ingresado') {
                     $pdo->prepare("UPDATE ordenestrabajo SET Estado = 'En diagnóstico' WHERE OrdenTrabajoID = :id")
@@ -44,99 +47,97 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $ot['Estado'] = 'En diagnóstico';
                 }
                 $message = 'Hallazgo agregado correctamente.';
+
+                if ($isAjax) {
+                    $areaKeyMap = ['Mecánica' => 'mecanica', 'Electricidad' => 'electricidad', 'Carrocería' => 'carroceria'];
+                    $areaKey = $areaKeyMap[$area] ?? strtolower($area);
+
+                    header('Content-Type: application/json; charset=utf-8');
+                    echo json_encode([
+                        'success' => true,
+                        'message' => $message,
+                        'item' => [
+                            'id' => $nuevoId,
+                            'area' => $area,
+                            'area_key' => $areaKey,
+                            'hallazgo' => $hallazgo,
+                            'usuario' => $user['nombre'] ?? 'Mecánico',
+                            'fecha' => date('d/m/Y H:i'),
+                        ]
+                    ]);
+                    exit;
+                }
             } catch (Exception $e) {
                 $error = 'Error al registrar el hallazgo: ' . $e->getMessage();
+                if ($isAjax) {
+                    header('Content-Type: application/json; charset=utf-8');
+                    echo json_encode(['success' => false, 'error' => $error]);
+                    exit;
+                }
             }
         } else {
             $error = 'Escribe el hallazgo antes de agregarlo.';
+            if ($isAjax) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['success' => false, 'error' => $error]);
+                exit;
+            }
         }
-    } elseif ($action === 'finalizar') {
-        $pdo->prepare("UPDATE ordenestrabajo SET Estado = 'Diagnosticado' WHERE OrdenTrabajoID = :id")
-            ->execute([':id' => $otId]);
-        $ot['Estado'] = 'Diagnosticado';
-        $message = 'Diagnóstico finalizado. Ya puedes generar el Presupuesto.';
-    } elseif ($action === 'omitir') {
-        $pdo->prepare("UPDATE ordenestrabajo SET Estado = 'Diagnóstico no aplica' WHERE OrdenTrabajoID = :id")
-            ->execute([':id' => $otId]);
-        $ot['Estado'] = 'Diagnóstico no aplica';
-        $message = 'Diagnóstico marcado como "no aplica".';
+    } elseif ($action === 'finalizar' || $action === 'omitir') {
+        // Blindaje: si vienen observaciones en el formulario, guardarlas antes de cerrar
+        if (isset($_POST['observaciones'])) {
+            $obs = trim($_POST['observaciones']);
+            $stmtEst = $pdo->prepare("
+                INSERT INTO estacionservicio_ot (OrdenTrabajoID, Observaciones)
+                VALUES (:ot, :obs)
+                ON DUPLICATE KEY UPDATE Observaciones = VALUES(Observaciones)
+            ");
+            $stmtEst->execute([':ot' => $otId, ':obs' => $obs ?: null]);
+        }
+
+        $nuevoEstado = $action === 'finalizar' ? 'Diagnosticado' : 'Diagnóstico no aplica';
+        $pdo->prepare("UPDATE ordenestrabajo SET Estado = :estado WHERE OrdenTrabajoID = :id")
+            ->execute([':estado' => $nuevoEstado, ':id' => $otId]);
+        $ot['Estado'] = $nuevoEstado;
+
+        // Asegurar que el Presupuesto quede creado e inicializado
+        require_once __DIR__ . '/includes/servicios.php';
+        $stmtP = $pdo->prepare("SELECT PresupuestoID FROM presupuestos WHERE OrdenTrabajoID = :id ORDER BY PresupuestoID DESC LIMIT 1");
+        $stmtP->execute([':id' => $otId]);
+        $presupuestoId = $stmtP->fetchColumn();
+        if (!$presupuestoId) {
+            $stmtNewP = $pdo->prepare("INSERT INTO presupuestos (OrdenTrabajoID, UsuarioID) VALUES (:ot, :uid)");
+            $stmtNewP->execute([':ot' => $otId, ':uid' => $user['id']]);
+            $presupuestoId = (int)$pdo->lastInsertId();
+            agregarDiagnosticoAlPresupuesto($pdo, $presupuestoId, $nuevoEstado);
+        }
+
+        // Redirigir de inmediato al Presupuesto sin pantalla intermedia innecesaria
+        header("Location: presupuesto.php?id=" . $otId);
+        exit;
     } elseif ($action === 'eliminar_hallazgo') {
         $diagId = (int)($_POST['diagnostico_id'] ?? 0);
         $pdo->prepare("DELETE FROM diagnosticoot WHERE DiagnosticoID = :id AND OrdenTrabajoID = :ot")
             ->execute([':id' => $diagId, ':ot' => $otId]);
         $message = 'Hallazgo eliminado.';
+        if ($isAjax) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['success' => true, 'message' => $message]);
+            exit;
+        }
     } elseif ($action === 'guardar_estacion') {
-        $est = $_POST['estacion'] ?? [];
-        $obsEstacion = trim($est['observaciones'] ?? '');
+        $obs = trim($_POST['observaciones'] ?? $_POST['estacion']['observaciones'] ?? '');
         $stmtEst = $pdo->prepare("
             INSERT INTO estacionservicio_ot (OrdenTrabajoID, Observaciones)
             VALUES (:ot, :obs)
             ON DUPLICATE KEY UPDATE Observaciones = VALUES(Observaciones)
         ");
-        $stmtEst->execute([':ot' => $otId, ':obs' => $obsEstacion ?: null]);
-        $message = 'Observaciones de estación de servicio guardadas correctamente.';
-
-        // Si se solicitó cargar al presupuesto
-        if ($action === 'guardar_y_cotizar_fluidos' || $action === 'cargar_fluidos_presupuesto') {
-            // Asegurar que exista presupuesto para esta OT
-            $stmtP = $pdo->prepare("SELECT PresupuestoID FROM presupuestos WHERE OrdenTrabajoID = :id ORDER BY PresupuestoID DESC LIMIT 1");
-            $stmtP->execute([':id' => $otId]);
-            $presupuestoId = $stmtP->fetchColumn();
-            if (!$presupuestoId) {
-                $pdo->prepare("INSERT INTO presupuestos (OrdenTrabajoID, UsuarioID) VALUES (:ot, :uid)")
-                    ->execute([':ot' => $otId, ':uid' => $user['id']]);
-                $presupuestoId = (int)$pdo->lastInsertId();
-                agregarDiagnosticoAlPresupuesto($pdo, $presupuestoId, (string)($ot["Estado"] ?? ""));
-            }
-
-            // Consultar estación de servicio
-            $stmtEst = $pdo->prepare("SELECT * FROM estacionservicio_ot WHERE OrdenTrabajoID = :id");
-            $stmtEst->execute([':id' => $otId]);
-            $es = $stmtEst->fetch();
-
-            if ($es) {
-                $itemsACotizar = [];
-                if ($es['MotorCambio']) {
-                    $itemsACotizar[] = ['desc' => 'Mano de Obra: Cambio de Aceite y Filtro de Motor', 'precio' => 15000];
-                }
-                if ($es['FrenosCambio']) {
-                    $itemsACotizar[] = ['desc' => 'Mano de Obra: Cambio y Purga de Líquido de Frenos', 'precio' => 20000];
-                }
-                if ($es['RadiadorAnticongelante']) {
-                    $itemsACotizar[] = ['desc' => 'Mano de Obra: Cambio/Carga de Refrigerante Anticongelante', 'precio' => 12000];
-                }
-                if ($es['CajaCambio']) {
-                    $itemsACotizar[] = ['desc' => 'Mano de Obra: Cambio de Aceite de Caja de Velocidades', 'precio' => 25000];
-                }
-
-                $stmtCheck = $pdo->prepare("SELECT COUNT(*) FROM presupuestodetalle WHERE PresupuestoID = :pid AND Descripcion = :desc");
-                $stmtIns = $pdo->prepare("
-                    INSERT INTO presupuestodetalle (PresupuestoID, TipoLinea, Descripcion, Cantidad, PrecioUnitario, Subtotal, Aprobado)
-                    VALUES (:pid, 'ManoObra', :desc, 1, :precio, :subtotal, 1)
-                ");
-
-                $agregados = 0;
-                foreach ($itemsACotizar as $item) {
-                    $stmtCheck->execute([':pid' => $presupuestoId, ':desc' => $item['desc']]);
-                    if ((int)$stmtCheck->fetchColumn() === 0) {
-                        $stmtIns->execute([
-                            ':pid' => $presupuestoId,
-                            ':desc' => $item['desc'],
-                            ':precio' => $item['precio'],
-                            ':subtotal' => $item['precio']
-                        ]);
-                        $agregados++;
-                    }
-                }
-
-                if ($agregados > 0) {
-                    $message = "¡Chequeo guardado y se agregaron $agregados servicios de fluidos al Presupuesto!";
-                } elseif (empty($itemsACotizar)) {
-                    $message = "Chequeo guardado. No había fluidos marcados con 'Requiere cambio'.";
-                } else {
-                    $message = "Chequeo guardado. Los fluidos marcados ya se encontraban incluidos en el Presupuesto.";
-                }
-            }
+        $stmtEst->execute([':ot' => $otId, ':obs' => $obs ?: null]);
+        $message = 'Observaciones guardadas correctamente.';
+        if ($isAjax) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['success' => true, 'message' => $message]);
+            exit;
         }
     }
 }
@@ -169,5 +170,6 @@ $operacionesSolicitadas = $stmtOps->fetchAll(PDO::FETCH_COLUMN);
 // Daños decodificados
 $daniosCarroceria = json_decode($ot['DaniosCarroceriaJson'] ?? '[]', true) ?: [];
 
+require_once __DIR__ . '/includes/header.php';
 include __DIR__ . '/views/diagnostico.view.php';
 require_once __DIR__ . '/includes/footer.php';
