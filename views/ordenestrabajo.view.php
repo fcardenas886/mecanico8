@@ -151,7 +151,7 @@ $visibles = array_filter($filas, function ($par) use ($filtro) {
                         <i class="fa-brands fa-whatsapp"></i> Ingreso
                       </a>
                     <?php elseif ($inf['grupo'] === 'esperando'): 
-                      $msgWAPres = mensajePresupuestoWhatsApp($ot, ['TiempoEntrega' => ''], (float)($ot['TotalPresupuesto'] ?? 0), $nombreTaller);
+                      $msgWAPres = mensajePresupuestoWhatsApp($ot, ['TiempoEntrega' => $ot['TiempoEntrega'] ?? ''], (float)($ot['TotalPresupuesto'] ?? 0), $nombreTaller);
                       $urlWAPres = generarUrlWhatsapp($ot['ClienteTelefono'] ?? '', $msgWAPres);
                     ?>
                       <a href="<?= $urlWAPres ?>" target="_blank" class="btn" style="background: #25d366; color: #fff; padding: 0.45rem 0.75rem; font-size: 0.82rem; border: none; display: inline-flex; align-items: center; gap: 0.35rem;" title="Enviar el presupuesto al cliente por WhatsApp">

@@ -132,7 +132,7 @@ foreach ($lineas as $l) $lineasPorGrupo[$l['TipoLinea']][] = $l;
   <?php endif; ?>
 
   <!-- ===== EL PRESUPUESTO (ANCHO COMPLETO) ===== -->
-  <main>
+  <div class="pr-main">
     <section class="pr-card">
       <div class="pr-card-title">
         <i class="fa-solid fa-file-invoice-dollar" style="color:#38bdf8"></i> Presupuesto
@@ -218,7 +218,7 @@ foreach ($lineas as $l) $lineasPorGrupo[$l['TipoLinea']][] = $l;
               </select>
               <input type="text" name="descripcion" class="form-control" placeholder="Ej: Cambio de pastillas de freno" required>
               <input type="number" name="cantidad" class="form-control" value="1" min="0.1" step="any" required title="Cantidad">
-              <input type="number" name="precio" class="form-control" placeholder="Precio $" min="100" step="100" required>
+              <input type="number" name="precio" class="form-control" placeholder="Precio $" min="1" step="any" required>
               <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Agregar</button>
             </form>
           </div>
@@ -414,7 +414,7 @@ foreach ($lineas as $l) $lineasPorGrupo[$l['TipoLinea']][] = $l;
         <?php endif; ?>
       </section>
     <?php endif; ?>
-  </main>
+  </div>
 </div>
 
 <?php if ($message || $error): ?>

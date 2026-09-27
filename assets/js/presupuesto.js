@@ -12,7 +12,7 @@
     const y = sessionStorage.getItem(SCROLL_KEY);
     if (y !== null) {
       sessionStorage.removeItem(SCROLL_KEY);
-      window.scrollTo({ top: parseInt(y, 10), behavior: 'instant' });
+      requestAnimationFrame(() => window.scrollTo(0, parseInt(y, 10)));
     }
   } catch (e) {}
 
@@ -35,8 +35,12 @@
   // ---------- Modal teléfono ----------
   window.prModal = abierto => {
     const m = document.getElementById('prModalTel');
+    if (!m) return;
     m.classList.toggle('is-open', abierto);
-    if (abierto) m.querySelector('input[name=telefono]').focus();
+    if (abierto) {
+      const inputTel = m.querySelector('input[name=telefono]');
+      if (inputTel) inputTel.focus();
+    }
   };
 
   // ---------- Filtro de la lista de repuestos ----------
@@ -52,12 +56,23 @@
       opciones.forEach(({ o, txt }) => {
         const ok = terms.every(t => txt.includes(t));
         o.hidden = !ok;
+        o.style.display = ok ? '' : 'none';
         if (ok && !primera) primera = o;
       });
       selRep.value = terms.length && primera ? primera.value : '';
     });
     filtro.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); if (selRep.value) { guardarScroll(); selRep.form.submit(); } }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (selRep.value) {
+          guardarScroll();
+          if (selRep.form.requestSubmit) {
+            selRep.form.requestSubmit();
+          } else {
+            selRep.form.submit();
+          }
+        }
+      }
     });
   }
 
@@ -159,8 +174,9 @@
   }
   document.querySelectorAll('.pr-chk').forEach(c => c.addEventListener('change', actualizarParcial));
   window.prModoParcial = on => {
-    root.classList.toggle('pr-modo-parcial', on);
+    if (root) root.classList.toggle('pr-modo-parcial', on);
     actualizarParcial();
-    if (on) document.querySelector('.pr-table').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const table = document.querySelector('.pr-table');
+    if (on && table) table.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 })();
