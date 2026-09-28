@@ -668,12 +668,18 @@ CREATE TABLE `presupuestodetalle` (
   `PrecioUnitario` int NOT NULL,
   `Subtotal` int NOT NULL,
   `Aprobado` tinyint(1) NOT NULL DEFAULT '1',
+  `ServicioID` int DEFAULT NULL,
+  `PoliticaCobro` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Siempre',
+  `Origen` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT 'Directo',
+  `DescuentoCombo` int NOT NULL DEFAULT '0',
+  `ComboNombre` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `DescuentoOferta` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`PresupuestoDetalleID`),
   KEY `FK_PresupuestoDetalle_Presupuesto` (`PresupuestoID`),
   KEY `FK_PresupuestoDetalle_Producto` (`ProductoID`),
   CONSTRAINT `FK_PresupuestoDetalle_Presupuesto` FOREIGN KEY (`PresupuestoID`) REFERENCES `presupuestos` (`PresupuestoID`) ON DELETE CASCADE,
   CONSTRAINT `FK_PresupuestoDetalle_Producto` FOREIGN KEY (`ProductoID`) REFERENCES `productos` (`ProductoID`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=78 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `presupuestos`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
