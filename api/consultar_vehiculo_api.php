@@ -1,8 +1,8 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../includes/auth.php';
-require_once __DIR__ . '/../includes/vehiculo_api_helper.php';
+require_once __DIR__ . '/../includes/core/auth.php';
+require_once __DIR__ . '/../includes/integraciones/vehiculo_api_helper.php';
 
 if (empty($_SESSION['usuario'])) {
     http_response_code(401);

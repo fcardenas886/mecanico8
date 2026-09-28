@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/core/auth.php';
 
 // Validar permisos (Solo Administrador y Supervisor)
 if (empty($_SESSION['usuario'])) {
@@ -747,6 +747,6 @@ if ($esExport) {
 // ----------------------------------------------------
 // 4. RENDERIZAR VISTA
 // ----------------------------------------------------
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 include __DIR__ . '/views/reportes.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

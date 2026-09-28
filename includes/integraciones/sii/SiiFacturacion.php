@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/drivers/SiiDriverInterface.php';
 require_once __DIR__ . '/drivers/MockDriver.php';
 require_once __DIR__ . '/drivers/OpenFacturaDriver.php';

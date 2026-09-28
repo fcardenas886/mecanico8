@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 
 $pdo = getDB();
 $otId = (int)($_GET['id'] ?? 0);
@@ -61,4 +61,4 @@ $operacionesSolicitadas = $stmtOps->fetchAll(PDO::FETCH_COLUMN);
 $daniosCarroceria = json_decode($ot['DaniosCarroceriaJson'] ?? '[]', true) ?: [];
 
 include __DIR__ . '/views/comprobante_ot.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

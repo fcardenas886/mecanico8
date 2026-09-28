@@ -4,7 +4,7 @@ $fechaEmision = date('d/m/Y', strtotime($presupuesto['FechaCreacion'] ?? 'now'))
 $validezFecha = date('d/m/Y', strtotime(($presupuesto['FechaCreacion'] ?? 'now') . ' +15 days'));
 
 // Preparar mensaje de WhatsApp usando helper centralizado
-require_once __DIR__ . '/../includes/whatsapp_helper.php';
+require_once __DIR__ . '/../includes/integraciones/whatsapp_helper.php';
 $msgWhatsapp = mensajePresupuestoWhatsApp($ot, $presupuesto, (float)$totalPresupuesto, $nombreEmpresa);
 $waUrl = generarUrlWhatsapp($ot['ClienteTelefono'] ?? '', $msgWhatsapp);
 ?>

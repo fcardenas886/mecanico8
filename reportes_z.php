@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
-require_once __DIR__ . '/includes/fiscal.php';
+require_once __DIR__ . '/includes/layout/header.php';
+require_once __DIR__ . '/includes/dominio/fiscal.php';
 checkRole(['Administrador', 'Supervisor']);
 
 $pdo = getDB();
@@ -35,4 +35,4 @@ $stmtReportesZ = $pdo->query("
 $cierresZ = $stmtReportesZ->fetchAll();
 
 include __DIR__ . '/views/reportes_z.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

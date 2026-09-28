@@ -1,8 +1,8 @@
-# 📘 Documentación Técnica - Sistema Minimarket POS
-**Versión:** 3.3.0  
-**Fecha de Respaldo:** 2026-09-09  
-**Ubicación:** minimarket-php (Respaldo en minimarket-php-backup-pre-pwa)  
+# 📘 Documentación Técnica - Sistema Taller Mecánico + POS
+**Versión:** 5.4.1  
 **Arquitectura:** PHP 8.1+ / MySQL (InnoDB) / Vanilla JavaScript / CSS Custom Theme  
+
+> El sistema nació como el POS de minimarket (v1 a v3) y evolucionó al taller mecánico con venta de repuestos (v4 en adelante). Las secciones de ventas, caja e inventario siguen vigentes; el flujo de taller (Recepción → Diagnóstico → Presupuesto → Reparación y cobro → Entrega) se agregó encima.
 
 ---
 
@@ -35,84 +35,58 @@ Permite administrar el ciclo completo del negocio:
 
 ## 3. Estructura del Proyecto
 
-`
-minimarket-php/
-├── api/                           # Endpoints JSON RESTful para consumo asíncrono
-│   ├── actualizar_precios_compra.php
-│   ├── anular_venta.php
-│   ├── auditar_turno.php
-│   ├── autorizar_supervisor.php    # Validación de PIN/clave para cancelaciones y descuentos
-│   ├── buscar_producto.php         # Búsqueda rápida por EAN, PLU, Nombre y Códigos Alternativos
-│   ├── codigos_producto.php        # Gestión de códigos secundarios y packs
-│   ├── cotizaciones.php            # Pausar y recuperar ventas pendientes
-│   ├── desbloquear_caja.php        # Desbloqueo de pantalla (Lock Screen)
-│   ├── detalle_cuenta_cliente.php  # Historial de fiados y abonos
-│   ├── guardar_cambio_precios.php  # Actualización masiva de precios y márgenes
-│   ├── inventario.php
-│   ├── movimiento_caja.php         # Egresos e ingresos manuales de efectivo
-│   ├── reembolsar_vale.php
-│   ├── registrar_ajuste.php        # Ajustes de stock por merma, vencimiento o conteo
-│   ├── registrar_compra.php        # Ingreso de facturas y mercadería de proveedores
-│   ├── registrar_devolucion.php    # Emisión de vales de cambio
-│   ├── registrar_nota_pedido.php
-│   ├── registrar_venta.php         # ⭐ Core de venta: transacciones, stock y medios de pago
-│   ├── ver_nota_pedido.php
-│   ├── ver_venta.php               # Detalle de venta y reimpresión de ticket
-│   └── verificar_vale.php
+```
+tallermecanico-php/
+├── *.php                      # Controladores de página: validan permisos, consultan y cargan su vista
+├── views/                     # Plantillas HTML de cada página (x.php → views/x.view.php)
+│   └── partials/              # Fragmentos reutilizables (ej. totales del presupuesto)
+├── api/                       # Endpoints JSON que consumen las pantallas vía fetch
 │
-├── assets/
-│   ├── css/
-│   │   └── style.css              # Estilos globales y variables de diseño
-│   └── js/
-│       ├── pos.js                 # ⭐ Lógica del POS: carrito, cobros, balanza, teclado
-│       └── ui.js                  # Modales, toasts, alertas y componentes de interfaz
+├── includes/
+│   ├── core/                  # auth.php: sesión, roles, CSRF y helpers base (lo cargan todas las páginas)
+│   ├── layout/                # header.php, footer.php, taller_ui.php (menú, pie y piezas de UI del taller)
+│   ├── dominio/               # Reglas del negocio compartidas entre páginas y APIs
+│   │   ├── promociones_combos.php   # Combos y ofertas (mismo cálculo en Caja y Presupuesto)
+│   │   ├── servicios.php            # Catálogo de servicios / mano de obra
+│   │   ├── busqueda_repuestos.php   # Búsqueda de repuestos por nombre, marca o N° de parte
+│   │   ├── repuestos_aprendizaje.php# Compatibilidad aprendida de repuestos por modelo
+│   │   └── fiscal.php               # Cierre Z
+│   └── integraciones/         # Servicios externos
+│       ├── whatsapp_helper.php
+│       ├── vehiculo_api_helper.php  # Consulta de patentes
+│       └── sii/                     # Facturación electrónica (drivers Mock y OpenFactura)
 │
 ├── config/
-│   └── database.php               # Conexión PDO, constantes del sistema y changelog
+│   ├── database.php           # Lectura de .env y conexión PDO (incluye version.php)
+│   └── version.php            # APP_VERSION y APP_CHANGELOG (novedades por versión)
 │
 ├── db/
-│   └── migrations/                # Scripts de evolución de esquema SQL (0001 a 0010)
-│       ├── 0001_valescanjes.sql
-│       ├── 0002_cambio_mercaderia.sql
-│       ├── 0003_notas_pedido.sql
-│       ├── 0004_ajustesstock_proveedor.sql
-│       ├── 0005_dte_emitidos.sql
-│       ├── 0006_productos_pesable.sql
-│       ├── 0007_supervision_pos.sql
-│       ├── 0008_personalizacion_visual.sql
-│       ├── 0009_multiples_codigos_y_bloqueo.sql
-│       └── 0010_codigos_cantidad_y_precio.sql
+│   ├── schema_actual.sql      # Esquema completo vigente (instalación nueva)
+│   └── migrations/            # Cambios de esquema en orden (ver README.md para el orden)
 │
-├── includes/                      # Componentes comunes de servidor
-│   ├── auth.php                   # Funciones de sesión, permisos y verificación CSRF
-│   ├── header.php                 # Menú superior y barra de navegación
-│   └── footer.php                 # Pie de página y versión
-│
-├── views/                         # Plantillas de renderizado desacopladas (.view.php)
-│   ├── pos.view.php               # Interfaz de Punto de Venta
-│   ├── caja.view.php              # Control de arqueos y turnos
-│   ├── ventas.view.php            # Consulta y filtros de ventas históricas
-│   ├── productos.view.php         # Maestro de artículos
-│   ├── clientes.view.php          # Cuentas corrientes y cartera de clientes
-│   ├── reportes.view.php          # Centro de analítica y business intelligence
-│   └── ...
-│
-├── caja.php                       # Controlador de flujo de turnos
-├── pos.php                        # Controlador principal del punto de venta
-├── ventas.php                     # Historial de ventas y reimpresión
-├── productos.php                  # Catálogo de productos
-├── actualizar_precios.php         # Herramienta rápida de márgenes y flejes
-├── reportes.php                   # Reportes gerenciales y exportación a Excel
-└── index.php                      # Dashboard principal / Dashboard de inicio
-`
+├── assets/                    # css/, js/, icons/, vendor/ (FontAwesome) y docs/ (DTE de ejemplo)
+├── docs/                      # Esta documentación y propuestas comerciales (docs/propuestas/)
+├── uploads/                   # Archivos subidos (no versionado)
+├── manifest.json, service-worker.js   # PWA y venta offline
+└── .env.example               # Plantilla de credenciales de base de datos
+```
+
+### Dónde va cada cosa nueva
+- **Pantalla nueva:** `nombre.php` en la raíz + `views/nombre.view.php`, y su enlace en `includes/layout/header.php`.
+- **Endpoint JSON:** `api/nombre.php` (carga `config/database.php` y `includes/core/auth.php`).
+- **Regla de negocio usada en más de un lugar:** `includes/dominio/`.
+- **Conexión con un servicio externo:** `includes/integraciones/`.
+- **Cambio de base de datos:** nueva migración `db/migrations/NNNN_descripcion.sql` y actualizar `db/schema_actual.sql`.
+- **Versión:** subir `APP_VERSION` y agregar sus novedades en `config/version.php`.
+
 
 ---
 
 ## 4. Lógica de Negocio y Algoritmos Críticos
 
-### A. Núcleo de Ventas (pi/registrar_venta.php)
+### A. Núcleo de Ventas (api/registrar_venta.php)
 1. **Transaccionalidad Estricta:** Todo el proceso de venta corre dentro de una transacción BEGIN TRANSACTION ... COMMIT con bloqueos pesimistas SELECT ... FOR UPDATE sobre los productos vendidos para evitar colisiones de stock concurrente.
-2. **Validación de Turno:** La venta se rechaza si el cajero no tiene un turno con estado 'Abierto' en la tabla 	urnos.
+2. **Validación de Turno:** La venta se rechaza si el cajero no tiene un turno con estado 'Abierto' en la tabla turnos.
 3. **Múltiples Medios de Pago:** Soporta pagos simples y mixtos (Efectivo, Tarjeta Debito, Tarjeta Credito, Transferencia, Credito Interno / Fiado, Puntos, Vale Devolucion).
 4. **Descuento de Stock por Factor:**
    * Si se vende un producto individual: unidadesFisicas = cantidad.
@@ -130,14 +104,14 @@ Un mismo producto físico (ProductoID) puede tener múltiples códigos asociados
   * **Regla 3:** Si no tiene precio fijo ni promo, el precio unitario se multiplica por el factor de unidades.
 
 ### C. Integración con Balanzas Electrónicas (Códigos EAN-13)
-En ssets/js/pos.js se implementa la decodificación en tiempo real de etiquetas generadas por balanzas pesables:
+En assets/js/pos.js se implementa la decodificación en tiempo real de etiquetas generadas por balanzas pesables:
 * Prefijo configurable (por defecto 20).
 * Estructura estándar EAN-13: 20 [PLU de 4 o 5 dígitos] [Peso o Importe en gramos/pesos] [Dígito Verificador].
 * Si el producto está marcado como EsPesable = TRUE, el sistema divide automáticamente el peso leído por 1.000 para obtener los kilos exactos y calcula el total instantáneamente.
 
 ### D. Sistema de Supervisión y Bloqueo (Lock Screen)
 Para evitar fraudes o errores en caja:
-* **Cancelación de Venta y Eliminación de Ítems:** Pueden configurarse para exigir la contraseña de un usuario con rol 'Supervisor' o 'Administrador' (pi/autorizar_supervisor.php).
+* **Cancelación de Venta y Eliminación de Ítems:** Pueden configurarse para exigir la contraseña de un usuario con rol 'Supervisor' o 'Administrador' (api/autorizar_supervisor.php).
 * **Límite de Descuento:** Si el cajero intenta hacer un descuento superior al porcentaje permitido en configuraciones (POS_DESCUENTO_MAX_PORC), la venta se bloquea hasta que un supervisor ingrese su clave.
 * **Bloqueo Rápido de Pantalla:** Atajo Alt + L o F9: oculta los datos de la venta y bloquea la terminal manteniendo intacto el carrito en memoria. Se desbloquea con el PIN del cajero o cualquier supervisor.
 
@@ -150,7 +124,7 @@ El sistema está desacoplado para conectarse con el motor tributario (sii-boleta
 
 ## 5. Esquema de Base de Datos (Tablas Clave)
 
-`sql
+```sql
 -- Productos e Inventario
 productos (ProductoID, CodigoBarras, Nombre, PrecioVenta, CostoCompra, Stock, StockMinimo, EsPesable, CodigoPLU, CategoriaID, Activo)
 productoscodigos (CodigoID, ProductoID, CodigoBarras, Descripcion, Cantidad, PrecioVenta)
@@ -174,12 +148,12 @@ cuentascorrientes (MovimientoID, ClienteID, VentaID, Tipo, Monto, SaldoResultant
 valescanjes (ValeID, Codigo, Monto, Estado, VentaOrigenID, FechaEmision)
 ajustesstock (AjusteID, ProductoID, Tipo, Cantidad, Motivo, Fecha, UsuarioID)
 configuraciones (Clave, Valor, Descripcion)
-`
+```
 
 ---
 
 ## 6. Consideraciones para Desarrollos Futuros (PWA Offline)
 Al evolucionar hacia una **Progressive Web App (PWA) con venta offline**:
 1. **IndexedDB:** Debe replicar la estructura de productos y productoscodigos para permitir la búsqueda instantánea sin conexión.
-2. **Cola de Sincronización:** Las ventas offline deben estructurarse con la misma firma que espera pi/registrar_venta.php y sincronizarse en lote mediante un nuevo endpoint idempotente (pi/sincronizar_offline.php).
+2. **Cola de Sincronización:** Las ventas offline deben estructurarse con la misma firma que espera api/registrar_venta.php y sincronizarse en lote mediante un nuevo endpoint idempotente (api/sincronizar_offline.php).
 3. **Turno de Caja Local:** El número de turno activo debe persistir en la sesión del navegador para que el cajero pueda seguir vendiendo bajo el turno que ya abrió con conexión.

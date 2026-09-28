@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 checkRole(['Administrador', 'Supervisor']);
 
 $pdo = getDB();
@@ -9,4 +9,4 @@ $stmtCat = $pdo->query("SELECT CategoriaID, Nombre FROM categorias ORDER BY Nomb
 $categorias = $stmtCat->fetchAll(PDO::FETCH_ASSOC);
 
 include __DIR__ . '/views/actualizar_precios.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

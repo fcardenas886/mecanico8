@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 checkRole(['Administrador', 'Supervisor']);
 
 $pdo = getDB();
@@ -89,4 +89,4 @@ $terminales = $pdo->query("
 $cajas = $pdo->query("SELECT * FROM cajas WHERE Activa = TRUE ORDER BY CajaID ASC")->fetchAll();
 
 include __DIR__ . '/views/configuracion.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

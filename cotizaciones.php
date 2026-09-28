@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 
 $pdo = getDB();
 
@@ -13,4 +13,4 @@ $productosList = $pdo->query("
 ")->fetchAll();
 
 include __DIR__ . '/views/cotizaciones.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

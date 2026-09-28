@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/core/auth.php';
 checkRole(['Administrador', 'Supervisor']);
 $pdo = getDB();
 $error = '';
@@ -39,6 +39,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $servicios = $pdo->query("SELECT * FROM operacionessolicitadas ORDER BY EsDiagnosticoBase DESC, Activo DESC, Categoria, Orden")->fetchAll();
 $politicas = politicasCobro();
 
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 include __DIR__ . '/views/servicios.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

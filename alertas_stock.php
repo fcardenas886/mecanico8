@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 
 $pdo = getDB();
 
@@ -20,4 +20,4 @@ $stmt = $pdo->query("
 $alertas = $stmt->fetchAll();
 
 include __DIR__ . '/views/alertas_stock.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

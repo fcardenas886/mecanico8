@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 
 $pdo = getDB();
 $user = currentUser();
@@ -43,4 +43,4 @@ $ultimasVentas = $stmtUltimas->fetchAll();
 $tallerRes = tallerResumen($pdo);
 
 include __DIR__ . '/views/index.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

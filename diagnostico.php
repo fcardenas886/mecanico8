@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/core/auth.php';
 requireLogin();
 
 $pdo = getDB();
@@ -101,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ot['Estado'] = $nuevoEstado;
 
         // Asegurar que el Presupuesto quede creado e inicializado
-        require_once __DIR__ . '/includes/servicios.php';
+        require_once __DIR__ . '/includes/dominio/servicios.php';
         $stmtP = $pdo->prepare("SELECT PresupuestoID FROM presupuestos WHERE OrdenTrabajoID = :id ORDER BY PresupuestoID DESC LIMIT 1");
         $stmtP->execute([':id' => $otId]);
         $presupuestoId = $stmtP->fetchColumn();
@@ -170,6 +170,6 @@ $operacionesSolicitadas = $stmtOps->fetchAll(PDO::FETCH_COLUMN);
 // Daños decodificados
 $daniosCarroceria = json_decode($ot['DaniosCarroceriaJson'] ?? '[]', true) ?: [];
 
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 include __DIR__ . '/views/diagnostico.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

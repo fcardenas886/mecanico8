@@ -7,7 +7,7 @@ if (!headers_sent()) {
     header('Content-Type: application/json; charset=utf-8');
 }
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/core/auth.php';
 
 if (empty($_SESSION['usuario'])) {
     echo json_encode(['success' => false, 'error' => 'No autorizado']);

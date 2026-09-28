@@ -1,8 +1,8 @@
 <?php
-// No incluye includes/header.php todavía: si el POST termina en éxito, redirige
+// No incluye includes/layout/header.php todavía: si el POST termina en éxito, redirige
 // con header('Location...') y eso falla si ya se envió HTML antes (mismo patrón
 // que usa login.php).
-require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/core/auth.php';
 requireLogin();
 
 $pdo = getDB();
@@ -182,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 
 $clientes = $pdo->query("SELECT ClienteID, Nombre, Telefono FROM clientes WHERE Activo = TRUE ORDER BY Nombre ASC")->fetchAll();
 
@@ -209,4 +209,4 @@ if ($vehiculoIdParam > 0) {
 }
 
 include __DIR__ . '/views/ordeningreso.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

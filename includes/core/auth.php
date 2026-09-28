@@ -3,10 +3,10 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/busqueda_repuestos.php';
-require_once __DIR__ . '/servicios.php';
-require_once __DIR__ . '/promociones_combos.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../dominio/busqueda_repuestos.php';
+require_once __DIR__ . '/../dominio/servicios.php';
+require_once __DIR__ . '/../dominio/promociones_combos.php';
 
 function requireLogin() {
     if (empty($_SESSION['usuario'])) {

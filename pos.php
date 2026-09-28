@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 
 $serviciosCatalogo = getDB()->query("SELECT OperacionID, Nombre, PrecioBase FROM operacionessolicitadas WHERE Activo = TRUE AND PrecioBase > 0 ORDER BY EsDiagnosticoBase DESC, Categoria, Orden")->fetchAll();
 $pdo = getDB();
@@ -64,4 +64,4 @@ $cotizacionPreload = (int)($_GET['cotizacion'] ?? 0);
 $otPreload = (int)($_GET['cargar_ot'] ?? 0);
 
 include __DIR__ . '/views/pos.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

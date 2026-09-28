@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 checkRole(['Administrador', 'Supervisor']);
 
 $pdo = getDB();
@@ -179,4 +179,4 @@ if (!empty($combos)) {
 $tiposRepuestoList = tiposRepuesto();
 
 include __DIR__ . '/views/promociones.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

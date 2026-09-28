@@ -223,7 +223,7 @@
 
           <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
             <?php
-              require_once __DIR__ . '/../includes/whatsapp_helper.php';
+              require_once __DIR__ . '/../includes/integraciones/whatsapp_helper.php';
               $msgWAMaint = mensajeAlertaMantenimientoWhatsApp(
                   ['Nombre' => $vehiculo['ClienteNombre'] ?? 'Cliente'],
                   $vehiculo,

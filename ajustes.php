@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 checkRole(['Administrador', 'Supervisor']);
 
 $pdo = getDB();
@@ -28,4 +28,4 @@ $stmtHist = $pdo->query("
 $historialAjustes = $stmtHist->fetchAll();
 
 include __DIR__ . '/views/ajustes.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

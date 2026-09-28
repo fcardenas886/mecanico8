@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 
 $pdo = getDB();
 $user = currentUser();
@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Si algo falla aquí, la entrega igual queda registrada.
         if (!$yaEntregada) {
             try {
-                require_once __DIR__ . '/includes/repuestos_aprendizaje.php';
+                require_once __DIR__ . '/includes/dominio/repuestos_aprendizaje.php';
                 $aprendidos = aprenderRepuestosOT($pdo, $otId);
             } catch (Exception $e) {
                 $aprendidos = [];
@@ -178,4 +178,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $mecanicos = $pdo->query("SELECT UsuarioID, Nombre FROM usuarios WHERE Activo = TRUE ORDER BY Nombre ASC")->fetchAll();
 
 include __DIR__ . '/views/ejecucion.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

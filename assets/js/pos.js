@@ -516,7 +516,7 @@ async function vaciarCarritoPos() {
 }
 
 // Vista previa de combos en el carrito (ej. "1 Aceite + 1 Filtro de Aceite"). El cobro
-// real siempre lo calcula y revalida el servidor (includes/promociones_combos.php); esto
+// real siempre lo calcula y revalida el servidor (includes/dominio/promociones_combos.php); esto
 // solo evita que el cajero tenga que adivinar por qué salió más barato.
 async function cargarCombosActivos() {
   try {
@@ -957,7 +957,7 @@ function calcularDescuentoItem(item) {
 
   // Un combo (ej. "1 Aceite + 1 Filtro") no se acumula con la promoción individual del
   // producto: si la línea quedó reclamada por un combo, ese descuento manda y se ignora
-  // la promoción individual, igual que hace el servidor en includes/promociones_combos.php.
+  // la promoción individual, igual que hace el servidor en includes/dominio/promociones_combos.php.
   const combo = obtenerComboDeItem(item);
   if (combo) return combo.monto;
 

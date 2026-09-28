@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 
 $pdo = getDB();
 $q = trim($_GET['q'] ?? '');
@@ -34,4 +34,4 @@ $stmt->execute([':q' => $q, ':like' => "%$q%", ':like2' => "%$q%", ':idnum' => $
 $ordenes = $stmt->fetchAll();
 
 include __DIR__ . '/views/ordenestrabajo.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

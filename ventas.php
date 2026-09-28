@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 
 $pdo = getDB();
 
@@ -109,4 +109,4 @@ while ($row = $stmtCfgLocal->fetch(PDO::FETCH_ASSOC)) {
 }
 
 include __DIR__ . '/views/ventas.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

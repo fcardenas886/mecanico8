@@ -3,7 +3,7 @@ $folio = formatFolioOT($ot['OrdenTrabajoID']);
 $pendiente = $presupuesto && $presupuesto['DecisionCliente'] === 'Pendiente';
 $decidido = $presupuesto && !$pendiente;
 
-require_once __DIR__ . '/../includes/whatsapp_helper.php';
+require_once __DIR__ . '/../includes/integraciones/whatsapp_helper.php';
 $waMsg = $presupuesto ? mensajePresupuestoWhatsApp($ot, $presupuesto, (float)$tot['total'], obtenerNombreTaller($pdo)) : '';
 $waUrl = $presupuesto ? generarUrlWhatsapp($ot['ClienteTelefono'] ?? '', $waMsg) : '';
 

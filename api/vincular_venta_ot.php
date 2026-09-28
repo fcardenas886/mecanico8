@@ -4,7 +4,7 @@
 // registrar_venta.php necesite saber nada de Ordenes de Trabajo.
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/core/auth.php';
 
 if (empty($_SESSION['usuario'])) {
     echo json_encode(['success' => false, 'error' => 'No autorizado']);

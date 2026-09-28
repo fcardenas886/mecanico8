@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 
 $pdo = getDB();
 $user = currentUser();
@@ -196,4 +196,4 @@ $idsUsados = array_column($usadosEnEsteAuto, 'ProductoID');
 $repuestosCompatibles = array_values(array_filter($repuestosCompatibles, fn($r) => !in_array($r['ProductoID'], $idsUsados)));
 
 include __DIR__ . '/views/ficha_vehiculo.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

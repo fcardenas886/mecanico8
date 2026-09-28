@@ -141,7 +141,7 @@ $visibles = array_filter($filas, function ($par) use ($filtro) {
                   <?= htmlspecialchars($txtAccion) ?> <i class="fa-solid fa-arrow-right" style="font-size: 0.75rem;"></i>
                 </a>
                   <?php
-                    require_once __DIR__ . '/../includes/whatsapp_helper.php';
+                    require_once __DIR__ . '/../includes/integraciones/whatsapp_helper.php';
                     $nombreTaller = obtenerNombreTaller($pdo ?? null);
                     $msgWARec = mensajeRecepcionWhatsApp($ot, $nombreTaller);
                     $urlWARec = generarUrlWhatsapp($ot['ClienteTelefono'] ?? '', $msgWARec);

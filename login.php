@@ -1,7 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/core/auth.php';
 
 if (!empty($_SESSION['usuario'])) {
     header('Location: index.php');

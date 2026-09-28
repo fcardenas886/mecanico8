@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 checkRole(['Administrador', 'Supervisor']);
 
 $pdo = getDB();
@@ -151,4 +151,4 @@ $productos = $stmtP->fetchAll();
 $categorias = $pdo->query("SELECT * FROM categorias ORDER BY Nombre ASC")->fetchAll();
 
 include __DIR__ . '/views/productos.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

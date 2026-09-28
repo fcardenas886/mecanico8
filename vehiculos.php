@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 
 $pdo = getDB();
 $message = '';
@@ -79,4 +79,4 @@ $stmtV->execute([':q' => $q, ':like' => "%$q%", ':like2' => "%$q%", ':like3' => 
 $vehiculos = $stmtV->fetchAll();
 
 include __DIR__ . '/views/vehiculos.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

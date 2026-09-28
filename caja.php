@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
-require_once __DIR__ . '/includes/fiscal.php';
+require_once __DIR__ . '/includes/layout/header.php';
+require_once __DIR__ . '/includes/dominio/fiscal.php';
 
 $pdo = getDB();
 $user = currentUser();
@@ -212,4 +212,4 @@ $historialTurnos = $stmtHist->fetchAll();
 // Cargar la vista HTML
 include __DIR__ . '/views/caja.view.php';
 
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/core/auth.php';
 
 if (empty($_SESSION['usuario'])) {
     echo json_encode(['success' => false, 'error' => 'No autorizado']);
@@ -482,7 +482,7 @@ try {
     try {
         $provider = $pdo->query("SELECT Valor FROM configuraciones WHERE Clave = 'DTE_PROVEEDOR'")->fetchColumn();
         if ($provider && $provider !== 'ninguno') {
-            require_once __DIR__ . '/../includes/sii/SiiFacturacion.php';
+            require_once __DIR__ . '/../includes/integraciones/sii/SiiFacturacion.php';
             $dteResponse = SiiFacturacion::emitirDesdeVenta($ventaID);
         }
     } catch (Exception $dteEx) {

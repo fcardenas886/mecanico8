@@ -167,7 +167,7 @@ $tipoLabel = ['Repuesto' => 'Repuesto', 'ManoObra' => 'Mano de Obra', 'Terceros'
       </button>
     </form>
     <?php
-      require_once __DIR__ . '/../includes/whatsapp_helper.php';
+      require_once __DIR__ . '/../includes/integraciones/whatsapp_helper.php';
       $saldoPendiente = (!empty($ot['VentaID']) || !empty($ot['ManoObraCobrada'])) ? 0 : (float)$totalPresupuesto;
       $msgWAAutoListo = mensajeAutoListoWhatsApp($ot, $saldoPendiente, obtenerNombreTaller($pdo));
       $urlWAAutoListo = generarUrlWhatsapp($ot['ClienteTelefono'] ?? '', $msgWAAutoListo);

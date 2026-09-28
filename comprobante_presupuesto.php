@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 
 $pdo = getDB();
 $otId = (int)($_GET['id'] ?? 0);
@@ -91,4 +91,4 @@ $telefonoEmpresa = $configs['telefono_empresa'] ?? '+56 9 1234 5678';
 $emailEmpresa = $configs['email_empresa'] ?? 'contacto@tallermecanico.cl';
 
 include __DIR__ . '/views/comprobante_presupuesto.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

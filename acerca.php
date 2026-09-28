@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/layout/header.php';
 $pdo = getDB();
 
 // Consultar datos de la empresa
@@ -19,4 +19,4 @@ $mysqlVersion = $pdo->query("SELECT VERSION()")->fetchColumn();
 $phpVersion = PHP_VERSION;
 
 include __DIR__ . '/views/acerca.view.php';
-require_once __DIR__ . '/includes/footer.php';
+require_once __DIR__ . '/includes/layout/footer.php';

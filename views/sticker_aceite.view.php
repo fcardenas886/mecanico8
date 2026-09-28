@@ -216,7 +216,7 @@
       <i class="fa-solid fa-print"></i> Imprimir Etiqueta
     </button>
     <?php
-    require_once __DIR__ . '/../includes/whatsapp_helper.php';
+    require_once __DIR__ . '/../includes/integraciones/whatsapp_helper.php';
     $msgWA = "Hola " . ($ot['ClienteNombre'] ?? '') . " 👋, te dejamos el comprobante de tu cambio de aceite realizado en " . $nombreEmpresa . ":\n";
     $msgWA .= "🚗 Patente: " . $ot['Patente'] . "\n";
     $msgWA .= "📟 Km Actual: " . number_format($kmRealizado, 0, ',', '.') . " km\n";

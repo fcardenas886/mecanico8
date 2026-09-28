@@ -81,7 +81,7 @@ function chkLabel($valor) {
   <div><i class="fa-solid fa-circle-check" style="color:#34d399;"></i> <strong>Vehículo recibido.</strong> Imprime el comprobante: se genera una copia para el cliente y otra reducida para dejar dentro del auto.</div>
   <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
     <?php
-      require_once __DIR__ . '/../includes/whatsapp_helper.php';
+      require_once __DIR__ . '/../includes/integraciones/whatsapp_helper.php';
       $msgWARecepcion = mensajeRecepcionWhatsApp($ot, $nombreTaller);
       $urlWARecepcion = generarUrlWhatsapp($ot['ClienteTelefono'] ?? '', $msgWARecepcion);
     ?>
