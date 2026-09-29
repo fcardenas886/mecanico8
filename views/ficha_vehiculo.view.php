@@ -126,6 +126,51 @@
     </form>
   </div>
 
+  <!-- Revisión Técnica (PRT Chile) -->
+  <div class="fv-kpi-card" style="border-left: 4px solid <?= $prtInfo['badge_color'] === 'danger' ? '#ef4444' : ($prtInfo['badge_color'] === 'warning' ? '#f59e0b' : '#10b981') ?>;">
+    <div class="fv-kpi-title" style="display: flex; justify-content: space-between; align-items: center;">
+      <span><i class="fa-solid fa-shield-halved"></i> Revisión Técnica (PRT)</span>
+      <span class="badge" style="font-size: 0.68rem; background: <?= $prtInfo['es_semestral'] ? 'rgba(168, 85, 247, 0.2)' : 'rgba(100, 116, 139, 0.2)' ?>; color: <?= $prtInfo['es_semestral'] ? '#c084fc' : '#cbd5e1' ?>;">
+        <?= $prtInfo['es_semestral'] ? 'Semestral' : 'Anual' ?>
+      </span>
+    </div>
+    <div class="fv-kpi-val" style="font-size: 1.25rem; color: <?= $prtInfo['badge_color'] === 'danger' ? '#ef4444' : ($prtInfo['badge_color'] === 'warning' ? '#f59e0b' : '#10b981') ?>;">
+      <i class="<?= $prtInfo['badge_icon'] ?>"></i> <?= htmlspecialchars($prtInfo['estado_label']) ?>
+    </div>
+    <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 0.35rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.3rem;">
+      <span>Dígito <strong><?= $prtInfo['digito'] ?? '-' ?></strong> • Mes legal: <strong style="color: #f1f5f9;"><?= htmlspecialchars($prtInfo['meses_texto']) ?></strong></span>
+      <?php if (!empty($prtInfo['vencimiento'])): ?>
+        <span>Vence: <strong><?= date('d/m/Y', strtotime($prtInfo['vencimiento'])) ?></strong></span>
+      <?php endif; ?>
+    </div>
+
+    <!-- Botones de Acción Rápida PRT -->
+    <div style="margin-top: 0.65rem; display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
+      <form method="POST" action="ficha_vehiculo.php?id=<?= $vehiculoId ?>" style="margin: 0;" onsubmit="return confirm('¿Confirmas que la Revisión Técnica está aprobada y al día? Se avanzará la vigencia al siguiente ciclo.');">
+        <?= csrfField() ?>
+        <input type="hidden" name="action" value="renovar_prt">
+        <button type="submit" class="btn btn-secondary" style="padding: 0.25rem 0.55rem; font-size: 0.72rem; background: rgba(16, 185, 129, 0.15); border-color: #10b981; color: #34d399;" title="Marcar como aprobada para el ciclo actual">
+          <i class="fa-solid fa-check"></i> Al Día / Renovada
+        </button>
+      </form>
+
+      <?php if (!empty($urlWhatsAppPRT)): ?>
+        <a href="<?= $urlWhatsAppPRT ?>" target="_blank" class="btn btn-secondary" style="padding: 0.25rem 0.55rem; font-size: 0.72rem; background: rgba(37, 211, 102, 0.12); border-color: #25d366; color: #4ade80;" title="Enviar recordatorio de revisión técnica por WhatsApp">
+          <i class="fa-brands fa-whatsapp"></i> Avisar
+        </a>
+      <?php endif; ?>
+
+      <form method="POST" action="ficha_vehiculo.php?id=<?= $vehiculoId ?>" style="margin: 0; display: inline-block;">
+        <?= csrfField() ?>
+        <input type="hidden" name="action" value="toggle_transporte_publico">
+        <input type="hidden" name="es_transporte_publico" value="<?= empty($vehiculo['EsTransportePublico']) ? '1' : '0' ?>">
+        <button type="submit" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.7rem; color: #94a3b8;" title="Cambiar régimen: Particular (Anual) vs Transporte/Carga (Semestral)">
+          <i class="fa-solid fa-repeat"></i> <?= empty($vehiculo['EsTransportePublico']) ? 'Marcar Transporte/Taxi' : 'Marcar Particular' ?>
+        </button>
+      </form>
+    </div>
+  </div>
+
   <!-- Estado de Alertas Preventivas -->
   <div class="fv-kpi-card">
     <div class="fv-kpi-title"><i class="fa-solid fa-bell"></i> Alertas de Mantenimiento</div>
@@ -166,6 +211,48 @@
   </div>
 
 </div>
+
+<!-- Banner Destacado si la Revisión Técnica está Vencida o por Vencer -->
+<?php if ($prtInfo['estado'] === 'vencida'): ?>
+  <div style="background: rgba(239, 68, 68, 0.12); border: 1px solid #ef4444; border-left: 5px solid #ef4444; border-radius: 8px; padding: 0.85rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+    <div>
+      <strong style="color: #f87171; font-size: 0.95rem;"><i class="fa-solid fa-circle-exclamation"></i> Revisión Técnica VENCIDA (Dígito <?= $prtInfo['digito'] ?> - <?= htmlspecialchars($prtInfo['meses_texto']) ?>)</strong>
+      <div style="color: #cbd5e1; font-size: 0.82rem; margin-top: 2px;">
+        Venció el <?= date('d/m/Y', strtotime($prtInfo['vencimiento'])) ?>. Sugerencia comercial: Ofrecer Pre-Revisión Técnica preventiva, revisión de frenos, luces y tren delantero.
+      </div>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+      <?php if (!empty($urlWhatsAppPRT)): ?>
+        <a href="<?= $urlWhatsAppPRT ?>" target="_blank" class="btn btn-secondary" style="background: rgba(16, 185, 129, 0.15); border-color: #10b981; color: #34d399; font-size: 0.8rem; padding: 0.35rem 0.75rem;">
+          <i class="fa-brands fa-whatsapp"></i> Avisar al Cliente
+        </a>
+      <?php endif; ?>
+      <form method="POST" action="ficha_vehiculo.php?id=<?= $vehiculoId ?>" style="margin: 0;">
+        <?= csrfField() ?>
+        <input type="hidden" name="action" value="renovar_prt">
+        <button type="submit" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">
+          <i class="fa-solid fa-check"></i> Ya fue Renovada
+        </button>
+      </form>
+    </div>
+  </div>
+<?php elseif ($prtInfo['estado'] === 'por_vencer'): ?>
+  <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid #f59e0b; border-left: 5px solid #f59e0b; border-radius: 8px; padding: 0.85rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+    <div>
+      <strong style="color: #fbbf24; font-size: 0.95rem;"><i class="fa-solid fa-triangle-exclamation"></i> Revisión Técnica por Vencer este Mes (Dígito <?= $prtInfo['digito'] ?> - <?= htmlspecialchars($prtInfo['meses_texto']) ?>)</strong>
+      <div style="color: #cbd5e1; font-size: 0.82rem; margin-top: 2px;">
+        Vence el <?= date('d/m/Y', strtotime($prtInfo['vencimiento'])) ?>. Oportunidad comercial: Agendar Pre-Revisión Técnica para asegurar que apruebe sin rechazos.
+      </div>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+      <?php if (!empty($urlWhatsAppPRT)): ?>
+        <a href="<?= $urlWhatsAppPRT ?>" target="_blank" class="btn btn-secondary" style="background: rgba(16, 185, 129, 0.15); border-color: #10b981; color: #34d399; font-size: 0.8rem; padding: 0.35rem 0.75rem;">
+          <i class="fa-brands fa-whatsapp"></i> Recordar por WhatsApp
+        </a>
+      <?php endif; ?>
+    </div>
+  </div>
+<?php endif; ?>
 
 <!-- Sección 1: Alertas de Próximo Mantenimiento Preventivo -->
 <div class="fv-section">

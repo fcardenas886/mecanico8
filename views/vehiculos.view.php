@@ -21,10 +21,29 @@
   </div>
 <?php endif; ?>
 
-<form method="GET" style="margin-bottom: 1rem; display: flex; gap: 0.5rem; max-width: 420px;">
-  <input type="text" name="q" class="form-control" placeholder="Buscar por patente, marca, modelo o cliente..." value="<?= htmlspecialchars($q) ?>">
-  <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass"></i></button>
-</form>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+  <form method="GET" style="display: flex; gap: 0.5rem; max-width: 420px; flex: 1;">
+    <input type="text" name="q" class="form-control" placeholder="Buscar por patente, marca, modelo o cliente..." value="<?= htmlspecialchars($q) ?>">
+    <?php if (!empty($filtroRt)): ?>
+      <input type="hidden" name="filtro_rt" value="<?= htmlspecialchars($filtroRt) ?>">
+    <?php endif; ?>
+    <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass"></i></button>
+  </form>
+
+  <!-- Filtros rápidos de Revisión Técnica (PRT) -->
+  <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+    <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;"><i class="fa-solid fa-shield-halved"></i> Revisión Técnica:</span>
+    <a href="vehiculos.php<?= !empty($q) ? '?q=' . urlencode($q) : '' ?>" class="btn <?= empty($filtroRt) ? 'btn-primary' : 'btn-secondary' ?>" style="padding: 0.25rem 0.6rem; font-size: 0.78rem;">
+      Todos (<?= $totalVehiculos ?>)
+    </a>
+    <a href="vehiculos.php?filtro_rt=por_vencer<?= !empty($q) ? '&q=' . urlencode($q) : '' ?>" class="btn <?= $filtroRt === 'por_vencer' ? 'btn-warning' : 'btn-secondary' ?>" style="padding: 0.25rem 0.6rem; font-size: 0.78rem; <?= $filtroRt === 'por_vencer' ? 'background: #f59e0b; color: #000;' : 'color: #fbbf24;' ?>">
+      <i class="fa-solid fa-triangle-exclamation"></i> Vencen este mes (<?= $totalPorVencer ?>)
+    </a>
+    <a href="vehiculos.php?filtro_rt=vencidos<?= !empty($q) ? '&q=' . urlencode($q) : '' ?>" class="btn <?= $filtroRt === 'vencidos' ? 'btn-danger' : 'btn-secondary' ?>" style="padding: 0.25rem 0.6rem; font-size: 0.78rem; <?= $filtroRt === 'vencidos' ? 'background: #ef4444; color: #fff;' : 'color: #f87171;' ?>">
+      <i class="fa-solid fa-circle-xmark"></i> Vencidos (<?= $totalVencidos ?>)
+    </a>
+  </div>
+</div>
 
 <div class="table-card">
   <div class="table-header">
@@ -41,13 +60,14 @@
         <th>Color</th>
         <th>Cliente</th>
         <th>Km Registrado</th>
+        <th>Revisión Técnica</th>
         <th>Órdenes</th>
         <th>Acciones</th>
       </tr>
     </thead>
     <tbody>
       <?php if (empty($vehiculos)): ?>
-        <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">No hay vehículos registrados.</td></tr>
+        <tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">No hay vehículos registrados.</td></tr>
       <?php else: ?>
         <?php foreach ($vehiculos as $v): ?>
           <tr>
@@ -73,6 +93,26 @@
             <td><?= htmlspecialchars($v['Color'] ?: '-') ?></td>
             <td><?= htmlspecialchars($v['ClienteNombre']) ?></td>
             <td><?= $v['KilometrajeUltimo'] ? number_format($v['KilometrajeUltimo'], 0, ',', '.') . ' km' : '-' ?></td>
+            <td>
+              <?php if (!empty($v['PRT']['valido'])): 
+                $prt = $v['PRT'];
+                $bg = $prt['badge_color'] === 'danger' ? 'rgba(239, 68, 68, 0.15)' : ($prt['badge_color'] === 'warning' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)');
+                $col = $prt['badge_color'] === 'danger' ? '#f87171' : ($prt['badge_color'] === 'warning' ? '#fbbf24' : '#34d399');
+                $bor = $prt['badge_color'] === 'danger' ? 'rgba(239, 68, 68, 0.3)' : ($prt['badge_color'] === 'warning' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)');
+              ?>
+                <span class="badge" style="background: <?= $bg ?>; color: <?= $col ?>; border: 1px solid <?= $bor ?>; font-size: 0.73rem; padding: 3px 7px; display: inline-flex; align-items: center; gap: 4px;" title="<?= htmlspecialchars($prt['estado_label']) ?>">
+                  <i class="<?= $prt['badge_icon'] ?>"></i> <?= htmlspecialchars($prt['meses_texto']) ?>
+                  <?php if ($prt['es_semestral']): ?>
+                    <i class="fa-solid fa-truck" style="margin-left: 2px;" title="Régimen Semestral (Carga/Transporte)"></i>
+                  <?php endif; ?>
+                </span>
+                <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 2px;">
+                  <?= $prt['vencimiento'] ? date('d/m/Y', strtotime($prt['vencimiento'])) : '' ?>
+                </div>
+              <?php else: ?>
+                <span style="color: var(--text-muted); font-size: 0.75rem;">-</span>
+              <?php endif; ?>
+            </td>
             <td>
               <a href="ficha_vehiculo.php?id=<?= $v['VehiculoID'] ?>#ordenes" style="text-decoration: none;">
                 <span class="badge badge-success"><?= (int)$v['TotalOrdenes'] ?></span>
@@ -229,6 +269,16 @@
         </div>
       </div>
 
+      <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-dark); border-radius: 8px; padding: 0.65rem 0.85rem;">
+        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; font-weight: 600; cursor: pointer; color: #f1f5f9; margin: 0;">
+          <input type="checkbox" name="es_transporte_publico" id="vf_es_transporte" value="1" style="width: 16px; height: 16px; accent-color: #38bdf8;">
+          <span><i class="fa-solid fa-truck" style="color: #38bdf8;"></i> Transporte Público / Taxi / Bus / Carga</span>
+        </label>
+        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; margin-left: 24px;">
+          Aplica régimen semestral de Revisión Técnica (2 revisiones al año según Decreto MTT).
+        </div>
+      </div>
+
       <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
         <button type="submit" class="btn btn-primary btn-block"><i class="fa-solid fa-floppy-disk"></i> Guardar Vehículo</button>
         <button type="button" onclick="document.getElementById('vehiculoModal').style.display='none'" class="btn btn-secondary btn-block">Cancelar</button>
@@ -263,6 +313,8 @@ function abrirNuevoVehiculo() {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  const chk = document.getElementById('vf_es_transporte');
+  if (chk) chk.checked = false;
   document.getElementById('apiModalStatus').style.display = 'none';
   document.getElementById('vehiculoModal').style.display = 'flex';
 }
@@ -282,6 +334,8 @@ function abrirEditarVehiculo(v) {
   document.getElementById('vf_tipo').value = v.TipoVehiculo || '';
   document.getElementById('vf_km').value = v.KilometrajeUltimo || '';
   document.getElementById('vf_vin').value = v.VIN || '';
+  const chk = document.getElementById('vf_es_transporte');
+  if (chk) chk.checked = !!Number(v.EsTransportePublico);
   document.getElementById('apiModalStatus').style.display = 'none';
   document.getElementById('vehiculoModal').style.display = 'flex';
 }
@@ -328,11 +382,16 @@ async function consultarApiVehiculosModal() {
     if (d.transmision) document.getElementById('vf_transmision').value = d.transmision;
     if (d.tipo_vehiculo) document.getElementById('vf_tipo').value = d.tipo_vehiculo;
     if (d.vin) document.getElementById('vf_vin').value = d.vin;
+    if (d.revision_tecnica && d.revision_tecnica.es_semestral) {
+      const chk = document.getElementById('vf_es_transporte');
+      if (chk) chk.checked = true;
+    }
 
     status.style.display = 'block';
     status.style.background = 'rgba(16, 185, 129, 0.15)';
     status.style.color = '#34d399';
-    status.innerHTML = `<i class="fa-solid fa-check"></i> Datos completados vía API (${d.marca} ${d.modelo} ${d.combustible || ''})`;
+    const prtTxt = d.revision_tecnica ? ` • RT: ${d.revision_tecnica.meses_texto}` : '';
+    status.innerHTML = `<i class="fa-solid fa-check"></i> Datos completados vía API (${d.marca} ${d.modelo} ${d.combustible || ''}${prtTxt})`;
   } catch (e) {
     status.style.display = 'block';
     status.style.background = 'rgba(239, 68, 68, 0.15)';

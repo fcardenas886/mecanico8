@@ -3,6 +3,7 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/core/auth.php';
 require_once __DIR__ . '/../includes/integraciones/vehiculo_api_helper.php';
+require_once __DIR__ . '/../includes/integraciones/revision_tecnica_helper.php';
 
 if (empty($_SESSION['usuario'])) {
     http_response_code(401);
@@ -33,6 +34,9 @@ if ($buscarLocal && !$forzarApi && !empty($patente)) {
             SELECT v.VehiculoID, v.Patente, v.Marca, v.Modelo, v.Anio, v.Color,
                    v.Combustible, v.Motor, v.Transmision, v.TipoVehiculo, v.VIN,
                    v.KilometrajeUltimo, v.ClienteID,
+                   v.RevisionTecnicaRegimen, v.RevisionTecnicaMes1, v.RevisionTecnicaMes2,
+                   v.RevisionTecnicaVencimiento, v.RevisionTecnicaUltima, v.RevisionTecnicaEstado,
+                   v.EsTransportePublico,
                    c.Nombre AS ClienteNombre, c.Telefono AS ClienteTelefono, c.Email AS ClienteEmail,
                    CONCAT(COALESCE(c.RutCuerpo, ''), IF(c.RutDv IS NOT NULL, CONCAT('-', c.RutDv), '')) AS ClienteRUT,
                    (SELECT COUNT(*) FROM ordenestrabajo ot WHERE ot.VehiculoID = v.VehiculoID) AS TotalOrdenes,
@@ -67,6 +71,16 @@ if ($buscarLocal && !$forzarApi && !empty($patente)) {
                 }
             } catch (Exception $em) {}
 
+            // Calcular Revisión Técnica (PRT)
+            $prt = calcularCalendarioPRT(
+                $vehiculoLocal['Patente'],
+                $vehiculoLocal['TipoVehiculo'],
+                (bool)($vehiculoLocal['EsTransportePublico'] ?? false),
+                null,
+                $vehiculoLocal['RevisionTecnicaUltima'] ?? null,
+                $vehiculoLocal['RevisionTecnicaVencimiento'] ?? null
+            );
+
             echo json_encode([
                 'success' => true,
                 'fuente' => 'local',
@@ -90,7 +104,8 @@ if ($buscarLocal && !$forzarApi && !empty($patente)) {
                     'cliente_rut' => $vehiculoLocal['ClienteRUT'] ?? '',
                     'total_ordenes' => (int)$vehiculoLocal['TotalOrdenes'],
                     'ultima_visita' => $vehiculoLocal['UltimaVisita'] ?? null,
-                    'alertas_mantenimiento' => $alertasMantenimiento
+                    'alertas_mantenimiento' => $alertasMantenimiento,
+                    'revision_tecnica' => $prt
                 ]
             ], JSON_UNESCAPED_UNICODE);
             exit;
@@ -110,4 +125,13 @@ try {
 // 3. Ejecutar Consulta Externa
 $resultado = consultarVehiculoPorPatenteOVin($patente, $vin, $configs);
 
+// Inyectar cálculo automático de Revisión Técnica para vehículos nuevos
+if (!empty($resultado['success']) && !empty($resultado['datos'])) {
+    $d = &$resultado['datos'];
+    $patCalculo = !empty($d['patente']) ? $d['patente'] : $patente;
+    $tipoCalculo = $d['tipo_vehiculo'] ?? '';
+    $d['revision_tecnica'] = calcularCalendarioPRT($patCalculo, $tipoCalculo);
+}
+
 echo json_encode($resultado, JSON_UNESCAPED_UNICODE);
+

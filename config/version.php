@@ -1,10 +1,17 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v5.4.4');
+define('APP_VERSION', 'v5.5.0');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v5.5.0' => [
+        'Módulo de Revisión Técnica (PRT) 100% automático: cálculo legal instantáneo basado en el Decreto Supremo 156 del MTT de Chile por último dígito de patente, sin costos de APIs ni captchas.',
+        'Doble régimen legal MTT: soporte automático para régimen anual (12 meses) en vehículos particulares y semestral (cada 6 meses, 2 revisiones al año) para transporte público, buses, camiones y transporte escolar.',
+        'Semáforo y Alertas en Ficha de Vehículo: tarjeta KPI con semáforo inteligente (Verde/Amarillo/Rojo), botón de renovación en 1 clic y cambio de régimen.',
+        'Alerta comercial en Recepción (OT): al ingresar la patente, el sistema alerta al recepcionista si la RT está vencida o vence este mes para ofrecer Pre-Revisión Técnica y servicios preventivos.',
+        'Filtros rápidos y Campañas por WhatsApp: botones de filtro en la lista de vehículos para ver los vencidos y los que vencen este mes, junto con botón para enviar recordatorio personalizado por WhatsApp con un solo clic.'
+    ],
     'v5.4.4' => [
         'Documentos digitales por WhatsApp con token corto de seguridad: los mensajes de WhatsApp para Presupuesto, Comprobante de Custodia y Aviso de Retiro ahora adjuntan automáticamente un enlace directo y un token único de 8 caracteres (ej: K9X2B4R7).',
         'Visor público de documentos (doc.php): los clientes pueden ver y descargar su presupuesto o comprobante en PDF desde el celular sin necesidad de usuario ni contraseña, con protección total contra accesos no autorizados.',

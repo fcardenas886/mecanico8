@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/layout/header.php';
+require_once __DIR__ . '/includes/integraciones/revision_tecnica_helper.php';
 
 $pdo = getDB();
 $user = currentUser();
@@ -55,6 +56,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = 'Ingresa un kilometraje válido mayor a cero.';
         }
+    } elseif ($action === 'renovar_prt') {
+        $res = marcarPRTRenovada($vehiculoId, $pdo);
+        if ($res['success']) {
+            $message = 'Revisión Técnica marcada como renovada exitosamente hasta el ' . $res['nuevo_vencimiento_format'] . '.';
+            // Recargar datos actualizados del vehículo
+            $stR = $pdo->prepare("SELECT * FROM vehiculos WHERE VehiculoID = :id");
+            $stR->execute([':id' => $vehiculoId]);
+            $vehiculoActualizado = $stR->fetch();
+            if ($vehiculoActualizado) {
+                $vehiculo = array_merge($vehiculo, $vehiculoActualizado);
+            }
+        } else {
+            $error = $res['error'] ?? 'Error al renovar la revisión técnica.';
+        }
+    } elseif ($action === 'toggle_transporte_publico') {
+        $nuevoTp = !empty($_POST['es_transporte_publico']) ? 1 : 0;
+        $pdo->prepare("UPDATE vehiculos SET EsTransportePublico = :tp WHERE VehiculoID = :id")
+            ->execute([':tp' => $nuevoTp, ':id' => $vehiculoId]);
+        sincronizarVehiculoPRT($vehiculoId, $pdo);
+        $vehiculo['EsTransportePublico'] = $nuevoTp;
+        $message = 'Régimen de Revisión Técnica actualizado a ' . ($nuevoTp ? 'Semestral (Transporte/Carga)' : 'Anual (Particular)') . '.';
     } elseif ($action === 'add_mantenimiento') {
         $tipo = trim($_POST['tipo_mantenimiento'] ?? '');
         $kmRealizado = (int)($_POST['km_realizado'] ?? $vehiculo['KilometrajeUltimo'] ?? 0);
@@ -89,6 +111,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Registro eliminado.';
     }
 }
+
+// Cálculo de Revisión Técnica para la vista
+$prtInfo = calcularCalendarioPRT(
+    $vehiculo['Patente'],
+    $vehiculo['TipoVehiculo'],
+    (bool)($vehiculo['EsTransportePublico'] ?? false),
+    null,
+    $vehiculo['RevisionTecnicaUltima'] ?? null,
+    $vehiculo['RevisionTecnicaVencimiento'] ?? null
+);
+
+// Nombre del taller para WhatsApp
+$nombreTaller = 'Taller Mecánico';
+try {
+    $stCfg = $pdo->query("SELECT Valor FROM configuraciones WHERE Clave = 'TALLER_NOMBRE' LIMIT 1");
+    $cfNom = $stCfg->fetchColumn();
+    if ($cfNom) $nombreTaller = $cfNom;
+} catch (Exception $e) {}
+
+$vehiculoConPRT = array_merge($vehiculo, [
+    'RevisionTecnicaMesesTexto' => $prtInfo['meses_texto'],
+    'RevisionTecnicaVencimiento' => $prtInfo['vencimiento'],
+    'RevisionTecnicaRegimen' => $prtInfo['regimen']
+]);
+$mensajeWhatsAppPRT = generarMensajeWhatsAppPRT($vehiculoConPRT, $nombreTaller);
+$telClienteLimpio = !empty($vehiculo['ClienteTelefono']) ? preg_replace('/\D/', '', $vehiculo['ClienteTelefono']) : '';
+$urlWhatsAppPRT = $telClienteLimpio ? 'https://wa.me/56' . $telClienteLimpio . '?text=' . rawurlencode($mensajeWhatsAppPRT) : '';
 
 // 1. Mantenimientos y alertas
 $stmtMaint = $pdo->prepare("

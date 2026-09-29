@@ -589,6 +589,28 @@ async function buscarVehiculoUniversal() {
 
     const d = data.datos;
 
+    // Generar alerta de Revisión Técnica (PRT) si aplica
+    let alertaPrtHtml = '';
+    if (d.revision_tecnica && d.revision_tecnica.valido) {
+      const prt = d.revision_tecnica;
+      const regimenTxt = prt.es_semestral ? ' [Semestral - Carga/Transporte]' : '';
+      if (prt.estado === 'vencida') {
+        alertaPrtHtml = `<div style="margin-top: 6px; padding: 6px 10px; background: rgba(239, 68, 68, 0.2); border-left: 3px solid #ef4444; border-radius: 4px; color: #fca5a5; font-weight: 600; font-size: 0.82rem;">
+          <i class="fa-solid fa-circle-xmark"></i> <strong>ALERTA REVISIÓN TÉCNICA VENCIDA (Dígito ${prt.digito} - ${prt.meses_texto}${regimenTxt}):</strong> Venció el ${prt.vencimiento ? new Date(prt.vencimiento + 'T00:00:00').toLocaleDateString('es-CL') : ''}.<br>
+          <span style="color: #fecaca; font-weight: normal;">👉 <em>Ofrécele al cliente: Pre-Revisión Técnica preventiva, revisión de frenos, luces y tren delantero.</em></span>
+        </div>`;
+      } else if (prt.estado === 'por_vencer') {
+        alertaPrtHtml = `<div style="margin-top: 6px; padding: 6px 10px; background: rgba(245, 158, 11, 0.2); border-left: 3px solid #f59e0b; border-radius: 4px; color: #fde047; font-weight: 600; font-size: 0.82rem;">
+          <i class="fa-solid fa-triangle-exclamation"></i> <strong>REVISIÓN TÉCNICA POR VENCER (Dígito ${prt.digito} - ${prt.meses_texto}${regimenTxt}):</strong> Vence este mes (${prt.vencimiento ? new Date(prt.vencimiento + 'T00:00:00').toLocaleDateString('es-CL') : ''}).<br>
+          <span style="color: #fef08a; font-weight: normal;">👉 <em>Oportunidad comercial: Ofrecer Pre-Revisión Técnica para asegurar que apruebe sin rechazos.</em></span>
+        </div>`;
+      } else if (prt.estado === 'vigente') {
+        alertaPrtHtml = `<div style="margin-top: 6px; padding: 4px 8px; background: rgba(16, 185, 129, 0.15); border-left: 3px solid #10b981; border-radius: 4px; color: #86efac; font-size: 0.8rem;">
+          <i class="fa-solid fa-circle-check"></i> Revisión Técnica al día (${prt.meses_texto}${regimenTxt} • Vence: ${prt.vencimiento ? new Date(prt.vencimiento + 'T00:00:00').toLocaleDateString('es-CL') : ''})
+        </div>`;
+      }
+    }
+
     if (data.fuente === 'local') {
       // VEHÍCULO EXISTENTE EN EL TALLER
       banner.style.display = 'flex';
@@ -604,7 +626,7 @@ async function buscarVehiculoUniversal() {
           <i class="fa-solid fa-triangle-exclamation"></i> Mantenimiento preventivo pendiente: ${d.alertas_mantenimiento.join(' • ')}
         </div>`;
       }
-      bannerTexto.innerHTML = `<div><strong>Vehículo del taller:</strong> ${d.marca} ${d.modelo} (${d.patente}) • Dueño: <strong>${d.cliente_nombre}</strong> • Último km: ${kmAnteriorTxt} • Visitas: ${d.total_ordenes}${alertaHtml}</div>`;
+      bannerTexto.innerHTML = `<div><strong>Vehículo del taller:</strong> ${d.marca} ${d.modelo} (${d.patente}) • Dueño: <strong>${d.cliente_nombre}</strong> • Último km: ${kmAnteriorTxt} • Visitas: ${d.total_ordenes}${alertaHtml}${alertaPrtHtml}</div>`;
       bannerBadge.className = 'badge badge-primary';
       bannerBadge.textContent = 'Historial Taller';
 
@@ -631,7 +653,7 @@ async function buscarVehiculoUniversal() {
       bannerIcon.className = 'fa-solid fa-wand-magic-sparkles';
       
       const fuenteNombre = data.fuente === 'findatos' ? 'Findatos Chile' : (data.fuente === 'boostr' ? 'Boostr Chile' : (data.fuente === 'getapi' ? 'GetAPI' : (data.fuente === 'nhtsa' ? 'NHTSA' : 'API Automotriz')));
-      bannerTexto.innerHTML = `<strong>Datos técnicos extraídos con éxito:</strong> ${d.marca} ${d.modelo} ${d.anio || ''} (${d.combustible || ''} ${d.motor || ''})`;
+      bannerTexto.innerHTML = `<div><strong>Datos técnicos extraídos con éxito:</strong> ${d.marca} ${d.modelo} ${d.anio || ''} (${d.combustible || ''} ${d.motor || ''})${alertaPrtHtml}</div>`;
       bannerBadge.className = 'badge badge-success';
       bannerBadge.textContent = fuenteNombre;
 
