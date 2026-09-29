@@ -447,8 +447,14 @@
 <!-- ==========================================================================
      MODAL DE REIMPRESIÓN TÉRMICA (80mm) (#ticketModal)
      ========================================================================== -->
-<div id="ticketModal" class="ticket-overlay" style="display: none;">
+<div id="ticketModal" class="ticket-overlay" style="display: none;" onclick="if(event.target === this) cerrarTicket()">
   <div class="ticket-modal__card">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.55rem 0.85rem; background: #0f172a; color: #fff; border-bottom: 1px solid #334155;">
+      <span style="font-size: 0.8rem; font-weight: 700; color: #94a3b8; display: flex; align-items: center; gap: 0.4rem;">
+        <i class="fa-solid fa-receipt"></i> Comprobante de Venta
+      </span>
+      <button type="button" onclick="cerrarTicket()" style="background: none; border: none; color: #cbd5e1; font-size: 1.35rem; line-height: 1; cursor: pointer; padding: 0 0.3rem;" title="Cerrar comprobante (Esc)">&times;</button>
+    </div>
     <div class="ticket-paper" id="ticketPaper">
       <!-- Encabezado del Local -->
       <div class="tk-center">
@@ -988,5 +994,20 @@ async function anularVenta(id) {
     alert('Error al anular venta: ' + err.message);
   }
 }
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const tm = document.getElementById('ticketModal');
+    if (tm && tm.style.display === 'flex') {
+      cerrarTicket();
+      return;
+    }
+    const dm = document.getElementById('detalleVentaModal');
+    if (dm && dm.style.display === 'flex') {
+      cerrarModalDetalle();
+      return;
+    }
+  }
+});
 </script>
 

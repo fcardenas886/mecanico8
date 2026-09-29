@@ -6,6 +6,8 @@ let metodoSeleccionadoModal = 'Efectivo';
 let valeAplicado = null; // { codigo, disponible }
 let cotizacionActiva = null; // CotizacionID si la venta actual salió de una cotización
 let otActiva = null; // OrdenTrabajoID si el carrito se cargó desde un presupuesto de taller
+let otActivaInfo = null; // Datos de la OT activa { folio, patente, vehiculo, cliente, ... }
+let otInfoFinalizada = null; // Respaldo de la OT recién cobrada para acciones post-venta
 
 function playBeep() {
   try {
@@ -510,6 +512,9 @@ async function vaciarCarritoPos() {
   cart = [];
   cotizacionActiva = null;
   otActiva = null;
+  otActivaInfo = null;
+  const banner = document.getElementById('posOtBanner');
+  if (banner) banner.style.display = 'none';
   resetDescuento();
   renderCart();
   toast('Venta en proceso cancelada y carrito vaciado.', 'info');
@@ -660,6 +665,45 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.addEventListener('keydown', (e) => {
+    // Cerrar modales con Escape
+    if (e.key === 'Escape') {
+      const modalPost = document.getElementById('modalPostVentaOt');
+      if (modalPost && modalPost.style.display === 'flex') {
+        cerrarModalPostVentaOt();
+        return;
+      }
+      const ticketModal = document.getElementById('ticketModal');
+      if (ticketModal && ticketModal.style.display === 'flex') {
+        cerrarTicket();
+        return;
+      }
+      const pagoModal = document.getElementById('pagoModal');
+      if (pagoModal && pagoModal.style.display === 'flex') {
+        cerrarModalPago();
+        return;
+      }
+      const consultaModal = document.getElementById('consultaPreciosModal');
+      if (consultaModal && consultaModal.style.display === 'flex') {
+        cerrarModalConsultaPrecios();
+        return;
+      }
+      const cotizacionesModal = document.getElementById('cotizacionesModal');
+      if (cotizacionesModal && cotizacionesModal.style.display === 'flex') {
+        cerrarModalCotizaciones();
+        return;
+      }
+      const servicioModal = document.getElementById('servicioModal');
+      if (servicioModal && servicioModal.style.display === 'flex') {
+        servicioModal.style.display = 'none';
+        return;
+      }
+      const movModal = document.getElementById('posMovModal');
+      if (movModal && movModal.style.display === 'flex') {
+        cerrarModalMovimiento();
+        return;
+      }
+    }
+
     // Bloquear terminal con Alt + L o tecla F9
     if ((e.altKey && (e.key === 'l' || e.key === 'L')) || e.key === 'F9') {
       e.preventDefault();
@@ -1227,6 +1271,10 @@ function abrirModalPago() {
   document.getElementById('montoRecibidoModal').value = total;
   calcularVueltoModal();
 
+  // Asegurar que la forma de pago activa esté correctamente resaltada
+  const btnActivo = document.querySelector(`.btn-metodo[data-metodo="${metodoSeleccionadoModal}"]`) || document.querySelector('.btn-metodo');
+  if (btnActivo) setFormaPago(metodoSeleccionadoModal, btnActivo);
+
   const modal = document.getElementById('pagoModal');
   modal.style.display = 'flex';
 }
@@ -1238,8 +1286,13 @@ function cerrarModalPago() {
 function setFormaPago(metodo, btn) {
   metodoSeleccionadoModal = metodo;
 
-  document.querySelectorAll('.btn-metodo').forEach(b => b.classList.remove('active', 'btn-primary'));
-  if (btn) btn.classList.add('active', 'btn-primary');
+  document.querySelectorAll('.btn-metodo').forEach(b => b.classList.remove('active'));
+  if (btn) {
+    btn.classList.add('active');
+  } else {
+    const el = document.querySelector(`.btn-metodo[data-metodo="${metodo}"]`);
+    if (el) el.classList.add('active');
+  }
 
   const pnlEfec = document.getElementById('panelEfectivoModal');
   const pnlMix = document.getElementById('panelMixtoModal');
@@ -1471,25 +1524,46 @@ async function confirmarPagoModal() {
     pagos.forEach(p => pagosTicket.push(p));
 
     const descPromos = cart.reduce((s, i) => s + calcularDescuentoItem(i), 0);
+
+    const otCobradaId = otActiva;
+    const otInfoCobrada = otActivaInfo ? { ...otActivaInfo } : null;
+
+    // Si el carrito venía de una OT de taller, vincular la venta real a esa OT
+    if (otCobradaId && !esOffline) {
+      try {
+        await fetch('api/vincular_venta_ot.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.CSRF_TOKEN || '' },
+          body: JSON.stringify({ ot_id: otCobradaId, venta_id: dataVenta.venta_id })
+        });
+      } catch (errVinc) {
+        console.error('Error al vincular OT:', errVinc);
+      }
+    }
+
+    if (otInfoCobrada) {
+      otInfoFinalizada = {
+        ...otInfoCobrada,
+        venta_id: dataVenta.venta_id,
+        total: total
+      };
+    } else {
+      otInfoFinalizada = null;
+    }
+
     mostrarTicket(dataVenta, cart, total, recibido, vuelto, pagosTicket, {
       subtotal: Math.round(subtotalBruto),
       descuento: Math.round(descPromos) + descGlobal,
       descLineas: Math.round(descPromos),
       descGlobal: descGlobal,
-    });
-
-    // Si el carrito venía de una OT de taller, deja la venta real vinculada a esa OT.
-    if (otActiva && !esOffline) {
-      fetch('api/vincular_venta_ot.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.CSRF_TOKEN || '' },
-        body: JSON.stringify({ ot_id: otActiva, venta_id: dataVenta.venta_id })
-      }).catch(() => {});
-    }
+    }, otInfoFinalizada);
 
     cart = [];
     cotizacionActiva = null;
     otActiva = null;
+    otActivaInfo = null;
+    const banner = document.getElementById('posOtBanner');
+    if (banner) banner.style.display = 'none';
     resetDescuento();
     valeAplicado = null;
     document.getElementById('valeCodigoInput').value = '';
@@ -1661,10 +1735,25 @@ async function cargarPresupuestoOT(otId) {
     cart = [...repuestos, ...servicios];
 
     otActiva = otId;
+    otActivaInfo = data.ot ? { ...data.ot, otId: otId } : null;
     cotizacionActiva = null;
     if (data.ot && data.ot.ClienteID) {
       const sel = document.getElementById('clienteSelect');
       if (sel) sel.value = String(data.ot.ClienteID);
+    }
+
+    // Desplegar el banner contextual de la Orden de Trabajo
+    const banner = document.getElementById('posOtBanner');
+    if (banner && data.ot) {
+      const folioEl = document.getElementById('posOtBannerFolio');
+      const patEl = document.getElementById('posOtBannerPatente');
+      const vehEl = document.getElementById('posOtBannerVehiculo');
+      const cliEl = document.getElementById('posOtBannerCliente');
+      if (folioEl) folioEl.textContent = data.ot.Folio || `OT-${String(otId).padStart(6, '0')}`;
+      if (patEl) patEl.textContent = data.ot.Patente || '';
+      if (vehEl) vehEl.textContent = `${data.ot.Marca || ''} ${data.ot.Modelo || ''}`.trim();
+      if (cliEl) cliEl.textContent = data.ot.ClienteNombre || '';
+      banner.style.display = 'flex';
     }
 
     renderCart();
@@ -1672,6 +1761,96 @@ async function cargarPresupuestoOT(otId) {
   } catch (err) {
     toast('Error al cargar presupuesto de la OT: ' + err.message, 'error');
   }
+}
+
+function cancelarCobroOT() {
+  if (!otActiva) return;
+  const id = otActiva;
+  const folio = otActivaInfo?.Folio || `OT-${String(id).padStart(6, '0')}`;
+  if (!confirm(`¿Deseas salir del cobro de la orden ${folio}?\n\nLos ítems se quitarán del carrito y volverás a la pantalla del taller.`)) {
+    return;
+  }
+  cart = [];
+  otActiva = null;
+  otActivaInfo = null;
+  const banner = document.getElementById('posOtBanner');
+  if (banner) banner.style.display = 'none';
+  renderCart();
+  window.location.href = `ejecucion.php?id=${id}`;
+}
+
+function cerrarModalPostVentaOt() {
+  const modal = document.getElementById('modalPostVentaOt');
+  if (modal) modal.style.display = 'none';
+  otInfoFinalizada = null;
+  const searchInput = document.getElementById('posSearch');
+  if (searchInput) searchInput.focus();
+}
+
+async function entregarOtDirecto(otId, btnEl, onComplete) {
+  if (!otId) return;
+  const textoOriginal = btnEl ? btnEl.innerHTML : '';
+  if (btnEl) {
+    btnEl.disabled = true;
+    btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+  }
+
+  try {
+    const resp = await fetch('api/entregar_ot.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': window.CSRF_TOKEN || ''
+      },
+      body: JSON.stringify({ ot_id: otId })
+    });
+    const res = await resp.json();
+    if (res.success) {
+      if (btnEl) {
+        btnEl.style.background = '#059669';
+        btnEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> ¡Vehículo Entregado!';
+      }
+      toast(res.mensaje || 'Vehículo marcado como entregado con éxito.', 'success');
+      if (onComplete) onComplete(res);
+    } else {
+      if (btnEl) {
+        btnEl.disabled = false;
+        btnEl.innerHTML = textoOriginal;
+      }
+      toast(res.error || 'No se pudo registrar la entrega.', 'error');
+    }
+  } catch (err) {
+    console.error('Error al entregar OT:', err);
+    if (btnEl) {
+      btnEl.disabled = false;
+      btnEl.innerHTML = textoOriginal;
+    }
+    toast('Error de comunicación con el servidor.', 'error');
+  }
+}
+
+async function entregarOtDirectoDesdeTicket() {
+  const btn = document.getElementById('ticketOtEntregarBtn');
+  const otId = btn ? parseInt(btn.dataset.otId) : (otInfoFinalizada ? (otInfoFinalizada.otId || otInfoFinalizada.OrdenTrabajoID) : 0);
+  if (!otId) return;
+
+  await entregarOtDirecto(otId, btn, () => {
+    if (otInfoFinalizada) otInfoFinalizada.yaEntregada = true;
+    const returnBtn = document.getElementById('ticketOtReturnBtn');
+    if (returnBtn) returnBtn.innerHTML = '<i class="fa-solid fa-car"></i> Ver OT Entregada';
+  });
+}
+
+async function entregarOtDirectoDesdeModal() {
+  if (!otInfoFinalizada) return;
+  const otId = otInfoFinalizada.otId || otInfoFinalizada.OrdenTrabajoID;
+  const btn = document.getElementById('btnPostOtEntregarDirecto');
+  await entregarOtDirecto(otId, btn, () => {
+    if (otInfoFinalizada) otInfoFinalizada.yaEntregada = true;
+    setTimeout(() => {
+      cerrarModalPostVentaOt();
+    }, 1200);
+  });
 }
 
 function elegirServicioCatalogo(sel) {
@@ -1769,13 +1948,47 @@ const NOMBRE_PAGO = {
   'Vale Devolucion': 'Vale / Nota de crédito',
 };
 
-function mostrarTicket(data, items, total, pagado, vuelto, pagos, meta) {
+function mostrarTicket(data, items, total, pagado, vuelto, pagos, meta, otInfo) {
   meta = meta || {};
   document.getElementById('ticketFecha').textContent = data.fecha || '';
   if (data.es_offline) {
     document.getElementById('ticketVentaNum').innerHTML = '<span style="color:#f59e0b;font-weight:bold;">COMPROBANTE PROVISIONAL (OFFLINE)</span>';
   } else {
     document.getElementById('ticketVentaNum').textContent = 'N° ' + (data.venta_id || '-');
+  }
+
+  // Si la venta pertenece a una Orden de Trabajo de taller
+  const otInfoEl = document.getElementById('ticketOtInfo');
+  const otActionsRow = document.getElementById('ticketOtActionsRow');
+  const otReturnBtn = document.getElementById('ticketOtReturnBtn');
+  const otEntregarBtn = document.getElementById('ticketOtEntregarBtn');
+  if (otInfo) {
+    const otIdReal = otInfo.otId || otInfo.OrdenTrabajoID;
+    if (otInfoEl) {
+      const folioEl = document.getElementById('ticketOtFolio');
+      const patEl = document.getElementById('ticketOtPatente');
+      const vehEl = document.getElementById('ticketOtVehiculo');
+      if (folioEl) folioEl.textContent = otInfo.Folio || `OT-${String(otIdReal).padStart(6, '0')}`;
+      if (patEl) patEl.textContent = otInfo.Patente || '';
+      if (vehEl) vehEl.textContent = `${otInfo.Marca || ''} ${otInfo.Modelo || ''}`.trim();
+      otInfoEl.style.display = 'block';
+    }
+    if (otActionsRow) {
+      otActionsRow.style.display = 'flex';
+    }
+    if (otReturnBtn) {
+      otReturnBtn.href = `ejecucion.php?id=${otIdReal}&cobrado=1&venta_id=${data.venta_id || ''}`;
+      otReturnBtn.innerHTML = '<i class="fa-solid fa-car"></i> Volver a la OT';
+    }
+    if (otEntregarBtn) {
+      otEntregarBtn.dataset.otId = otIdReal;
+      otEntregarBtn.disabled = false;
+      otEntregarBtn.style.background = '#10b981';
+      otEntregarBtn.innerHTML = '<i class="fa-solid fa-key"></i> Entregar Vehículo';
+    }
+  } else {
+    if (otInfoEl) otInfoEl.style.display = 'none';
+    if (otActionsRow) otActionsRow.style.display = 'none';
   }
 
   const detalleEl = document.getElementById('ticketDetalle');
@@ -1881,31 +2094,48 @@ function mostrarTicket(data, items, total, pagado, vuelto, pagos, meta) {
   const localPrintBtn = document.getElementById('ticketLocalPrintBtn');
   const dtePrintBtn = document.getElementById('ticketDtePrintBtn');
 
-  // El comprobante interno SIEMPRE se puede imprimir (es el respaldo del local y,
-  // en ventas a crédito, lleva la firma del cliente).
-  if (localPrintBtn) localPrintBtn.style.display = 'inline-flex';
+  if (data.dte && data.dte.success) {
+    if (dteFolio) dteFolio.textContent = `Folio: ${data.dte.folio}`;
+    if (dteInfo) dteInfo.style.display = 'block';
 
-  if (dteInfo && dteFolio && dtePdfBtn) {
-    if (data.dte && data.dte.success) {
-      dteFolio.textContent = `Folio: ${data.dte.folio}`;
+    // 1. Botón principal de impresión: Boleta SII
+    if (dtePrintBtn) {
+      dtePrintBtn.dataset.url = data.dte.pdf_url;
+      dtePrintBtn.style.display = 'inline-flex';
+    }
+
+    // 2. Botón secundario: Ver PDF oficial en el navegador
+    if (dtePdfBtn) {
       dtePdfBtn.href = data.dte.pdf_url;
       dtePdfBtn.style.display = 'inline-flex';
-      dteInfo.style.display = 'block';
+    }
 
-      if (dtePrintBtn) {
-        dtePrintBtn.style.display = 'inline-flex';
-        dtePrintBtn.dataset.url = data.dte.pdf_url;
+    // 3. Comprobante interno local:
+    // Si la venta emitió Boleta Electrónica SII, NO se muestra el comprobante interno local
+    // para no saturar con 3 botones redundantes de impresión, EXCEPTO en ventas a crédito
+    // donde el local necesita la firma física del cliente en el pagaré.
+    if (localPrintBtn) {
+      if (data.credito) {
+        localPrintBtn.innerHTML = '<i class="fa-solid fa-signature"></i> Comprobante Crédito';
+        localPrintBtn.style.display = 'inline-flex';
+      } else {
+        localPrintBtn.style.display = 'none';
       }
+    }
 
-      // Impresión directa de la boleta electrónica (salvo venta a crédito:
-      // ahí el cajero imprime primero el comprobante firmado).
-      if (!data.credito) {
-        setTimeout(() => imprimirPdfDirecto(data.dte.pdf_url), 300);
-      }
-    } else {
-      dteInfo.style.display = 'none';
-      dtePdfBtn.style.display = 'none';
-      if (dtePrintBtn) dtePrintBtn.style.display = 'none';
+    // Impresión directa de la boleta electrónica (salvo venta a crédito:
+    // ahí el cajero imprime primero el comprobante firmado).
+    if (!data.credito) {
+      setTimeout(() => imprimirPdfDirecto(data.dte.pdf_url), 300);
+    }
+  } else {
+    // Venta normal sin DTE o cuando DTE está desactivado
+    if (dteInfo) dteInfo.style.display = 'none';
+    if (dtePdfBtn) dtePdfBtn.style.display = 'none';
+    if (dtePrintBtn) dtePrintBtn.style.display = 'none';
+    if (localPrintBtn) {
+      localPrintBtn.innerHTML = '<i class="fa-solid fa-print"></i> Imprimir Comprobante';
+      localPrintBtn.style.display = 'inline-flex';
     }
   }
 
@@ -1943,8 +2173,52 @@ function imprimirPdfDirecto(pdfUrl) {
 }
 
 function cerrarTicket() {
-  document.getElementById('ticketModal').style.display = 'none';
-  document.getElementById('posSearch').focus();
+  const modal = document.getElementById('ticketModal');
+  if (modal) modal.style.display = 'none';
+
+  // Si la venta recién cobrada correspondía a una OT de taller,
+  // mostrar diálogo interactivo para volver al taller o continuar en caja.
+  if (otInfoFinalizada && !otInfoFinalizada.yaEntregada) {
+    const postModal = document.getElementById('modalPostVentaOt');
+    if (postModal) {
+      const otIdReal = otInfoFinalizada.otId || otInfoFinalizada.OrdenTrabajoID;
+      const folioEl = document.getElementById('postOtFolio');
+      const patEl = document.getElementById('postOtPatente');
+      const vehEl = document.getElementById('postOtVehiculo');
+      const cliEl = document.getElementById('postOtCliente');
+      const totEl = document.getElementById('postOtTotal');
+
+      if (folioEl) folioEl.textContent = otInfoFinalizada.Folio || `OT-${String(otIdReal).padStart(6, '0')}`;
+      if (patEl) patEl.textContent = otInfoFinalizada.Patente || '';
+      if (vehEl) vehEl.textContent = `${otInfoFinalizada.Marca || ''} ${otInfoFinalizada.Modelo || ''}`.trim();
+      if (cliEl) cliEl.textContent = otInfoFinalizada.ClienteNombre || '';
+      if (totEl) totEl.textContent = `$${formatNumber(otInfoFinalizada.total || 0)}`;
+
+      const btnEntregar = document.getElementById('btnPostOtEntregarDirecto');
+      if (btnEntregar) {
+        btnEntregar.disabled = false;
+        btnEntregar.style.background = '#10b981';
+        btnEntregar.innerHTML = '<i class="fa-solid fa-key"></i> Entregar Vehículo y Cerrar OT Ahora';
+      }
+
+      const btnIr = document.getElementById('btnPostOtIrEntrega');
+      if (btnIr) {
+        btnIr.href = `ejecucion.php?id=${otIdReal}&cobrado=1&venta_id=${otInfoFinalizada.venta_id || ''}`;
+      }
+
+      const btnSticker = document.getElementById('btnPostOtSticker');
+      if (btnSticker) {
+        btnSticker.href = `sticker_aceite.php?ot=${otIdReal}`;
+        btnSticker.style.display = 'inline-flex';
+      }
+
+      postModal.style.display = 'flex';
+      return;
+    }
+  }
+
+  const searchInput = document.getElementById('posSearch');
+  if (searchInput) searchInput.focus();
 }
 
 function formatNumber(num) {

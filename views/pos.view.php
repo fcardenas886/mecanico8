@@ -30,6 +30,25 @@
       </button>
     </div>
   </div>
+
+  <!-- Banner Contextual de Orden de Trabajo (solo cuando el carrito viene de una OT de taller) -->
+  <div id="posOtBanner" style="grid-column: 1 / -1; display: none; align-items: center; justify-content: space-between; padding: 0.65rem 1.25rem; border-radius: 10px; background: rgba(2, 132, 199, 0.15); border: 1.5px solid #0284c7; color: #e0f2fe; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.75rem;">
+    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+      <span style="background: #0284c7; color: #fff; font-weight: 800; font-size: 0.8rem; padding: 0.25rem 0.6rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.35rem;">
+        <i class="fa-solid fa-wrench"></i> COBRANDO TALLER
+      </span>
+      <span id="posOtBannerFolio" style="font-weight: 800; font-size: 1rem; color: #38bdf8;">OT-000000</span>
+      <span style="color: #94a3b8;">&bull;</span>
+      <span>🚗 <strong id="posOtBannerPatente" style="color: #fbbf24; font-family: monospace; font-size: 1rem;"></strong> (<span id="posOtBannerVehiculo"></span>)</span>
+      <span style="color: #94a3b8;">&bull;</span>
+      <span>👤 <strong id="posOtBannerCliente"></strong></span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <button type="button" onclick="cancelarCobroOT()" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-color: rgba(239, 68, 68, 0.4); color: #f87171;" title="Quitar la OT de caja y volver a la orden">
+        <i class="fa-solid fa-arrow-left"></i> Volver a la OT sin cobrar
+      </button>
+    </div>
+  </div>
   
   <!-- Columna Izquierda: Catálogo y Búsqueda (Se oculta automáticamente en Modo Supermercado) -->
   <div class="pos-catalog">
@@ -341,22 +360,22 @@
         <div>
           <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.5rem;">SELECCIONA FORMA DE PAGO</label>
           <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem;">
-            <button type="button" class="btn btn-secondary btn-metodo active" data-metodo="Efectivo" onclick="setFormaPago('Efectivo', this)">
+            <button type="button" class="btn btn-metodo active" data-metodo="Efectivo" onclick="setFormaPago('Efectivo', this)">
               <i class="fa-solid fa-money-bill-wave"></i> Efectivo
             </button>
-            <button type="button" class="btn btn-secondary btn-metodo" data-metodo="Tarjeta Debito" onclick="setFormaPago('Tarjeta Debito', this)">
+            <button type="button" class="btn btn-metodo" data-metodo="Tarjeta Debito" onclick="setFormaPago('Tarjeta Debito', this)">
               <i class="fa-solid fa-credit-card"></i> Tarjeta
             </button>
-            <button type="button" class="btn btn-secondary btn-metodo" data-metodo="Transferencia" onclick="setFormaPago('Transferencia', this)">
+            <button type="button" class="btn btn-metodo" data-metodo="Transferencia" onclick="setFormaPago('Transferencia', this)">
               <i class="fa-solid fa-building-columns"></i> Transferencia
             </button>
-            <button type="button" class="btn btn-secondary btn-metodo" data-metodo="Credito" onclick="setFormaPago('Credito', this)">
+            <button type="button" class="btn btn-metodo" data-metodo="Credito" onclick="setFormaPago('Credito', this)">
               <i class="fa-solid fa-handshake"></i> Fiado / Crédito
             </button>
-            <button type="button" class="btn btn-secondary btn-metodo" data-metodo="Puntos" onclick="setFormaPago('Puntos', this)">
+            <button type="button" class="btn btn-metodo" data-metodo="Puntos" onclick="setFormaPago('Puntos', this)">
               <i class="fa-solid fa-star"></i> Puntos
             </button>
-            <button type="button" class="btn btn-secondary btn-metodo" data-metodo="Mixto" onclick="setFormaPago('Mixto', this)">
+            <button type="button" class="btn btn-metodo" data-metodo="Mixto" onclick="setFormaPago('Mixto', this)">
               <i class="fa-solid fa-layer-group"></i> Pago Mixto
             </button>
           </div>
@@ -366,11 +385,11 @@
         <div id="panelEfectivoModal">
           <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.4rem;">BOTONES DE EFECTIVO RÁPIDO</label>
           <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem;">
-            <button type="button" onclick="setMontoQuick('exacto')" class="btn btn-secondary" style="flex:1; padding:0.5rem;">$ Exacto</button>
-            <button type="button" onclick="setMontoQuick(2000)" class="btn btn-secondary" style="flex:1; padding:0.5rem;">$2.000</button>
-            <button type="button" onclick="setMontoQuick(5000)" class="btn btn-secondary" style="flex:1; padding:0.5rem;">$5.000</button>
-            <button type="button" onclick="setMontoQuick(10000)" class="btn btn-secondary" style="flex:1; padding:0.5rem;">$10.000</button>
-            <button type="button" onclick="setMontoQuick(20000)" class="btn btn-secondary" style="flex:1; padding:0.5rem;">$20.000</button>
+            <button type="button" onclick="setMontoQuick('exacto')" class="btn btn-quick-monto" style="flex:1; padding:0.55rem 0.4rem;">$ Exacto</button>
+            <button type="button" onclick="setMontoQuick(2000)" class="btn btn-quick-monto" style="flex:1; padding:0.55rem 0.4rem;">$2.000</button>
+            <button type="button" onclick="setMontoQuick(5000)" class="btn btn-quick-monto" style="flex:1; padding:0.55rem 0.4rem;">$5.000</button>
+            <button type="button" onclick="setMontoQuick(10000)" class="btn btn-quick-monto" style="flex:1; padding:0.55rem 0.4rem;">$10.000</button>
+            <button type="button" onclick="setMontoQuick(20000)" class="btn btn-quick-monto" style="flex:1; padding:0.55rem 0.4rem;">$20.000</button>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
@@ -498,8 +517,15 @@
 </div>
 
 <!-- Modal de Ticket / Comprobante -->
-<div id="ticketModal" class="ticket-overlay" style="display: none;">
+<div id="ticketModal" class="ticket-overlay" style="display: none;" onclick="if(event.target === this) cerrarTicket()">
   <div class="ticket-modal__card">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.55rem 0.85rem; background: #0f172a; color: #fff; border-bottom: 1px solid #334155;">
+      <span style="font-size: 0.8rem; font-weight: 700; color: #94a3b8; display: flex; align-items: center; gap: 0.4rem;">
+        <i class="fa-solid fa-receipt"></i> Comprobante de Venta
+      </span>
+      <button type="button" onclick="cerrarTicket()" style="background: none; border: none; color: #cbd5e1; font-size: 1.35rem; line-height: 1; cursor: pointer; padding: 0 0.3rem;" title="Cerrar comprobante (Esc)">&times;</button>
+    </div>
+
     <div class="ticket-paper" id="ticketPaper">
       <div class="tk-center">
         <div class="tk-strong tk-lg"><?= htmlspecialchars($cfgLocal['MINIMARKET_NOMBRE'] ?? 'MINIMARKET') ?></div>
@@ -512,6 +538,13 @@
       <div class="tk-sep"></div>
       <div class="tk-row"><span>Comprobante interno</span><span id="ticketVentaNum"></span></div>
       <div class="tk-row"><span id="ticketFecha"></span><span>Caja: <?= htmlspecialchars($user['nombre']) ?></span></div>
+
+      <!-- Membrete si la venta proviene de una Orden de Trabajo -->
+      <div id="ticketOtInfo" style="display: none; background: #f1f5f9; border: 1px dashed #64748b; border-radius: 6px; padding: 0.45rem 0.6rem; margin: 0.45rem 0; font-size: 11px; text-align: left;">
+        <div style="font-weight: 800; color: #0284c7;"><i class="fa-solid fa-wrench"></i> <span id="ticketOtFolio">OT-000000</span></div>
+        <div style="color: #1e293b; margin-top: 1px;"><span id="ticketOtVehiculo"></span> &bull; <strong id="ticketOtPatente"></strong></div>
+      </div>
+
       <div class="tk-sep"></div>
 
       <div id="ticketDetalle" class="tk-items"></div>
@@ -557,16 +590,63 @@
     </div>
 
     <div class="ticket-modal__actions no-print">
-      <a id="ticketDtePdfBtn" href="#" target="_blank" class="btn btn-success" style="display: none;">
-        <i class="fa-solid fa-file-pdf"></i> Ver PDF SII
+      <!-- Fila 1: Impresión y Documento de Venta -->
+      <div id="ticketRowPrint" style="display: flex; gap: 0.5rem; width: 100%;">
+        <button id="ticketDtePrintBtn" type="button" onclick="imprimirPdfDirecto(this.dataset.url)" class="btn btn-primary" style="display: none; flex: 1.4; background: #0284c7; border-color: #0284c7; font-weight: 700;">
+          <i class="fa-solid fa-print"></i> Imprimir Boleta SII
+        </button>
+        <a id="ticketDtePdfBtn" href="#" target="_blank" class="btn btn-secondary" style="display: none; flex: 1;">
+          <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> Ver PDF
+        </a>
+        <button id="ticketLocalPrintBtn" type="button" onclick="window.print()" class="btn btn-primary" style="width: 100%; font-weight: 700;">
+          <i class="fa-solid fa-print"></i> Imprimir Comprobante
+        </button>
+      </div>
+
+      <!-- Fila 2: Gestión de Taller (solo si la venta corresponde a una OT) -->
+      <div id="ticketOtActionsRow" style="display: none; gap: 0.5rem; width: 100%;">
+        <button id="ticketOtEntregarBtn" type="button" onclick="entregarOtDirectoDesdeTicket()" class="btn" style="flex: 1; background: #10b981; color: #fff; font-weight: 800; border: none; box-shadow: 0 4px 12px rgba(16,185,129,0.25);">
+          <i class="fa-solid fa-key"></i> Entregar Vehículo
+        </button>
+        <a id="ticketOtReturnBtn" href="#" class="btn btn-primary" style="flex: 1; background: #2563eb; border-color: #2563eb; color: #fff; font-weight: 700;">
+          <i class="fa-solid fa-car"></i> Volver a la OT
+        </a>
+      </div>
+
+      <!-- Fila 3: Botón Cerrar legible a ancho completo -->
+      <button onclick="cerrarTicket()" class="btn btn-secondary" id="ticketCerrarBtn" style="width: 100%; font-weight: 700;">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Éxito y Retorno a OT de Taller (aparece al cerrar ticket si la venta fue de una OT) -->
+<div id="modalPostVentaOt" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 2100; align-items: center; justify-content: center; padding: 1.5rem;" onclick="if(event.target===this) cerrarModalPostVentaOt()">
+  <div style="background: var(--card-bg); border: 2px solid #0284c7; border-radius: 16px; width: 520px; max-width: 95vw; padding: 2rem; box-shadow: 0 25px 50px rgba(0,0,0,0.7); text-align: center;">
+    <div style="width: 64px; height: 64px; background: rgba(16, 185, 129, 0.15); border: 2px solid #10b981; color: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1.25rem;">
+      <i class="fa-solid fa-circle-check"></i>
+    </div>
+    <h3 style="font-size: 1.35rem; font-weight: 800; color: #fff; margin-bottom: 0.4rem;">¡Venta Vinculada a la Orden de Trabajo!</h3>
+    <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.25rem;">
+      La orden <strong id="postOtFolio" style="color: #38bdf8;">OT-000000</strong> ha quedado registrada como cobrada.
+    </p>
+    <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-dark); border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 1.5rem; text-align: left; font-size: 0.88rem; display: flex; flex-direction: column; gap: 0.4rem;">
+      <div><span style="color: var(--text-muted);">Vehículo:</span> <strong id="postOtVehiculo" style="color: #fff;"></strong> &bull; <code id="postOtPatente" style="font-size: 0.95rem; font-weight: 700; color: #fbbf24;"></code></div>
+      <div><span style="color: var(--text-muted);">Cliente:</span> <strong id="postOtCliente" style="color: #cbd5e1;"></strong></div>
+      <div><span style="color: var(--text-muted);">Total cobrado:</span> <strong id="postOtTotal" style="color: #34d399; font-size: 1.05rem;"></strong></div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+      <button type="button" id="btnPostOtEntregarDirecto" onclick="entregarOtDirectoDesdeModal()" class="btn" style="padding: 0.85rem 1.25rem; font-size: 1rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: #10b981; color: #fff; border: none; box-shadow: 0 4px 14px rgba(16,185,129,0.35); cursor: pointer;">
+        <i class="fa-solid fa-key"></i> Entregar Vehículo y Cerrar OT Ahora
+      </button>
+      <a id="btnPostOtIrEntrega" href="#" class="btn btn-primary" style="padding: 0.75rem 1.25rem; font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: #0284c7; border-color: #0284c7;">
+        <i class="fa-solid fa-wrench"></i> Ir a la Ficha de la OT en Taller
       </a>
-      <button id="ticketLocalPrintBtn" onclick="window.print()" class="btn btn-primary">
-        <i class="fa-solid fa-print"></i> Imprimir comprobante
+      <a id="btnPostOtSticker" href="#" target="_blank" class="btn" style="padding: 0.65rem 1.25rem; font-size: 0.9rem; font-weight: 700; display: none; align-items: center; justify-content: center; gap: 0.5rem; background: #f59e0b; color: #000;">
+        <i class="fa-solid fa-tag"></i> Imprimir Sticker Aceite
+      </a>
+      <button type="button" onclick="cerrarModalPostVentaOt()" class="btn btn-secondary" style="padding: 0.65rem 1.25rem; font-size: 0.9rem;">
+        <i class="fa-solid fa-cart-shopping"></i> Continuar en Caja POS (Siguiente Venta)
       </button>
-      <button id="ticketDtePrintBtn" onclick="imprimirPdfDirecto(this.dataset.url)" class="btn btn-success" style="display: none;">
-        <i class="fa-solid fa-print"></i> Imprimir boleta SII
-      </button>
-      <button onclick="cerrarTicket()" class="btn btn-secondary">Cerrar</button>
     </div>
   </div>
 </div>

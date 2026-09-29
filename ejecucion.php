@@ -70,105 +70,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = 'Todavía falta cobrar la OT en caja antes de marcarla como lista.';
         }
-    } elseif ($action === 'marcar_entregado' && $ot['Estado'] !== 'Listo para entregar') {
-        $error = $ot['Estado'] === 'Entregado'
-            ? 'Esta orden ya fue entregada.'
-            : 'Antes de entregar, la orden debe estar cobrada en caja y marcada como "Listo para entregar".';
     } elseif ($action === 'marcar_entregado') {
-        $yaEntregada = $ot['Estado'] === 'Entregado';
-        $pdo->prepare("UPDATE ordenestrabajo SET Estado = 'Entregado', FechaEntrega = NOW() WHERE OrdenTrabajoID = :id")
-            ->execute([':id' => $otId]);
-
-        // El sistema recuerda qué repuestos usa este vehículo/modelo para sugerirlos la próxima vez.
-        // Si algo falla aquí, la entrega igual queda registrada.
-        if (!$yaEntregada) {
-            try {
-                require_once __DIR__ . '/includes/dominio/repuestos_aprendizaje.php';
-                $aprendidos = aprenderRepuestosOT($pdo, $otId);
-            } catch (Exception $e) {
-                $aprendidos = [];
-            }
-        }
-
-        // Registrar automáticamente en historialmantenimiento si se realizaron tareas preventivas clave
-        $kmIngreso = (int)($ot['KilometrajeIngreso'] ?? 0);
-        $vehiculoId = (int)$ot['VehiculoID'];
-
-        $stmtChkHm = $pdo->prepare("SELECT COUNT(*) FROM historialmantenimiento WHERE OrdenTrabajoID = :ot");
-        $stmtChkHm->execute([':ot' => $otId]);
-        if ((int)$stmtChkHm->fetchColumn() === 0 && !empty($lineas)) {
-            // Consultar si el mecánico definió intervalos específicos en la inspección/chequeo
-            $stmtEstCfg = $pdo->prepare("SELECT AceiteIntervaloKm, AceiteIntervaloMeses, FrenosIntervaloKm, FrenosIntervaloMeses FROM estacionservicio_ot WHERE OrdenTrabajoID = :id");
-            $stmtEstCfg->execute([':id' => $otId]);
-            $estCfg = $stmtEstCfg->fetch();
-
-            $aceiteKmInterval = (!empty($estCfg['AceiteIntervaloKm']) && (int)$estCfg['AceiteIntervaloKm'] > 0) ? (int)$estCfg['AceiteIntervaloKm'] : 10000;
-            $aceiteMesesInterval = (!empty($estCfg['AceiteIntervaloMeses']) && (int)$estCfg['AceiteIntervaloMeses'] > 0) ? (int)$estCfg['AceiteIntervaloMeses'] : 6;
-
-            $frenosKmInterval = (!empty($estCfg['FrenosIntervaloKm']) && (int)$estCfg['FrenosIntervaloKm'] > 0) ? (int)$estCfg['FrenosIntervaloKm'] : 25000;
-            $frenosMesesInterval = (!empty($estCfg['FrenosIntervaloMeses']) && (int)$estCfg['FrenosIntervaloMeses'] > 0) ? (int)$estCfg['FrenosIntervaloMeses'] : 12;
-
-            $stmtInsHm = $pdo->prepare("
-                INSERT INTO historialmantenimiento
-                    (VehiculoID, OrdenTrabajoID, TipoMantenimiento, KilometrajeRealizado, FechaRealizado,
-                     KilometrajeProximo, FechaProxima, Estado, Notas, UsuarioID)
-                VALUES
-                    (:vid, :ot, :tipo, :kmr, NOW(), :kmp, :fp, 'Vigente', :notas, :uid)
-            ");
-
-            $tieneAceite = false;
-            $tieneFrenos = false;
-            $tieneDistribucion = false;
-
-            foreach ($lineas as $l) {
-                $desc = mb_strtolower($l['Descripcion']);
-                if (str_contains($desc, 'aceite') || str_contains($desc, 'lubricante')) {
-                    $tieneAceite = true;
-                }
-                if (str_contains($desc, 'freno') || str_contains($desc, 'pastilla')) {
-                    $tieneFrenos = true;
-                }
-                if (str_contains($desc, 'distribucion') || str_contains($desc, 'correa') || str_contains($desc, 'distribución')) {
-                    $tieneDistribucion = true;
-                }
-            }
-
-            if ($tieneAceite) {
-                $stmtInsHm->execute([
-                    ':vid' => $vehiculoId,
-                    ':ot' => $otId,
-                    ':tipo' => 'Cambio de Aceite y Filtro de Motor',
-                    ':kmr' => $kmIngreso,
-                    ':kmp' => $kmIngreso ? ($kmIngreso + $aceiteKmInterval) : null,
-                    ':fp' => date('Y-m-d', strtotime("+{$aceiteMesesInterval} months")),
-                    ':notas' => "Registrado automáticamente al entregar OT " . formatFolioOT($otId) . " (Intervalo: " . number_format($aceiteKmInterval, 0, ',', '.') . " km / {$aceiteMesesInterval} meses)",
-                    ':uid' => $user['id']
-                ]);
-            }
-            if ($tieneFrenos) {
-                $stmtInsHm->execute([
-                    ':vid' => $vehiculoId,
-                    ':ot' => $otId,
-                    ':tipo' => 'Mantenimiento de Frenos',
-                    ':kmr' => $kmIngreso,
-                    ':kmp' => $kmIngreso ? ($kmIngreso + $frenosKmInterval) : null,
-                    ':fp' => date('Y-m-d', strtotime("+{$frenosMesesInterval} months")),
-                    ':notas' => "Registrado automáticamente al entregar OT " . formatFolioOT($otId) . " (Intervalo: " . number_format($frenosKmInterval, 0, ',', '.') . " km / {$frenosMesesInterval} meses)",
-                    ':uid' => $user['id']
-                ]);
-            }
-            if ($tieneDistribucion) {
-                $stmtInsHm->execute([
-                    ':vid' => $vehiculoId,
-                    ':ot' => $otId,
-                    ':tipo' => 'Cambio de Kit de Distribución',
-                    ':kmr' => $kmIngreso,
-                    ':kmp' => $kmIngreso ? ($kmIngreso + 60000) : null,
-                    ':fp' => date('Y-m-d', strtotime('+3 years')),
-                    ':notas' => 'Registrado automáticamente al entregar OT ' . formatFolioOT($otId),
-                    ':uid' => $user['id']
-                ]);
-            }
+        require_once __DIR__ . '/includes/dominio/ot_entrega.php';
+        $userId = (int)($user['UsuarioID'] ?? $user['id'] ?? 1);
+        $resEntrega = entregarOrdenTrabajo($pdo, $otId, $userId);
+        if (!$resEntrega['success']) {
+            $error = $resEntrega['error'];
+        } else {
+            $aprendidos = $resEntrega['aprendidos'] ?? [];
         }
     }
 

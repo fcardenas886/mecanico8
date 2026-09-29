@@ -408,6 +408,7 @@ $stmtHist = $pdo->prepare("
     JOIN ordenestrabajo ot ON pr.OrdenTrabajoID = ot.OrdenTrabajoID
     LEFT JOIN productos p ON pd.ProductoID = p.ProductoID
     WHERE ot.VehiculoID = :vid AND pd.Aprobado = 1 AND ot.OrdenTrabajoID != :ot
+      AND (pd.ProductoID IS NULL OR p.Activo = TRUE)
     ORDER BY ot.OrdenTrabajoID DESC, pd.PresupuestoDetalleID ASC
 ");
 $stmtHist->execute([':vid' => $ot['VehiculoID'], ':ot' => $otId]);

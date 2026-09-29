@@ -15,7 +15,15 @@ $otId = (int)($_GET['ot_id'] ?? 0);
 
 $pdo = getDB();
 
-$stmtOT = $pdo->prepare("SELECT OrdenTrabajoID, ClienteID, VentaID FROM ordenestrabajo WHERE OrdenTrabajoID = :id");
+$stmtOT = $pdo->prepare("
+    SELECT ot.OrdenTrabajoID, ot.ClienteID, ot.VentaID, ot.Estado,
+           v.Patente, v.Marca, v.Modelo, v.Anio,
+           c.Nombre AS ClienteNombre, c.Telefono AS ClienteTelefono
+    FROM ordenestrabajo ot
+    JOIN vehiculos v ON ot.VehiculoID = v.VehiculoID
+    JOIN clientes c ON ot.ClienteID = c.ClienteID
+    WHERE ot.OrdenTrabajoID = :id
+");
 $stmtOT->execute([':id' => $otId]);
 $ot = $stmtOT->fetch();
 
@@ -67,7 +75,18 @@ if (empty($repuestos) && empty($servicios)) {
 
 echo json_encode([
     'success' => true,
-    'ot' => ['OrdenTrabajoID' => $ot['OrdenTrabajoID'], 'ClienteID' => $ot['ClienteID']],
+    'ot' => [
+        'OrdenTrabajoID' => (int)$ot['OrdenTrabajoID'],
+        'ClienteID' => (int)$ot['ClienteID'],
+        'Folio' => formatFolioOT($ot['OrdenTrabajoID']),
+        'Patente' => $ot['Patente'],
+        'Marca' => $ot['Marca'],
+        'Modelo' => $ot['Modelo'],
+        'Anio' => $ot['Anio'],
+        'ClienteNombre' => $ot['ClienteNombre'],
+        'ClienteTelefono' => $ot['ClienteTelefono'],
+        'Estado' => $ot['Estado'],
+    ],
     'repuestos' => $repuestos,
     'servicios' => $servicios,
     'congelado' => (int)($presupuesto['DescuentosCongelados'] ?? 0) === 1,

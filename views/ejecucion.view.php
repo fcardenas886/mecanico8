@@ -69,6 +69,38 @@ $tipoLabel = ['Repuesto' => 'Repuesto', 'ManoObra' => 'Mano de Obra', 'Terceros'
   </div>
 <?php endif; ?>
 
+<?php if (isset($_GET['cobrado']) && !$entregado): ?>
+  <div style="background: rgba(16, 185, 129, 0.15); border: 2px solid var(--success); color: #34d399; padding: 1.1rem 1.35rem; border-radius: 12px; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+    <div style="display: flex; align-items: center; gap: 0.85rem;">
+      <i class="fa-solid fa-circle-check" style="font-size: 1.85rem; color: var(--success);"></i>
+      <div>
+        <div style="font-weight: 800; font-size: 1.1rem; color: #fff;">¡Cobro registrado exitosamente en Caja POS!</div>
+        <div style="font-size: 0.88rem; color: #cbd5e1;">
+          La orden de trabajo quedó vinculada <?= !empty($_GET['venta_id']) ? 'a la <strong>Venta #' . (int)$_GET['venta_id'] . '</strong>' : 'al pago' ?>. Ya está pagada.
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap;">
+      <form method="POST" action="ejecucion.php?id=<?= $otId ?>" style="margin: 0;">
+        <?= csrfField() ?>
+        <input type="hidden" name="action" value="marcar_entregado">
+        <button type="submit" class="btn" style="background: #10b981; color: #fff; font-weight: 800; padding: 0.65rem 1.3rem; font-size: 0.95rem; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 14px rgba(16,185,129,0.35);">
+          <i class="fa-solid fa-key"></i> Marcar Entregado (1 Clic)
+        </button>
+      </form>
+      <?php if (!$listoParaEntregar): ?>
+        <form method="POST" action="ejecucion.php?id=<?= $otId ?>" style="margin: 0;">
+          <?= csrfField() ?>
+          <input type="hidden" name="action" value="marcar_listo">
+          <button type="submit" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.6rem 0.95rem;" title="Si el vehículo quedará en taller esperando que el cliente lo retire">
+            <i class="fa-solid fa-clock"></i> Solo marcar listo para retiro
+          </button>
+        </form>
+      <?php endif; ?>
+    </div>
+  </div>
+<?php endif; ?>
+
 <?php if ($entregado): ?>
   <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid var(--success); color: #34d399; padding: 1rem 1.25rem; border-radius: 8px; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
     <div>
@@ -147,25 +179,28 @@ $tipoLabel = ['Repuesto' => 'Repuesto', 'ManoObra' => 'Mano de Obra', 'Terceros'
 </div>
 
 <div class="ej-section" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-  <?php if (!$listoParaEntregar): ?>
-    <form method="POST" action="ejecucion.php?id=<?= $otId ?>">
-      <?= csrfField() ?>
-      <input type="hidden" name="action" value="marcar_listo">
-      <button type="submit" class="btn btn-primary" style="padding: 0.7rem 1.3rem;" <?= $puedeMarcarListo ? '' : 'disabled' ?>>
-        <i class="fa-solid fa-check"></i> Marcar Listo para Entregar
-      </button>
-    </form>
-    <?php if (!$puedeMarcarListo): ?>
-      <span style="color: var(--text-muted); font-size: 0.85rem;">Cobra la OT en caja primero.</span>
+  <?php if (!$entregado): ?>
+    <?php if ($cobrado): ?>
+      <form method="POST" action="ejecucion.php?id=<?= $otId ?>" style="margin: 0;">
+        <?= csrfField() ?>
+        <input type="hidden" name="action" value="marcar_entregado">
+        <button type="submit" class="btn" style="background: #10b981; color: #fff; font-weight: 800; padding: 0.7rem 1.3rem; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(16,185,129,0.3);">
+          <i class="fa-solid fa-key"></i> Marcar Entregado
+        </button>
+      </form>
     <?php endif; ?>
-  <?php elseif (!$entregado): ?>
-    <form method="POST" action="ejecucion.php?id=<?= $otId ?>">
-      <?= csrfField() ?>
-      <input type="hidden" name="action" value="marcar_entregado">
-      <button type="submit" class="btn btn-primary" style="padding: 0.7rem 1.3rem;">
-        <i class="fa-solid fa-key"></i> Marcar Entregado
-      </button>
-    </form>
+    <?php if (!$listoParaEntregar): ?>
+      <form method="POST" action="ejecucion.php?id=<?= $otId ?>" style="margin: 0;">
+        <?= csrfField() ?>
+        <input type="hidden" name="action" value="marcar_listo">
+        <button type="submit" class="btn btn-primary" style="padding: 0.7rem 1.3rem;" <?= $puedeMarcarListo ? '' : 'disabled' ?>>
+          <i class="fa-solid fa-check"></i> Marcar Listo para Entregar
+        </button>
+      </form>
+      <?php if (!$puedeMarcarListo): ?>
+        <span style="color: var(--text-muted); font-size: 0.85rem;">Cobra la OT en caja primero.</span>
+      <?php endif; ?>
+    <?php endif; ?>
     <?php
       require_once __DIR__ . '/../includes/integraciones/whatsapp_helper.php';
       $saldoPendiente = (!empty($ot['VentaID']) || !empty($ot['ManoObraCobrada'])) ? 0 : (float)$totalPresupuesto;

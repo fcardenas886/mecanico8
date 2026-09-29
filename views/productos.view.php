@@ -1,15 +1,28 @@
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
   <div>
-    <h1 style="font-size: 1.5rem; font-weight: 700;">Catálogo de Productos</h1>
-    <p style="color: var(--text-muted); font-size: 0.9rem;">Gestión de precios, stock mínimo y códigos de barra</p>
+    <h1 style="font-size: 1.5rem; font-weight: 700;">
+      <?= $verInactivos ? '<i class="fa-solid fa-eye-slash" style="color: #ef4444;"></i> Productos Desactivados' : 'Catálogo de Productos' ?>
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.9rem;">
+      <?= $verInactivos ? 'Gestión de repuestos y productos fuera de circulación' : 'Gestión de precios, stock mínimo y códigos de barra' ?>
+    </p>
   </div>
-  <div style="display: flex; gap: 0.6rem; align-items: center;">
-    <a href="actualizar_precios.php" class="btn btn-secondary" style="color: #f59e0b; border-color: rgba(245, 158, 11, 0.35); font-weight: 600;">
-      <i class="fa-solid fa-bolt"></i> Actualizador Rápido
-    </a>
-    <button onclick="abrirNuevoModal()" class="btn btn-primary">
-      <i class="fa-solid fa-plus"></i> Nuevo Producto
-    </button>
+  <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+    <?php if ($verInactivos): ?>
+      <a href="productos.php" class="btn btn-primary" style="font-weight: 700;">
+        <i class="fa-solid fa-arrow-left"></i> Volver a Activos (<?= $totalActivos ?>)
+      </a>
+    <?php else: ?>
+      <a href="productos.php?ver=inactivos" class="btn btn-secondary" style="font-weight: 600; border-color: rgba(239, 68, 68, 0.4); color: <?= $totalInactivos > 0 ? '#f87171' : 'var(--text-muted)' ?>;" title="Ver productos fuera de circulación">
+        <i class="fa-solid fa-eye-slash"></i> Ver Desactivados (<?= $totalInactivos ?>)
+      </a>
+      <a href="actualizar_precios.php" class="btn btn-secondary" style="color: #f59e0b; border-color: rgba(245, 158, 11, 0.35); font-weight: 600;">
+        <i class="fa-solid fa-bolt"></i> Actualizador Rápido
+      </a>
+      <button onclick="abrirNuevoModal()" class="btn btn-primary">
+        <i class="fa-solid fa-plus"></i> Nuevo Producto
+      </button>
+    <?php endif; ?>
   </div>
 </div>
 
@@ -25,13 +38,34 @@
   </div>
 <?php endif; ?>
 
+<?php if ($verInactivos): ?>
+  <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 10px; padding: 0.85rem 1.15rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <i class="fa-solid fa-circle-exclamation" style="font-size: 1.4rem; color: #ef4444;"></i>
+      <div>
+        <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">Estás en la lista de productos desactivados</div>
+        <div style="font-size: 0.82rem; color: #cbd5e1;">Estos productos están ocultos de la venta en Caja POS y del catálogo activo. Pulsa <strong>«Reactivar»</strong> para volver a habilitarlos.</div>
+      </div>
+    </div>
+    <a href="productos.php" class="btn btn-secondary" style="font-size: 0.85rem; font-weight: 600;">
+      <i class="fa-solid fa-arrow-left"></i> Volver a Activos
+    </a>
+  </div>
+<?php endif; ?>
+
 <div class="table-card">
   <div class="table-header">
     <form method="GET" action="productos.php" style="display: flex; gap: 0.5rem; width: 100%; max-width: 400px;">
-      <input type="text" name="q" value="<?= htmlspecialchars($search) ?>" class="form-control" placeholder="Buscar por nombre o código..." style="padding: 0.5rem 0.85rem;">
+      <?php if ($verInactivos): ?>
+        <input type="hidden" name="ver" value="inactivos">
+      <?php endif; ?>
+      <input type="text" name="q" value="<?= htmlspecialchars($search) ?>" class="form-control" placeholder="<?= $verInactivos ? 'Buscar desactivado por nombre o código...' : 'Buscar por nombre o código...' ?>" style="padding: 0.5rem 0.85rem;">
       <button type="submit" class="btn btn-secondary" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-magnifying-glass"></i></button>
+      <?php if (!empty($search)): ?>
+        <a href="productos.php<?= $verInactivos ? '?ver=inactivos' : '' ?>" class="btn btn-secondary" style="padding: 0.5rem 0.75rem;" title="Limpiar búsqueda"><i class="fa-solid fa-xmark"></i></a>
+      <?php endif; ?>
     </form>
-    <div style="color: var(--text-muted); font-size: 0.85rem;">Total: <?= count($productos) ?> productos</div>
+    <div style="color: var(--text-muted); font-size: 0.85rem;">Total: <?= count($productos) ?> <?= $verInactivos ? 'desactivados' : 'activos' ?></div>
   </div>
 
   <table class="table">
@@ -43,15 +77,24 @@
         <th>Stock</th>
         <th>Precio Venta</th>
         <th>Estado Stock</th>
-        <th style="text-align: center; width: 140px;">Acciones</th>
+        <th style="text-align: center; width: <?= $verInactivos ? '175px' : '140px' ?>;">Acciones</th>
       </tr>
     </thead>
     <tbody>
       <?php if (empty($productos)): ?>
-        <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">No hay productos registrados.</td></tr>
+        <tr>
+          <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2.5rem;">
+            <?php if ($verInactivos): ?>
+              <i class="fa-solid fa-circle-check" style="font-size: 2rem; color: var(--success); display: block; margin-bottom: 0.5rem;"></i>
+              No hay productos desactivados. Todos los productos del catálogo están activos.
+            <?php else: ?>
+              No hay productos registrados.
+            <?php endif; ?>
+          </td>
+        </tr>
       <?php else: ?>
         <?php foreach ($productos as $p): ?>
-          <tr style="<?= !$p['Activo'] ? 'opacity: 0.5; background: rgba(255,255,255,0.02);' : '' ?>">
+          <tr style="<?= !$p['Activo'] ? 'opacity: 0.85; background: rgba(239, 68, 68, 0.03);' : '' ?>">
             <td><code><?= htmlspecialchars($p['CodigoBarras'] ?: 'SIN CÓDIGO') ?></code></td>
             <td style="font-weight: 600; color: #fff;">
               <?= htmlspecialchars($p['Nombre']) ?>
@@ -63,7 +106,7 @@
                 </div>
               <?php endif; ?>
               <?php if (!$p['Activo']): ?>
-                <span class="badge badge-danger" style="font-size: 0.65rem; padding: 0.15rem 0.3rem; margin-left: 0.4rem;">INACTIVO</span>
+                <span class="badge badge-danger" style="font-size: 0.65rem; padding: 0.15rem 0.35rem; margin-left: 0.4rem;">DESACTIVADO</span>
               <?php endif; ?>
             </td>
             <td><?= htmlspecialchars($p['Categoria'] ?: 'General') ?></td>
@@ -71,7 +114,7 @@
             <td style="font-weight: 700; color: var(--success);"><?= formatCLP($p['PrecioVenta']) ?></td>
             <td>
               <?php if (!$p['Activo']): ?>
-                <span class="badge badge-secondary">Inactivo</span>
+                <span class="badge badge-secondary" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">Desactivado</span>
               <?php elseif ($p['Stock'] <= 0): ?>
                 <span class="badge badge-danger">Sin Stock</span>
               <?php elseif ($p['Stock'] <= $p['StockMinimo']): ?>
@@ -81,7 +124,7 @@
               <?php endif; ?>
             </td>
             <td style="text-align: center;">
-              <div style="display: flex; gap: 0.4rem; justify-content: center;">
+              <div style="display: flex; gap: 0.4rem; justify-content: center; align-items: center;">
                 <button type="button" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;" 
                         onclick='abrirEditarModal(<?= json_encode($p, JSON_HEX_APOS | JSON_HEX_QUOT) ?>)' title="Editar producto">
                   <i class="fa-solid fa-pen-to-square"></i>
@@ -94,17 +137,17 @@
                     <span style="background: var(--primary); color: #fff; font-size: 0.65rem; padding: 0.1rem 0.35rem; border-radius: 10px; font-weight: bold; margin-left: 0.15rem;">+<?= (int)$p['TotalCodigosAlt'] ?></span>
                   <?php endif; ?>
                 </button>
-                <form method="POST" action="productos.php" style="display:inline;">
+                <form method="POST" action="productos.php<?= $verInactivos ? '?ver=inactivos' : '' ?>" style="display:inline; margin:0;">
                   <?= csrfField() ?>
                   <input type="hidden" name="action" value="toggle_activo">
                   <input type="hidden" name="producto_id" value="<?= $p['ProductoID'] ?>">
                   <?php if ($p['Activo']): ?>
-                    <button type="submit" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; color: var(--danger); border-color: rgba(239, 68, 68, 0.2);" title="Desactivar">
+                    <button type="submit" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; color: var(--danger); border-color: rgba(239, 68, 68, 0.25);" title="Desactivar producto" onclick="return confirm('¿Desactivar este producto? Ya no aparecerá en el catálogo activo ni en el POS.');">
                       <i class="fa-solid fa-ban"></i>
                     </button>
                   <?php else: ?>
-                    <button type="submit" class="btn btn-success" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;" title="Activar">
-                      <i class="fa-solid fa-check"></i>
+                    <button type="submit" class="btn btn-success" style="padding: 0.3rem 0.75rem; font-size: 0.82rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 6px; box-shadow: 0 2px 6px rgba(16,185,129,0.3);" title="Volver a activar este producto en el catálogo">
+                      <i class="fa-solid fa-rotate-left"></i> Reactivar
                     </button>
                   <?php endif; ?>
                 </form>
@@ -122,7 +165,7 @@
   <div style="background: var(--card-bg); border: 1px solid var(--border-dark); border-radius: 16px; width: 480px; max-width: 100%; padding: 1.75rem; margin: auto; box-shadow: var(--shadow-lg);">
     <h2 id="modalTitle" style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1.25rem;">Agregar Nuevo Producto</h2>
     
-    <form method="POST" action="productos.php" style="display: flex; flex-direction: column; gap: 1rem;">
+    <form method="POST" action="productos.php<?= $verInactivos ? '?ver=inactivos' : '' ?>" style="display: flex; flex-direction: column; gap: 1rem;">
       <?= csrfField() ?>
       <input type="hidden" name="producto_id" id="prodIdInput" value="">
       

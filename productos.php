@@ -6,15 +6,28 @@ $pdo = getDB();
 $message = '';
 $error = '';
 
+$verInactivos = (isset($_GET['ver']) && $_GET['ver'] === 'inactivos');
+$activoFiltro = $verInactivos ? 0 : 1;
+
 // Procesar formulario de guardar o editar producto, o alternar estado activo/inactivo
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifyCsrf();
 
     if (($_POST['action'] ?? '') === 'toggle_activo') {
         $id = (int)($_POST['producto_id'] ?? 0);
-        $stmt = $pdo->prepare("UPDATE productos SET Activo = NOT Activo WHERE ProductoID = ?");
-        $stmt->execute([$id]);
-        $message = 'Estado del producto actualizado.';
+        $stmtNom = $pdo->prepare("SELECT Nombre, Activo FROM productos WHERE ProductoID = ?");
+        $stmtNom->execute([$id]);
+        $prodInfo = $stmtNom->fetch();
+        if ($prodInfo) {
+            $nuevoEstado = $prodInfo['Activo'] ? 0 : 1;
+            $stmt = $pdo->prepare("UPDATE productos SET Activo = ? WHERE ProductoID = ?");
+            $stmt->execute([$nuevoEstado, $id]);
+            if ($nuevoEstado === 1) {
+                $message = 'Producto «' . htmlspecialchars($prodInfo['Nombre']) . '» reactivado con éxito en el catálogo.';
+            } else {
+                $message = 'Producto «' . htmlspecialchars($prodInfo['Nombre']) . '» desactivado. Ya no se mostrará en el catálogo activo (puedes consultarlo en «Ver Desactivados»).';
+            }
+        }
     } else {
         $id = !empty($_POST['producto_id']) ? (int)$_POST['producto_id'] : null;
         $nombre = trim($_POST['nombre'] ?? '');
@@ -111,7 +124,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Búsqueda (por nombre, código principal, códigos alternativos o PLU)
+// Conteos para pestañas / botones de estado
+$totalActivos = (int)$pdo->query("SELECT COUNT(*) FROM productos WHERE Activo = 1")->fetchColumn();
+$totalInactivos = (int)$pdo->query("SELECT COUNT(*) FROM productos WHERE Activo = 0")->fetchColumn();
+
+// Búsqueda (por nombre, código principal, códigos alternativos o PLU) filtrada por estado activo/inactivo
 $search = trim($_GET['q'] ?? '');
 if (!empty($search)) {
     $stmtP = $pdo->prepare("
@@ -119,15 +136,19 @@ if (!empty($search)) {
                (SELECT COUNT(*) FROM productoscodigos pc WHERE pc.ProductoID = p.ProductoID) AS TotalCodigosAlt
         FROM productos p
         LEFT JOIN categorias c ON p.CategoriaID = c.CategoriaID
-        WHERE p.Nombre LIKE :q 
-           OR p.CodigoBarras = :exact_q 
-           OR p.CodigoPLU = :plu_q
-           OR " . sqlCoincideReferencia('p', ':ref1', ':ref2') . "
-           OR p.MarcaRepuesto LIKE :marca_q
-           OR EXISTS (SELECT 1 FROM productoscodigos pc WHERE pc.ProductoID = p.ProductoID AND pc.CodigoBarras = :exact_q2)
+        WHERE p.Activo = :activo
+          AND (
+            p.Nombre LIKE :q 
+            OR p.CodigoBarras = :exact_q 
+            OR p.CodigoPLU = :plu_q
+            OR " . sqlCoincideReferencia('p', ':ref1', ':ref2') . "
+            OR p.MarcaRepuesto LIKE :marca_q
+            OR EXISTS (SELECT 1 FROM productoscodigos pc WHERE pc.ProductoID = p.ProductoID AND pc.CodigoBarras = :exact_q2)
+          )
         ORDER BY p.Nombre ASC
     ");
     $stmtP->execute([
+        ':activo' => $activoFiltro,
         ':q' => "%$search%",
         ':exact_q' => $search,
         ':plu_q' => $search,
@@ -137,13 +158,15 @@ if (!empty($search)) {
         ':marca_q' => "%$search%"
     ]);
 } else {
-    $stmtP = $pdo->query("
+    $stmtP = $pdo->prepare("
         SELECT p.*, c.Nombre AS Categoria,
                (SELECT COUNT(*) FROM productoscodigos pc WHERE pc.ProductoID = p.ProductoID) AS TotalCodigosAlt
         FROM productos p
         LEFT JOIN categorias c ON p.CategoriaID = c.CategoriaID
+        WHERE p.Activo = :activo
         ORDER BY p.Nombre ASC LIMIT 100
     ");
+    $stmtP->execute([':activo' => $activoFiltro]);
 }
 $productos = $stmtP->fetchAll();
 

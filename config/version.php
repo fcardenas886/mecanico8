@@ -1,10 +1,21 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v5.4.1');
+define('APP_VERSION', 'v5.4.3');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v5.4.3' => [
+        'Gestión de productos inactivos en Mantenedores: los productos desactivados se ocultan automáticamente del catálogo principal y de la venta en Caja POS/Presupuesto, con un nuevo botón superior con contador para verlos y reactivarlos en 1 clic.',
+        'Entrega inmediata de OT en 1 clic: eliminación de pasos intermedios y recargas innecesarias al volver de Caja POS a la Orden de Trabajo. El vehículo pagado se puede marcar como "Entregado" con un solo clic directamente desde el banner superior o la botonera.',
+        'Entrega directa desde Caja POS: el cajero puede marcar la entrega del vehículo y cerrar la orden directamente desde el comprobante de venta o el diálogo post-venta, sin necesidad de navegar a la ficha del taller.',
+        'Resaltado inequívoco de medios de pago en Caja POS: visualización clara con azul eléctrico vibrante, borde luminoso y sello de verificación en la opción activa.',
+    ],
+    'v5.4.2' => [
+        'Caja POS y Taller conectados: banner informativo en caja al cobrar una orden con datos del auto y cliente, botón para salir sin cobrar, comprobante con datos de la OT y opciones directas al finalizar la venta para volver a la entrega del auto o imprimir sticker de aceite sin quedar en pantalla vacía.',
+        'Corrección en comprobante/ticket de venta: ahora se puede cerrar con un clic fuera del papel, con la tecla Escape o con el botón [×] superior, y sus botones de acción se mantienen siempre visibles sin cortarse.',
+        'Presupuesto: acceso directo para cobrar en Caja POS cuando el cliente aprueba y desea cancelar de inmediato en recepción.',
+    ],
     'v5.4.1' => [
         'Orden interno del proyecto (sin cambios visibles): código compartido agrupado por tipo (núcleo, diseño, reglas del negocio e integraciones), versión y novedades separadas de la conexión a la base de datos, y documentación e instrucciones de instalación actualizadas.',
         'Corregido el orden de una migración de base de datos que en una instalación nueva se aplicaba antes de crear su tabla.',

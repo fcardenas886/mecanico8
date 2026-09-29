@@ -408,7 +408,20 @@ foreach ($lineas as $l) $lineasPorGrupo[$l['TipoLinea']][] = $l;
               <div class="pr-decidido-monto"><?= formatCLP($tot['totalAprobado']) ?></div>
             </div>
             <?php if ($presupuesto['DecisionCliente'] !== 'Rechazado'): ?>
-              <a href="ejecucion.php?id=<?= $otId ?>" class="btn btn-primary" style="font-weight:700;padding:.7rem 1.3rem"><i class="fa-solid fa-screwdriver-wrench"></i> Ir a reparación</a>
+              <div style="display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center;">
+                <a href="ejecucion.php?id=<?= $otId ?>" class="btn btn-primary" style="font-weight:700;padding:.7rem 1.3rem;">
+                  <i class="fa-solid fa-screwdriver-wrench"></i> Ir a reparación
+                </a>
+                <?php if (empty($ot['VentaID']) && empty($ot['ManoObraCobrada'])): ?>
+                  <a href="pos.php?cargar_ot=<?= $otId ?>" class="btn" style="background: #10b981; color: #fff; font-weight:700; padding:.7rem 1.3rem; border: none; display: inline-flex; align-items: center; gap: 0.4rem;" title="Cargar repuestos y mano de obra a la caja registradora">
+                    <i class="fa-solid fa-cart-shopping"></i> Cobrar en Caja POS
+                  </a>
+                <?php else: ?>
+                  <span class="badge badge-success" style="font-size: 0.85rem; padding: 0.6rem 0.9rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <i class="fa-solid fa-circle-check"></i> Cobrado (Venta #<?= $ot['VentaID'] ?>)
+                  </span>
+                <?php endif; ?>
+              </div>
             <?php endif; ?>
           </div>
         <?php endif; ?>
