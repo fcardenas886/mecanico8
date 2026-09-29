@@ -1011,6 +1011,22 @@ CREATE TABLE `ventas` (
   CONSTRAINT `CK_Ventas_Vuelto` CHECK ((`Vuelto` >= 0))
 ) ENGINE=InnoDB AUTO_INCREMENT=104 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+DROP TABLE IF EXISTS `tokens_documentos`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `tokens_documentos` (
+  `TokenID` int NOT NULL AUTO_INCREMENT,
+  `Token` varchar(16) NOT NULL,
+  `TipoDocumento` varchar(30) NOT NULL COMMENT 'presupuesto, ingreso, entrega, venta',
+  `ReferenciaID` int NOT NULL COMMENT 'OrdenTrabajoID o VentaID',
+  `FechaCreacion` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `UltimoAcceso` datetime DEFAULT NULL,
+  PRIMARY KEY (`TokenID`),
+  UNIQUE KEY `UQ_TokensDoc_Token` (`Token`),
+  KEY `IX_TokensDoc_Ref` (`TipoDocumento`, `ReferenciaID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

@@ -4,6 +4,8 @@
  * Especializado en números móviles chilenos (+56 9 XXXX XXXX).
  */
 
+require_once __DIR__ . '/../dominio/tokens_documentos.php';
+
 if (!function_exists('obtenerNombreTaller')) {
     function obtenerNombreTaller($pdo = null): string {
         static $nombre = null;
@@ -75,20 +77,37 @@ if (!function_exists('generarUrlWhatsapp')) {
 }
 
 if (!function_exists('mensajePresupuestoWhatsApp')) {
-    function mensajePresupuestoWhatsApp(array $ot, array $presupuesto, float $totalPresupuesto, string $nombreTaller): string {
+    function mensajePresupuestoWhatsApp(array $ot, array $presupuesto, float $totalPresupuesto, string $nombreTaller, ?string $token = null, ?PDO $pdo = null): string {
         $folio = function_exists('formatFolioOT') ? formatFolioOT($ot['OrdenTrabajoID']) : '#' . $ot['OrdenTrabajoID'];
         $cliente = trim($ot['ClienteNombre'] ?? 'Estimado(a) cliente');
         $auto = trim(($ot['Marca'] ?? '') . ' ' . ($ot['Modelo'] ?? '') . ' (' . ($ot['Patente'] ?? '') . ')');
 
-        $msg = "Hola {$cliente} 👋, te saludamos de *{$nombreTaller}*.\n\n";
+        if (empty($token) && !empty($ot['OrdenTrabajoID'])) {
+            try {
+                if (!$pdo && function_exists('getDB')) $pdo = getDB();
+                if ($pdo && function_exists('obtenerOCrearTokenDocumento')) {
+                    $token = obtenerOCrearTokenDocumento($pdo, 'presupuesto', (int)$ot['OrdenTrabajoID']);
+                }
+            } catch (\Exception $e) {}
+        }
+
+        $msg = "Hola {$cliente}, te saludamos de *{$nombreTaller}*.\n\n";
         $msg .= "Te compartimos el detalle del *Presupuesto* para tu vehículo *{$auto}*:\n";
-        $msg .= "📄 *Folio OT:* {$folio}\n";
-        $msg .= "💰 *Monto Total:* $" . number_format($totalPresupuesto, 0, ',', '.') . " CLP\n";
+        $msg .= "• *Folio OT:* {$folio}\n";
+        $msg .= "• *Monto Total:* $" . number_format($totalPresupuesto, 0, ',', '.') . " CLP\n";
 
         if (!empty($presupuesto['TiempoEntrega'])) {
             $tiempo = trim($presupuesto['TiempoEntrega']);
             $sufijo = !str_contains(mb_strtolower($tiempo), 'a contar') ? ' (a contar de la recepción de repuestos y aprobación formal)' : '';
-            $msg .= "⏱️ *Tiempo estimado de entrega:* {$tiempo}{$sufijo}\n";
+            $msg .= "• *Tiempo estimado de entrega:* {$tiempo}{$sufijo}\n";
+        }
+
+        if (!empty($token)) {
+            $urlDoc = function_exists('obtenerUrlPublicaDocumento') ? obtenerUrlPublicaDocumento($token, $pdo) : '';
+            if ($urlDoc) {
+                $msg .= "\n• *Ver Presupuesto Digital / PDF:*\n{$urlDoc}\n";
+                $msg .= "• *Código de seguridad:* {$token}\n";
+            }
         }
 
         $msg .= "\nPuedes responder a este mensaje indicándonos si *apruebas* los trabajos para dar inicio a la reparación de inmediato. ¡Muchas gracias!";
@@ -97,38 +116,73 @@ if (!function_exists('mensajePresupuestoWhatsApp')) {
 }
 
 if (!function_exists('mensajeRecepcionWhatsApp')) {
-    function mensajeRecepcionWhatsApp(array $ot, string $nombreTaller): string {
+    function mensajeRecepcionWhatsApp(array $ot, string $nombreTaller, ?string $token = null, ?PDO $pdo = null): string {
         $folio = function_exists('formatFolioOT') ? formatFolioOT($ot['OrdenTrabajoID']) : '#' . $ot['OrdenTrabajoID'];
         $cliente = trim($ot['ClienteNombre'] ?? 'Estimado(a) cliente');
         $auto = trim(($ot['Marca'] ?? '') . ' ' . ($ot['Modelo'] ?? '') . ' (' . ($ot['Patente'] ?? '') . ')');
         $km = !empty($ot['KilometrajeIngreso']) ? number_format((int)$ot['KilometrajeIngreso'], 0, ',', '.') . ' km' : 'No registrado';
 
-        $msg = "Hola {$cliente} 👋, confirmamos la recepción de tu vehículo en *{$nombreTaller}*.\n\n";
-        $msg .= "📋 *Orden de Ingreso:* {$folio}\n";
-        $msg .= "🚗 *Vehículo:* {$auto}\n";
-        $msg .= "📟 *Kilometraje:* {$km}\n";
-        if (!empty($ot['MotivoIngreso'])) {
-            $msg .= "🔧 *Motivo:* " . $ot['MotivoIngreso'] . "\n";
+        if (empty($token) && !empty($ot['OrdenTrabajoID'])) {
+            try {
+                if (!$pdo && function_exists('getDB')) $pdo = getDB();
+                if ($pdo && function_exists('obtenerOCrearTokenDocumento')) {
+                    $token = obtenerOCrearTokenDocumento($pdo, 'ingreso', (int)$ot['OrdenTrabajoID']);
+                }
+            } catch (\Exception $e) {}
         }
+
+        $msg = "Hola {$cliente}, confirmamos la recepción de tu vehículo en *{$nombreTaller}*.\n\n";
+        $msg .= "• *Orden de Ingreso:* {$folio}\n";
+        $msg .= "• *Vehículo:* {$auto}\n";
+        $msg .= "• *Kilometraje:* {$km}\n";
+        if (!empty($ot['MotivoIngreso'])) {
+            $msg .= "• *Motivo:* " . $ot['MotivoIngreso'] . "\n";
+        }
+
+        if (!empty($token)) {
+            $urlDoc = function_exists('obtenerUrlPublicaDocumento') ? obtenerUrlPublicaDocumento($token, $pdo) : '';
+            if ($urlDoc) {
+                $msg .= "\n• *Ver Comprobante de Custodia:*\n{$urlDoc}\n";
+                $msg .= "• *Código de seguridad:* {$token}\n";
+            }
+        }
+
         $msg .= "\nTu vehículo ha quedado bajo nuestra custodia. Te mantendremos informado del diagnóstico y avances. ¡Gracias por confiar en nosotros!";
         return $msg;
     }
 }
 
 if (!function_exists('mensajeAutoListoWhatsApp')) {
-    function mensajeAutoListoWhatsApp(array $ot, float $saldoPendiente, string $nombreTaller): string {
+    function mensajeAutoListoWhatsApp(array $ot, float $saldoPendiente, string $nombreTaller, ?string $token = null, ?PDO $pdo = null): string {
         $folio = function_exists('formatFolioOT') ? formatFolioOT($ot['OrdenTrabajoID']) : '#' . $ot['OrdenTrabajoID'];
         $cliente = trim($ot['ClienteNombre'] ?? 'Estimado(a) cliente');
         $auto = trim(($ot['Marca'] ?? '') . ' ' . ($ot['Modelo'] ?? '') . ' (' . ($ot['Patente'] ?? '') . ')');
 
-        $msg = "¡Buenas noticias, {$cliente}! 🎉\n\n";
+        if (empty($token) && !empty($ot['OrdenTrabajoID'])) {
+            try {
+                if (!$pdo && function_exists('getDB')) $pdo = getDB();
+                if ($pdo && function_exists('obtenerOCrearTokenDocumento')) {
+                    $token = obtenerOCrearTokenDocumento($pdo, 'entrega', (int)$ot['OrdenTrabajoID']);
+                }
+            } catch (\Exception $e) {}
+        }
+
+        $msg = "¡Buenas noticias, {$cliente}!\n\n";
         $msg .= "Tu vehículo *{$auto}* ya está *LISTO PARA RETIRAR* en *{$nombreTaller}*.\n";
-        $msg .= "📄 *Orden de Trabajo:* {$folio}\n";
+        $msg .= "• *Orden de Trabajo:* {$folio}\n";
 
         if ($saldoPendiente > 0) {
-            $msg .= "💳 *Saldo a pagar:* $" . number_format($saldoPendiente, 0, ',', '.') . " CLP\n";
+            $msg .= "• *Saldo a pagar:* $" . number_format($saldoPendiente, 0, ',', '.') . " CLP\n";
         } else {
-            $msg .= "✅ *Estado de pago:* Pagado totalmente\n";
+            $msg .= "• *Estado de pago:* Pagado totalmente\n";
+        }
+
+        if (!empty($token)) {
+            $urlDoc = function_exists('obtenerUrlPublicaDocumento') ? obtenerUrlPublicaDocumento($token, $pdo) : '';
+            if ($urlDoc) {
+                $msg .= "\n• *Ver Detalle de Reparación:*\n{$urlDoc}\n";
+                $msg .= "• *Código de seguridad:* {$token}\n";
+            }
         }
 
         $msg .= "\nPuedes pasar a retirarlo en nuestro horario habitual de atención. ¡Te esperamos!";

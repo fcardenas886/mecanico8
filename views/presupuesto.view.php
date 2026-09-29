@@ -349,7 +349,16 @@ foreach ($lineas as $l) $lineasPorGrupo[$l['TipoLinea']][] = $l;
                   <span>Todo guardado automáticamente</span>
                 </div>
                 <div class="pr-foot-btns">
-                  <a href="<?= htmlspecialchars($waUrl) ?>" target="_blank" class="btn pr-btn-wa">
+                  <?php
+                    $tokenPresOT = function_exists('obtenerOCrearTokenDocumento') ? obtenerOCrearTokenDocumento($pdo, 'presupuesto', (int)$otId) : '';
+                    $urlDocPresOT = $tokenPresOT ? obtenerUrlPublicaDocumento($tokenPresOT) : '';
+                  ?>
+                  <?php if (!empty($urlDocPresOT)): ?>
+                    <button type="button" class="btn btn-secondary" onclick="navigator.clipboard.writeText('<?= $urlDocPresOT ?>'); alert('Enlace público con token copiado al portapapeles:\n<?= $urlDocPresOT ?>');" title="Copiar enlace con token seguro">
+                      <i class="fa-solid fa-link"></i> Copiar Enlace
+                    </button>
+                  <?php endif; ?>
+                  <a href="<?= htmlspecialchars($waUrl) ?>" target="_blank" class="btn pr-btn-wa" title="Enviar presupuesto y enlace seguro por WhatsApp">
                     <i class="fa-brands fa-whatsapp"></i> Enviar por WhatsApp
                   </a>
                   <a href="comprobante_presupuesto.php?id=<?= $otId ?>" target="_blank" class="btn btn-secondary">

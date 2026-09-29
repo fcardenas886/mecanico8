@@ -87,6 +87,14 @@
         <input type="text" name="config[TICKET_PIE_PAGINA]" value="<?= htmlspecialchars($config['TICKET_PIE_PAGINA'] ?? '¡Gracias por su preferencia!') ?>" class="form-control">
       </div>
 
+      <div>
+        <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">URL PÚBLICA / DOMINIO DEL TALLER (ENLACES DE WHATSAPP)</label>
+        <input type="text" name="config[APP_URL_BASE]" value="<?= htmlspecialchars($config['APP_URL_BASE'] ?? '') ?>" class="form-control" placeholder="Ej: https://mitaller.cl o http://<?= gethostbyname(gethostname()) ?>/tallermecanico-php">
+        <p style="color: var(--text-muted); font-size: 0.74rem; margin-top: 0.35rem; line-height: 1.4;">
+          <i class="fa-solid fa-circle-info" style="color: #38bdf8;"></i> <strong>¿Por qué configurar esto?</strong> WhatsApp no reconoce ni activa como link la palabra <code>localhost</code>. Define aquí tu dominio web oficial (ej: <code>https://mitaller.cl</code>), tu túnel (Cloudflare/ngrok) o la IP de red local (<code>http://<?= gethostbyname(gethostname()) ?>/tallermecanico-php</code>) para que los enlaces lleguen como links azules cliqueables a los teléfonos de tus clientes.
+        </p>
+      </div>
+
       <h2 style="font-size: 1.1rem; font-weight: 600; color: #818cf8; border-bottom: 1px solid var(--border-dark); padding-bottom: 0.4rem; margin-top: 0.5rem;">Módulos y Reglas del Sistema</h2>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">

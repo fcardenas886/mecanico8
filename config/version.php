@@ -1,10 +1,15 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v5.4.3');
+define('APP_VERSION', 'v5.4.4');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v5.4.4' => [
+        'Documentos digitales por WhatsApp con token corto de seguridad: los mensajes de WhatsApp para Presupuesto, Comprobante de Custodia y Aviso de Retiro ahora adjuntan automáticamente un enlace directo y un token único de 8 caracteres (ej: K9X2B4R7).',
+        'Visor público de documentos (doc.php): los clientes pueden ver y descargar su presupuesto o comprobante en PDF desde el celular sin necesidad de usuario ni contraseña, con protección total contra accesos no autorizados.',
+        'Aprobación rápida por WhatsApp: el visor público incluye botón directo para que el cliente responda aprobando el presupuesto con su código de verificación.',
+    ],
     'v5.4.3' => [
         'Gestión de productos inactivos en Mantenedores: los productos desactivados se ocultan automáticamente del catálogo principal y de la venta en Caja POS/Presupuesto, con un nuevo botón superior con contador para verlos y reactivarlos en 1 clic.',
         'Entrega inmediata de OT en 1 clic: eliminación de pasos intermedios y recargas innecesarias al volver de Caja POS a la Orden de Trabajo. El vehículo pagado se puede marcar como "Entregado" con un solo clic directamente desde el banner superior o la botonera.',
