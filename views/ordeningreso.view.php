@@ -135,30 +135,6 @@ $vehiculoPreId = $vehiculoPrecargado['VehiculoID'] ?? null;
       <select name="vehiculo_id" id="vehiculoSelect" class="form-control" onchange="onSelectVehiculoExistente(this.value)">
         <option value="">Primero selecciona un cliente o busca por patente arriba...</option>
       </select>
-
-      <!-- Frecuencia de Revisión Técnica para Vehículo Registrado -->
-      <div id="vePrtBlock" style="display: none; margin-top: 0.85rem; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-dark); border-radius: 8px; padding: 0.75rem 1rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.45rem;">
-          <label style="font-size: 0.8rem; color: #38bdf8; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.4rem;">
-            <i class="fa-solid fa-shield-halved"></i> FRECUENCIA REVISIÓN TÉCNICA (PRT)
-          </label>
-          <span id="vePrtInfoBadge" style="font-size: 0.75rem; color: #cbd5e1;"></span>
-        </div>
-        <div style="display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center;">
-          <label style="font-size: 0.82rem; color: #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; margin: 0;">
-            <input type="radio" name="ve_regimen_prt" id="ve_prt_12" value="anual" style="accent-color: #38bdf8;" onchange="cambiarRegimenDesdeIngreso('anual')">
-            <span><strong>Cada 12 meses</strong> <small style="color: var(--text-muted);">(Particular)</small></span>
-          </label>
-          <label style="font-size: 0.82rem; color: #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; margin: 0;">
-            <input type="radio" name="ve_regimen_prt" id="ve_prt_6" value="semestral" style="accent-color: #a855f7;" onchange="cambiarRegimenDesdeIngreso('semestral')">
-            <span><strong>Cada 6 meses</strong> <small style="color: var(--text-muted);">(Transporte / Carga / Taxi)</small></span>
-          </label>
-          <label style="font-size: 0.82rem; color: #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; margin: 0;">
-            <input type="radio" name="ve_regimen_prt" id="ve_prt_4" value="cuatrimestral" style="accent-color: #f97316;" onchange="cambiarRegimenDesdeIngreso('cuatrimestral')">
-            <span><strong>Cada 4 meses</strong> <small style="color: var(--text-muted);">(Buses antiguos / Escolar)</small></span>
-          </label>
-        </div>
-      </div>
     </div>
 
     <div id="vehiculoNuevoBlock" style="display: none;">
@@ -605,6 +581,9 @@ function generarHtmlAlertaPRT(prt, esExistente) {
   }
 
   let actionButtonsHtml = '';
+  let frequencySelectorHtml = '';
+  const reg = prt.regimen || 'anual';
+
   if (esExistente) {
     actionButtonsHtml = `
       <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 6px;">
@@ -620,16 +599,8 @@ function generarHtmlAlertaPRT(prt, esExistente) {
         </div>
       </div>
     `;
-  }
 
-  const borderCol = prt.estado === 'vencida' ? '#ef4444' : (prt.estado === 'por_vencer' ? '#f59e0b' : '#10b981');
-  const bgCol = prt.estado === 'vencida' ? 'rgba(239, 68, 68, 0.2)' : (prt.estado === 'por_vencer' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.15)');
-  const reg = prt.regimen || 'anual';
-
-  return `
-    <div id="prtAlertContainerBox" style="margin-top: 8px; padding: 8px 12px; background: ${bgCol}; border-left: 4px solid ${borderCol}; border-radius: 6px;">
-      ${alertaBody}
-      ${actionButtonsHtml}
+    frequencySelectorHtml = `
       <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.22); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
         <div style="font-size: 0.8rem; font-weight: 700; color: #bae6fd; display: flex; align-items: center; gap: 6px;">
           <i class="fa-solid fa-sliders" style="color: #38bdf8;"></i> MODIFICAR FRECUENCIA:
@@ -650,6 +621,17 @@ function generarHtmlAlertaPRT(prt, esExistente) {
           <span id="prtQuickNotice" style="font-size: 0.75rem; font-weight: bold; color: #34d399; display: none;"></span>
         </div>
       </div>
+    `;
+  }
+
+  const borderCol = prt.estado === 'vencida' ? '#ef4444' : (prt.estado === 'por_vencer' ? '#f59e0b' : '#10b981');
+  const bgCol = prt.estado === 'vencida' ? 'rgba(239, 68, 68, 0.2)' : (prt.estado === 'por_vencer' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.15)');
+
+  return `
+    <div id="prtAlertContainerBox" style="margin-top: 8px; padding: 8px 12px; background: ${bgCol}; border-left: 4px solid ${borderCol}; border-radius: 6px;">
+      ${alertaBody}
+      ${actionButtonsHtml}
+      ${frequencySelectorHtml}
     </div>
   `;
 }
@@ -706,10 +688,6 @@ async function guardarFechaPRTManualIngreso() {
         newNotice.innerHTML = '<i class="fa-solid fa-check"></i> Fecha actualizada';
         setTimeout(() => { if (newNotice) newNotice.style.display = 'none'; }, 3000);
       }
-      const badge = document.getElementById('vePrtInfoBadge');
-      if (badge && data.revision_tecnica.vencimiento) {
-        badge.innerHTML = `<i class="fa-solid fa-calendar"></i> Vence: <strong>${new Date(data.revision_tecnica.vencimiento + 'T00:00:00').toLocaleDateString('es-CL')}</strong>`;
-      }
     } else {
       if (notice) {
         notice.style.color = '#f87171';
@@ -760,10 +738,6 @@ async function marcarPRTAlDiaDesdeIngreso() {
       if (alertBox) {
         alertBox.outerHTML = generarHtmlAlertaPRT(data.revision_tecnica, true);
       }
-      const badge = document.getElementById('vePrtInfoBadge');
-      if (badge && data.revision_tecnica.vencimiento) {
-        badge.innerHTML = `<i class="fa-solid fa-calendar"></i> Vence: <strong>${new Date(data.revision_tecnica.vencimiento + 'T00:00:00').toLocaleDateString('es-CL')}</strong>`;
-      }
       const newNotice = document.getElementById('prtQuickNotice');
       if (newNotice) {
         newNotice.style.display = 'inline-block';
@@ -790,7 +764,6 @@ async function cambiarRegimenDesdeIngreso(nuevoRegimen) {
 
   // Sincronizar todos los inputs en pantalla
   document.querySelectorAll('input[name="banner_prt_regimen"]').forEach(r => { r.checked = (r.value === nuevoRegimen); });
-  document.querySelectorAll('input[name="ve_regimen_prt"]').forEach(r => { r.checked = (r.value === nuevoRegimen); });
   document.querySelectorAll('input[name="vn_regimen_prt"]').forEach(r => { r.checked = (r.value === nuevoRegimen); });
 
   const esExistente = document.getElementById('radioVehiculoExistente').checked;
@@ -839,12 +812,6 @@ async function cambiarRegimenDesdeIngreso(nuevoRegimen) {
         if (alertBox) {
           alertBox.outerHTML = generarHtmlAlertaPRT(data.revision_tecnica, true);
         }
-
-        // Actualizar badge en vePrtBlock
-        const badge = document.getElementById('vePrtInfoBadge');
-        if (badge && data.revision_tecnica.vencimiento) {
-          badge.innerHTML = `<i class="fa-solid fa-calendar"></i> Vence: <strong>${new Date(data.revision_tecnica.vencimiento + 'T00:00:00').toLocaleDateString('es-CL')}</strong>`;
-        }
       } else {
         if (notice) {
           notice.style.color = '#f87171';
@@ -879,10 +846,55 @@ async function cambiarRegimenDesdeIngreso(nuevoRegimen) {
   }
 }
 
-function onSelectVehiculoExistente(vid) {
+async function cargarBannerVehiculoExistente(patente) {
+  const banner = document.getElementById('resultadoPatenteBanner');
+  const bannerIcon = document.getElementById('resultadoPatenteIcon');
+  const bannerTexto = document.getElementById('resultadoPatenteTexto');
+  const bannerBadge = document.getElementById('resultadoPatenteBadge');
+  if (!banner || !patente) return;
+
+  try {
+    const res = await fetch(`api/consultar_vehiculo_api.php?patente=${encodeURIComponent(patente)}`);
+    const data = await res.json();
+    if (data.success && data.fuente === 'local') {
+      const d = data.datos;
+      vehiculoActualIngreso = {
+        id: d.vehiculo_id || 0,
+        patente: d.patente || patente,
+        marca: d.marca,
+        modelo: d.modelo,
+        regimen: (d.revision_tecnica && d.revision_tecnica.regimen) ? d.revision_tecnica.regimen : 'anual',
+        revision_tecnica: d.revision_tecnica
+      };
+
+      let alertaPrtHtml = '';
+      if (d.revision_tecnica && d.revision_tecnica.valido) {
+        alertaPrtHtml = generarHtmlAlertaPRT(d.revision_tecnica, true);
+      }
+
+      banner.style.display = 'flex';
+      banner.style.background = 'rgba(56, 189, 248, 0.15)';
+      banner.style.border = '1px solid #38bdf8';
+      banner.style.color = '#bae6fd';
+      bannerIcon.className = 'fa-solid fa-circle-check';
+
+      const kmAnteriorTxt = d.kilometraje ? `${Number(d.kilometraje).toLocaleString('es-CL')} km` : 'Sin registro';
+      let alertaHtml = '';
+      if (d.alertas_mantenimiento && d.alertas_mantenimiento.length > 0) {
+        alertaHtml = `<div style="margin-top: 6px; padding: 4px 8px; background: rgba(245, 158, 11, 0.2); border-left: 3px solid #f59e0b; border-radius: 4px; color: #fde047; font-weight: 600; font-size: 0.8rem;">
+          <i class="fa-solid fa-triangle-exclamation"></i> Mantenimiento preventivo pendiente: ${d.alertas_mantenimiento.join(' • ')}
+        </div>`;
+      }
+      bannerTexto.innerHTML = `<div><strong>Vehículo del taller:</strong> ${d.marca} ${d.modelo} (${d.patente}) • Dueño: <strong>${d.cliente_nombre}</strong> • Último km: ${kmAnteriorTxt} • Visitas: ${d.total_ordenes}${alertaHtml}${alertaPrtHtml}</div>`;
+      bannerBadge.className = 'badge badge-primary';
+      bannerBadge.textContent = 'Historial Taller';
+    }
+  } catch (e) {}
+}
+
+async function onSelectVehiculoExistente(vid, skipBanner = false) {
   const sel = document.getElementById('vehiculoSelect');
-  const idNum = parseInt(vid || sel.value, 10);
-  const vePrtBlock = document.getElementById('vePrtBlock');
+  const idNum = parseInt(vid || (sel ? sel.value : 0), 10);
 
   if (idNum > 0) {
     const v = vehiculosClienteCache.find(x => parseInt(x.VehiculoID, 10) === idNum);
@@ -900,31 +912,14 @@ function onSelectVehiculoExistente(vid) {
         regimen: reg
       };
 
-      if (vePrtBlock) {
-        vePrtBlock.style.display = 'block';
-        const r12 = document.getElementById('ve_prt_12');
-        const r6 = document.getElementById('ve_prt_6');
-        const r4 = document.getElementById('ve_prt_4');
-        if (reg === 'cuatrimestral') {
-          if (r4) r4.checked = true;
-        } else if (reg === 'semestral') {
-          if (r6) r6.checked = true;
-        } else {
-          if (r12) r12.checked = true;
-        }
-
-        const badge = document.getElementById('vePrtInfoBadge');
-        if (badge) {
-          if (v.RevisionTecnicaVencimiento) {
-            badge.innerHTML = `<i class="fa-solid fa-calendar"></i> Vence: <strong>${new Date(v.RevisionTecnicaVencimiento + 'T00:00:00').toLocaleDateString('es-CL')}</strong>`;
-          } else {
-            badge.innerHTML = '';
-          }
-        }
+      if (!skipBanner) {
+        await cargarBannerVehiculoExistente(v.Patente);
       }
     }
   } else {
-    if (vePrtBlock) vePrtBlock.style.display = 'none';
+    vehiculoActualIngreso = null;
+    const banner = document.getElementById('resultadoPatenteBanner');
+    if (banner) banner.style.display = 'none';
   }
 }
 
@@ -1015,8 +1010,7 @@ async function buscarVehiculoUniversal() {
       // Seleccionar vehículo
       document.getElementById('radioVehiculoExistente').checked = true;
       toggleVehiculoModo();
-      await fetchVehiculos(d.cliente_id, d.vehiculo_id);
-      onSelectVehiculoExistente(d.vehiculo_id);
+      await fetchVehiculos(d.cliente_id, d.vehiculo_id, true);
 
       if (d.kilometraje) {
         document.getElementById('kmIngresoInput').value = d.kilometraje;
@@ -1118,12 +1112,10 @@ function actualizarModelosSugeridos(marca, datalistId) {
   });
 }
 
-async function fetchVehiculos(clienteId, seleccionar) {
+async function fetchVehiculos(clienteId, seleccionar, skipSelectBanner = false) {
   const select = document.getElementById('vehiculoSelect');
   if (!clienteId) {
     select.innerHTML = '<option value="">Primero selecciona un cliente...</option>';
-    const vePrt = document.getElementById('vePrtBlock');
-    if (vePrt) vePrt.style.display = 'none';
     return;
   }
   select.innerHTML = '<option value="">Cargando vehículos...</option>';
@@ -1134,8 +1126,6 @@ async function fetchVehiculos(clienteId, seleccionar) {
     vehiculosClienteCache = vehiculos;
     if (vehiculos.length === 0) {
       select.innerHTML = '<option value="">Este cliente no tiene vehículos. Elige "Vehículo nuevo".</option>';
-      const vePrt = document.getElementById('vePrtBlock');
-      if (vePrt) vePrt.style.display = 'none';
       return;
     }
     let html = '<option value="">Selecciona un vehículo...</option>';
@@ -1147,7 +1137,7 @@ async function fetchVehiculos(clienteId, seleccionar) {
     select.innerHTML = html;
 
     if (seleccionar) {
-      onSelectVehiculoExistente(seleccionar);
+      onSelectVehiculoExistente(seleccionar, skipSelectBanner);
     }
   } catch (e) {
     select.innerHTML = '<option value="">Error al cargar vehículos</option>';

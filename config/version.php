@@ -1,10 +1,15 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v5.5.1');
+define('APP_VERSION', 'v5.5.2');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v5.5.2' => [
+        'Unificación de tarjeta de Revisión Técnica (PRT) en Recepción: eliminación de selectores duplicados y bloques redundantes en pantalla.',
+        'Tarjeta interactiva consolidada: visualización del estado (Al día / Por vencer / Vencida), fecha de vencimiento, botón de renovación directa «¿Está al día? Marcar Aprobada», selector de fecha manual y ajuste de frecuencia (12m / 6m / 4m) en un solo panel.',
+        'Sincronización instantánea de PRT al seleccionar cualquier vehículo desde el listado desplegable o desde el buscador universal por patente.'
+    ],
     'v5.5.1' => [
         'Régimen Cuatrimestral MTT (cada 4 meses): cálculo automático y soporte para buses urbanos antiguos (>= 20 años) y escolares (>= 15 años) según Decreto Supremo 156 del MTT (3 revisiones al año).',
         'Selector interactivo de frecuencia (12m / 6m / 4m) en Recepción y Vehículos: opción directa para alternar entre régimen particular, transporte/carga y buses escolares en tiempo real con recálculo dinámico.',
