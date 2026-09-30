@@ -23,6 +23,22 @@ $pdo = getDB();
 switch ($action) {
     case 'marcar_renovada':
         $res = marcarPRTRenovada($vehiculoId, $pdo);
+        if (!empty($res['success'])) {
+            $stV = $pdo->prepare("SELECT Patente, TipoVehiculo, Anio, RevisionTecnicaRegimen, EsTransportePublico, RevisionTecnicaUltima, RevisionTecnicaVencimiento FROM vehiculos WHERE VehiculoID = :id");
+            $stV->execute([':id' => $vehiculoId]);
+            $veh = $stV->fetch(PDO::FETCH_ASSOC);
+            if ($veh) {
+                $res['revision_tecnica'] = calcularCalendarioPRT(
+                    $veh['Patente'],
+                    $veh['TipoVehiculo'] ?? '',
+                    $veh['RevisionTecnicaRegimen'] ?? (!empty($veh['EsTransportePublico']) ? 'semestral' : null),
+                    null,
+                    $veh['RevisionTecnicaUltima'],
+                    $veh['RevisionTecnicaVencimiento'],
+                    $veh['Anio'] ? (int)$veh['Anio'] : null
+                );
+            }
+        }
         echo json_encode($res, JSON_UNESCAPED_UNICODE);
         break;
 

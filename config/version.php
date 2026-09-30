@@ -1,10 +1,16 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v5.5.0');
+define('APP_VERSION', 'v5.5.1');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v5.5.1' => [
+        'Régimen Cuatrimestral MTT (cada 4 meses): cálculo automático y soporte para buses urbanos antiguos (>= 20 años) y escolares (>= 15 años) según Decreto Supremo 156 del MTT (3 revisiones al año).',
+        'Selector interactivo de frecuencia (12m / 6m / 4m) en Recepción y Vehículos: opción directa para alternar entre régimen particular, transporte/carga y buses escolares en tiempo real con recálculo dinámico.',
+        'Acción rápida «¿Está al día? Marcar Aprobada» en Recepción: botón directo en la alerta de la Orden de Ingreso para avanzar la vigencia legal al siguiente ciclo (+1 año o +6/+4 meses) sin salir del ingreso.',
+        'Ajuste manual de fecha de vencimiento: selector de fecha directo para registrar la fecha exacta del certificado de revisión técnica de forma inmediata.'
+    ],
     'v5.5.0' => [
         'Módulo de Revisión Técnica (PRT) 100% automático: cálculo legal instantáneo basado en el Decreto Supremo 156 del MTT de Chile por último dígito de patente, sin costos de APIs ni captchas.',
         'Doble régimen legal MTT: soporte automático para régimen anual (12 meses) en vehículos particulares y semestral (cada 6 meses, 2 revisiones al año) para transporte público, buses, camiones y transporte escolar.',

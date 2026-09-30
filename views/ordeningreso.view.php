@@ -604,6 +604,24 @@ function generarHtmlAlertaPRT(prt, esExistente) {
       </div>`;
   }
 
+  let actionButtonsHtml = '';
+  if (esExistente) {
+    actionButtonsHtml = `
+      <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 6px;">
+        <button type="button" onclick="marcarPRTAlDiaDesdeIngreso()" style="padding: 3px 9px; font-size: 0.74rem; font-weight: 600; background: rgba(16, 185, 129, 0.25); border: 1px solid #10b981; color: #86efac; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="Si el cliente ya aprobó su revisión técnica, avanza la vigencia al siguiente ciclo (+1 año o +6/+4 meses)">
+          <i class="fa-solid fa-circle-check"></i> ¿Está al día? Marcar Aprobada
+        </button>
+        <button type="button" onclick="toggleEditorFechaPRTIngreso()" style="padding: 3px 9px; font-size: 0.74rem; font-weight: 600; background: rgba(56, 189, 248, 0.2); border: 1px solid rgba(56, 189, 248, 0.4); color: #bae6fd; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="Ingresar o ajustar manualmente la fecha exacta de vencimiento">
+          <i class="fa-regular fa-calendar-days"></i> Ajustar Fecha
+        </button>
+        <div id="editorFechaPRTInline" style="display: none; align-items: center; gap: 5px;">
+          <input type="date" id="inputFechaPRTManual" value="${prt.vencimiento || ''}" style="padding: 2px 6px; font-size: 0.74rem; background: #0f172a; color: #fff; border: 1px solid var(--border-dark); border-radius: 4px;">
+          <button type="button" onclick="guardarFechaPRTManualIngreso()" style="padding: 2px 8px; font-size: 0.72rem; background: #38bdf8; color: #0f172a; font-weight: bold; border: none; border-radius: 4px; cursor: pointer;">Guardar</button>
+        </div>
+      </div>
+    `;
+  }
+
   const borderCol = prt.estado === 'vencida' ? '#ef4444' : (prt.estado === 'por_vencer' ? '#f59e0b' : '#10b981');
   const bgCol = prt.estado === 'vencida' ? 'rgba(239, 68, 68, 0.2)' : (prt.estado === 'por_vencer' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.15)');
   const reg = prt.regimen || 'anual';
@@ -611,6 +629,7 @@ function generarHtmlAlertaPRT(prt, esExistente) {
   return `
     <div id="prtAlertContainerBox" style="margin-top: 8px; padding: 8px 12px; background: ${bgCol}; border-left: 4px solid ${borderCol}; border-radius: 6px;">
       ${alertaBody}
+      ${actionButtonsHtml}
       <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.22); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
         <div style="font-size: 0.8rem; font-weight: 700; color: #bae6fd; display: flex; align-items: center; gap: 6px;">
           <i class="fa-solid fa-sliders" style="color: #38bdf8;"></i> MODIFICAR FRECUENCIA:
@@ -633,6 +652,137 @@ function generarHtmlAlertaPRT(prt, esExistente) {
       </div>
     </div>
   `;
+}
+
+function toggleEditorFechaPRTIngreso() {
+  const el = document.getElementById('editorFechaPRTInline');
+  if (el) el.style.display = (el.style.display === 'none' || !el.style.display) ? 'inline-flex' : 'none';
+}
+
+async function guardarFechaPRTManualIngreso() {
+  const input = document.getElementById('inputFechaPRTManual');
+  const fechaVal = input ? input.value : '';
+  if (!fechaVal) return alert('Selecciona una fecha válida');
+
+  const selVid = document.getElementById('vehiculoSelect').value;
+  const vehiculoId = parseInt(selVid || (vehiculoActualIngreso ? vehiculoActualIngreso.id : 0), 10);
+  if (vehiculoId <= 0) return;
+
+  const notice = document.getElementById('prtQuickNotice');
+  if (notice) {
+    notice.style.display = 'inline-block';
+    notice.style.color = '#38bdf8';
+    notice.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando fecha...';
+  }
+
+  try {
+    const fd = new FormData();
+    fd.append('action', 'guardar_fecha_manual');
+    fd.append('vehiculo_id', vehiculoId);
+    fd.append('vencimiento', fechaVal);
+
+    const res = await fetch('api/actualizar_revision_tecnica.php', {
+      method: 'POST',
+      body: fd
+    });
+    const data = await res.json();
+    if (data.success && data.revision_tecnica) {
+      if (vehiculoActualIngreso) {
+        vehiculoActualIngreso.revision_tecnica = data.revision_tecnica;
+      }
+      const vCached = vehiculosClienteCache.find(x => parseInt(x.VehiculoID, 10) === vehiculoId);
+      if (vCached) {
+        vCached.RevisionTecnicaVencimiento = data.revision_tecnica.vencimiento;
+        vCached.RevisionTecnicaEstado = data.revision_tecnica.estado;
+      }
+      const alertBox = document.getElementById('prtAlertContainerBox');
+      if (alertBox) {
+        alertBox.outerHTML = generarHtmlAlertaPRT(data.revision_tecnica, true);
+      }
+      const newNotice = document.getElementById('prtQuickNotice');
+      if (newNotice) {
+        newNotice.style.display = 'inline-block';
+        newNotice.style.color = '#34d399';
+        newNotice.innerHTML = '<i class="fa-solid fa-check"></i> Fecha actualizada';
+        setTimeout(() => { if (newNotice) newNotice.style.display = 'none'; }, 3000);
+      }
+      const badge = document.getElementById('vePrtInfoBadge');
+      if (badge && data.revision_tecnica.vencimiento) {
+        badge.innerHTML = `<i class="fa-solid fa-calendar"></i> Vence: <strong>${new Date(data.revision_tecnica.vencimiento + 'T00:00:00').toLocaleDateString('es-CL')}</strong>`;
+      }
+    } else {
+      if (notice) {
+        notice.style.color = '#f87171';
+        notice.textContent = data.error || 'Error al guardar';
+      }
+    }
+  } catch (e) {
+    if (notice) {
+      notice.style.color = '#f87171';
+      notice.textContent = 'Error de conexión';
+    }
+  }
+}
+
+async function marcarPRTAlDiaDesdeIngreso() {
+  const notice = document.getElementById('prtQuickNotice');
+  const selVid = document.getElementById('vehiculoSelect').value;
+  const vehiculoId = parseInt(selVid || (vehiculoActualIngreso ? vehiculoActualIngreso.id : 0), 10);
+
+  if (vehiculoId <= 0) return;
+
+  if (notice) {
+    notice.style.display = 'inline-block';
+    notice.style.color = '#38bdf8';
+    notice.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Renovando...';
+  }
+
+  try {
+    const fd = new FormData();
+    fd.append('action', 'marcar_renovada');
+    fd.append('vehiculo_id', vehiculoId);
+
+    const res = await fetch('api/actualizar_revision_tecnica.php', {
+      method: 'POST',
+      body: fd
+    });
+    const data = await res.json();
+    if (data.success && data.revision_tecnica) {
+      if (vehiculoActualIngreso) {
+        vehiculoActualIngreso.revision_tecnica = data.revision_tecnica;
+      }
+      const vCached = vehiculosClienteCache.find(x => parseInt(x.VehiculoID, 10) === vehiculoId);
+      if (vCached) {
+        vCached.RevisionTecnicaVencimiento = data.revision_tecnica.vencimiento;
+        vCached.RevisionTecnicaEstado = data.revision_tecnica.estado;
+      }
+      const alertBox = document.getElementById('prtAlertContainerBox');
+      if (alertBox) {
+        alertBox.outerHTML = generarHtmlAlertaPRT(data.revision_tecnica, true);
+      }
+      const badge = document.getElementById('vePrtInfoBadge');
+      if (badge && data.revision_tecnica.vencimiento) {
+        badge.innerHTML = `<i class="fa-solid fa-calendar"></i> Vence: <strong>${new Date(data.revision_tecnica.vencimiento + 'T00:00:00').toLocaleDateString('es-CL')}</strong>`;
+      }
+      const newNotice = document.getElementById('prtQuickNotice');
+      if (newNotice) {
+        newNotice.style.display = 'inline-block';
+        newNotice.style.color = '#34d399';
+        newNotice.innerHTML = '<i class="fa-solid fa-check"></i> Marcada al día hasta ' + (data.nuevo_vencimiento_format || data.revision_tecnica.vencimiento);
+        setTimeout(() => { if (newNotice) newNotice.style.display = 'none'; }, 4000);
+      }
+    } else {
+      if (notice) {
+        notice.style.color = '#f87171';
+        notice.textContent = data.error || 'Error al renovar';
+      }
+    }
+  } catch (e) {
+    if (notice) {
+      notice.style.color = '#f87171';
+      notice.textContent = 'Error de conexión';
+    }
+  }
 }
 
 async function cambiarRegimenDesdeIngreso(nuevoRegimen) {
