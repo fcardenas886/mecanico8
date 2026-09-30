@@ -131,7 +131,7 @@ if ($tipoDoc === 'presupuesto') {
 
     // Preparar enlace de WhatsApp para que el cliente responda aprobando
     $folioOT = function_exists('formatFolioOT') ? formatFolioOT($ot['OrdenTrabajoID']) : 'OT-' . $ot['OrdenTrabajoID'];
-    $waAprobarTexto = "Hola, apruebo los trabajos del presupuesto para mi auto {$ot['Marca']} {$ot['Modelo']} ({$ot['Patente']}), Folio {$folioOT}. (Token: {$token})";
+    $waAprobarTexto = "Hola, apruebo los trabajos del presupuesto para mi auto {$ot['Marca']} {$ot['Modelo']} ({$ot['Patente']}), Folio {$folioOT}.";
     $urlWaRespuesta = !empty($telTaller) ? generarUrlWhatsapp($telTaller, $waAprobarTexto) : '';
 
 } elseif ($tipoDoc === 'ingreso') {

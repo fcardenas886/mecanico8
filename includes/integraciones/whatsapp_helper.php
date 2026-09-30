@@ -106,7 +106,6 @@ if (!function_exists('mensajePresupuestoWhatsApp')) {
             $urlDoc = function_exists('obtenerUrlPublicaDocumento') ? obtenerUrlPublicaDocumento($token, $pdo) : '';
             if ($urlDoc) {
                 $msg .= "\n• *Ver Presupuesto Digital / PDF:*\n{$urlDoc}\n";
-                $msg .= "• *Código de seguridad:* {$token}\n";
             }
         }
 
@@ -143,7 +142,6 @@ if (!function_exists('mensajeRecepcionWhatsApp')) {
             $urlDoc = function_exists('obtenerUrlPublicaDocumento') ? obtenerUrlPublicaDocumento($token, $pdo) : '';
             if ($urlDoc) {
                 $msg .= "\n• *Ver Comprobante de Custodia:*\n{$urlDoc}\n";
-                $msg .= "• *Código de seguridad:* {$token}\n";
             }
         }
 
@@ -181,7 +179,6 @@ if (!function_exists('mensajeAutoListoWhatsApp')) {
             $urlDoc = function_exists('obtenerUrlPublicaDocumento') ? obtenerUrlPublicaDocumento($token, $pdo) : '';
             if ($urlDoc) {
                 $msg .= "\n• *Ver Detalle de Reparación:*\n{$urlDoc}\n";
-                $msg .= "• *Código de seguridad:* {$token}\n";
             }
         }
 

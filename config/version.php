@@ -1,10 +1,14 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v5.5.2');
+define('APP_VERSION', 'v5.5.3');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v5.5.3' => [
+        'Simplificación de mensajes de WhatsApp: eliminación de la línea «Código de seguridad» en los mensajes de Presupuesto, Comprobante de Custodia y Aviso de Retiro.',
+        'Acceso directo sin fricción: el enlace web inteligente ya contiene el token de acceso seguro necesario, permitiendo al cliente abrir su documento o PDF con un solo toque sin códigos ni pasos adicionales.'
+    ],
     'v5.5.2' => [
         'Unificación de tarjeta de Revisión Técnica (PRT) en Recepción: eliminación de selectores duplicados y bloques redundantes en pantalla.',
         'Tarjeta interactiva consolidada: visualización del estado (Al día / Por vencer / Vencida), fecha de vencimiento, botón de renovación directa «¿Está al día? Marcar Aprobada», selector de fecha manual y ajuste de frecuencia (12m / 6m / 4m) en un solo panel.',
