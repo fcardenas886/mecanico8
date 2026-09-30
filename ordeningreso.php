@@ -89,6 +89,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt = $pdo->prepare("UPDATE vehiculos SET KilometrajeUltimo = :km WHERE VehiculoID = :id");
                     $stmt->execute([':km' => $kilometrajeIngreso, ':id' => $vehiculoId]);
                 }
+
+                // Si se modificó la frecuencia de Revisión Técnica para el vehículo existente
+                $regimenExistente = strtolower(trim($_POST['ve_regimen_prt'] ?? $_POST['banner_prt_regimen'] ?? ''));
+                if (in_array($regimenExistente, ['anual', 'semestral', 'cuatrimestral'], true)) {
+                    $esTp = ($regimenExistente !== 'anual') ? 1 : 0;
+                    $pdo->prepare("UPDATE vehiculos SET RevisionTecnicaRegimen = :reg, EsTransportePublico = :tp WHERE VehiculoID = :id")
+                        ->execute([':reg' => $regimenExistente, ':tp' => $esTp, ':id' => $vehiculoId]);
+                    sincronizarVehiculoPRT($vehiculoId, $pdo, $regimenExistente);
+                }
             }
 
             // Insertar Orden de Trabajo con daños de carrocería y texto libre
@@ -210,11 +219,23 @@ $operacionesCatalogo = $pdo->query("
 
 // Si se llega desde la Ficha de Vehículo con un vehículo puntual, precargarlo.
 $vehiculoPrecargado = null;
+$vehiculoPrecargadoPRT = null;
 $vehiculoIdParam = (int)($_GET['vehiculo_id'] ?? 0);
 if ($vehiculoIdParam > 0) {
     $stmt = $pdo->prepare("SELECT * FROM vehiculos WHERE VehiculoID = :id AND Activo = TRUE");
     $stmt->execute([':id' => $vehiculoIdParam]);
     $vehiculoPrecargado = $stmt->fetch();
+    if ($vehiculoPrecargado) {
+        $vehiculoPrecargadoPRT = calcularCalendarioPRT(
+            $vehiculoPrecargado['Patente'],
+            $vehiculoPrecargado['TipoVehiculo'] ?? '',
+            $vehiculoPrecargado['RevisionTecnicaRegimen'] ?? (!empty($vehiculoPrecargado['EsTransportePublico']) ? 'semestral' : null),
+            null,
+            $vehiculoPrecargado['RevisionTecnicaUltima'] ?? null,
+            $vehiculoPrecargado['RevisionTecnicaVencimiento'] ?? null,
+            $vehiculoPrecargado['Anio'] ? (int)$vehiculoPrecargado['Anio'] : null
+        );
+    }
 }
 
 include __DIR__ . '/views/ordeningreso.view.php';

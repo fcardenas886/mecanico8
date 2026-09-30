@@ -135,6 +135,30 @@ $vehiculoPreId = $vehiculoPrecargado['VehiculoID'] ?? null;
       <select name="vehiculo_id" id="vehiculoSelect" class="form-control" onchange="onSelectVehiculoExistente(this.value)">
         <option value="">Primero selecciona un cliente o busca por patente arriba...</option>
       </select>
+
+      <!-- Frecuencia de Revisión Técnica para Vehículo Registrado -->
+      <div id="vePrtBlock" style="display: none; margin-top: 0.85rem; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-dark); border-radius: 8px; padding: 0.75rem 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.45rem;">
+          <label style="font-size: 0.8rem; color: #38bdf8; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+            <i class="fa-solid fa-shield-halved"></i> FRECUENCIA REVISIÓN TÉCNICA (PRT)
+          </label>
+          <span id="vePrtInfoBadge" style="font-size: 0.75rem; color: #cbd5e1;"></span>
+        </div>
+        <div style="display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center;">
+          <label style="font-size: 0.82rem; color: #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; margin: 0;">
+            <input type="radio" name="ve_regimen_prt" id="ve_prt_12" value="anual" style="accent-color: #38bdf8;" onchange="cambiarRegimenDesdeIngreso('anual')">
+            <span><strong>Cada 12 meses</strong> <small style="color: var(--text-muted);">(Particular)</small></span>
+          </label>
+          <label style="font-size: 0.82rem; color: #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; margin: 0;">
+            <input type="radio" name="ve_regimen_prt" id="ve_prt_6" value="semestral" style="accent-color: #a855f7;" onchange="cambiarRegimenDesdeIngreso('semestral')">
+            <span><strong>Cada 6 meses</strong> <small style="color: var(--text-muted);">(Transporte / Carga / Taxi)</small></span>
+          </label>
+          <label style="font-size: 0.82rem; color: #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; margin: 0;">
+            <input type="radio" name="ve_regimen_prt" id="ve_prt_4" value="cuatrimestral" style="accent-color: #f97316;" onchange="cambiarRegimenDesdeIngreso('cuatrimestral')">
+            <span><strong>Cada 4 meses</strong> <small style="color: var(--text-muted);">(Buses antiguos / Escolar)</small></span>
+          </label>
+        </div>
+      </div>
     </div>
 
     <div id="vehiculoNuevoBlock" style="display: none;">
@@ -553,14 +577,204 @@ function toggleVehiculoModo() {
   ['vn_patente', 'vn_marca', 'vn_modelo'].forEach(id => { document.getElementById(id).required = (modo === 'nuevo'); });
 }
 
+let vehiculosClienteCache = [];
+let vehiculoActualIngreso = null;
+
+function generarHtmlAlertaPRT(prt, esExistente) {
+  if (!prt || !prt.valido) return '';
+  const regimenTxt = prt.es_cuatrimestral ? ' [Cuatrimestral - Buses/Escolar]' : (prt.es_semestral ? ' [Semestral - Carga/Transporte]' : '');
+
+  let alertaBody = '';
+  if (prt.estado === 'vencida') {
+    alertaBody = `
+      <div style="color: #fca5a5; font-weight: 600; font-size: 0.84rem;">
+        <i class="fa-solid fa-circle-xmark"></i> <strong>ALERTA REVISIÓN TÉCNICA VENCIDA (Dígito ${prt.digito} - ${prt.meses_texto}${regimenTxt}):</strong> Venció el ${prt.vencimiento ? new Date(prt.vencimiento + 'T00:00:00').toLocaleDateString('es-CL') : ''}.<br>
+        <span style="color: #fecaca; font-weight: normal; font-size: 0.8rem;">👉 <em>Ofrécele al cliente: Pre-Revisión Técnica preventiva, revisión de frenos, luces y tren delantero.</em></span>
+      </div>`;
+  } else if (prt.estado === 'por_vencer') {
+    alertaBody = `
+      <div style="color: #fde047; font-weight: 600; font-size: 0.84rem;">
+        <i class="fa-solid fa-triangle-exclamation"></i> <strong>REVISIÓN TÉCNICA POR VENCER (Dígito ${prt.digito} - ${prt.meses_texto}${regimenTxt}):</strong> Vence este mes (${prt.vencimiento ? new Date(prt.vencimiento + 'T00:00:00').toLocaleDateString('es-CL') : ''}).<br>
+        <span style="color: #fef08a; font-weight: normal; font-size: 0.8rem;">👉 <em>Oportunidad comercial: Ofrecer Pre-Revisión Técnica para asegurar que apruebe sin rechazos.</em></span>
+      </div>`;
+  } else if (prt.estado === 'vigente') {
+    alertaBody = `
+      <div style="color: #86efac; font-size: 0.84rem;">
+        <i class="fa-solid fa-circle-check"></i> <strong>Revisión Técnica al día:</strong> ${prt.meses_texto}${regimenTxt} • Vence: <strong>${prt.vencimiento ? new Date(prt.vencimiento + 'T00:00:00').toLocaleDateString('es-CL') : ''}</strong>
+      </div>`;
+  }
+
+  const borderCol = prt.estado === 'vencida' ? '#ef4444' : (prt.estado === 'por_vencer' ? '#f59e0b' : '#10b981');
+  const bgCol = prt.estado === 'vencida' ? 'rgba(239, 68, 68, 0.2)' : (prt.estado === 'por_vencer' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.15)');
+  const reg = prt.regimen || 'anual';
+
+  return `
+    <div id="prtAlertContainerBox" style="margin-top: 8px; padding: 8px 12px; background: ${bgCol}; border-left: 4px solid ${borderCol}; border-radius: 6px;">
+      ${alertaBody}
+      <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.22); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: #bae6fd; display: flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-sliders" style="color: #38bdf8;"></i> MODIFICAR FRECUENCIA:
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <label style="font-size: 0.78rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin: 0; background: rgba(15, 23, 42, 0.65); padding: 4px 9px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); color: #f1f5f9;">
+            <input type="radio" name="banner_prt_regimen" value="anual" ${reg === 'anual' ? 'checked' : ''} onchange="cambiarRegimenDesdeIngreso('anual')" style="accent-color: #38bdf8;">
+            <span><strong>Cada 12 meses</strong> <small style="color: #94a3b8;">(Particular)</small></span>
+          </label>
+          <label style="font-size: 0.78rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin: 0; background: rgba(15, 23, 42, 0.65); padding: 4px 9px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); color: #f1f5f9;">
+            <input type="radio" name="banner_prt_regimen" value="semestral" ${reg === 'semestral' ? 'checked' : ''} onchange="cambiarRegimenDesdeIngreso('semestral')" style="accent-color: #a855f7;">
+            <span><strong>Cada 6 meses</strong> <small style="color: #c084fc;">(Carga / Taxi)</small></span>
+          </label>
+          <label style="font-size: 0.78rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin: 0; background: rgba(15, 23, 42, 0.65); padding: 4px 9px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); color: #f1f5f9;">
+            <input type="radio" name="banner_prt_regimen" value="cuatrimestral" ${reg === 'cuatrimestral' ? 'checked' : ''} onchange="cambiarRegimenDesdeIngreso('cuatrimestral')" style="accent-color: #f97316;">
+            <span><strong>Cada 4 meses</strong> <small style="color: #fb923c;">(Buses / Escolar)</small></span>
+          </label>
+          <span id="prtQuickNotice" style="font-size: 0.75rem; font-weight: bold; color: #34d399; display: none;"></span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function cambiarRegimenDesdeIngreso(nuevoRegimen) {
+  const notice = document.getElementById('prtQuickNotice');
+
+  // Sincronizar todos los inputs en pantalla
+  document.querySelectorAll('input[name="banner_prt_regimen"]').forEach(r => { r.checked = (r.value === nuevoRegimen); });
+  document.querySelectorAll('input[name="ve_regimen_prt"]').forEach(r => { r.checked = (r.value === nuevoRegimen); });
+  document.querySelectorAll('input[name="vn_regimen_prt"]').forEach(r => { r.checked = (r.value === nuevoRegimen); });
+
+  const esExistente = document.getElementById('radioVehiculoExistente').checked;
+  const selVid = document.getElementById('vehiculoSelect').value;
+  const vehiculoId = parseInt(selVid || (vehiculoActualIngreso ? vehiculoActualIngreso.id : 0), 10);
+
+  if (esExistente && vehiculoId > 0) {
+    if (notice) {
+      notice.style.display = 'inline-block';
+      notice.style.color = '#38bdf8';
+      notice.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+    }
+    try {
+      const fd = new FormData();
+      fd.append('action', 'cambiar_regimen');
+      fd.append('vehiculo_id', vehiculoId);
+      fd.append('regimen', nuevoRegimen);
+
+      const res = await fetch('api/actualizar_revision_tecnica.php', {
+        method: 'POST',
+        body: fd
+      });
+      const data = await res.json();
+      if (data.success && data.revision_tecnica) {
+        if (notice) {
+          notice.style.color = '#34d399';
+          notice.innerHTML = '<i class="fa-solid fa-check"></i> Frecuencia guardada';
+          setTimeout(() => { if (notice) notice.style.display = 'none'; }, 2500);
+        }
+
+        // Actualizar en memoria
+        if (vehiculoActualIngreso) {
+          vehiculoActualIngreso.revision_tecnica = data.revision_tecnica;
+          vehiculoActualIngreso.regimen = nuevoRegimen;
+        }
+
+        const vCached = vehiculosClienteCache.find(x => parseInt(x.VehiculoID, 10) === vehiculoId);
+        if (vCached) {
+          vCached.RevisionTecnicaRegimen = nuevoRegimen;
+          vCached.RevisionTecnicaVencimiento = data.revision_tecnica.vencimiento;
+          vCached.RevisionTecnicaEstado = data.revision_tecnica.estado;
+        }
+
+        // Re-renderizar la tarjeta de alerta con el nuevo cálculo
+        const alertBox = document.getElementById('prtAlertContainerBox');
+        if (alertBox) {
+          alertBox.outerHTML = generarHtmlAlertaPRT(data.revision_tecnica, true);
+        }
+
+        // Actualizar badge en vePrtBlock
+        const badge = document.getElementById('vePrtInfoBadge');
+        if (badge && data.revision_tecnica.vencimiento) {
+          badge.innerHTML = `<i class="fa-solid fa-calendar"></i> Vence: <strong>${new Date(data.revision_tecnica.vencimiento + 'T00:00:00').toLocaleDateString('es-CL')}</strong>`;
+        }
+      } else {
+        if (notice) {
+          notice.style.color = '#f87171';
+          notice.textContent = data.error || 'Error al guardar';
+        }
+      }
+    } catch (e) {
+      if (notice) {
+        notice.style.color = '#f87171';
+        notice.textContent = 'Error de conexión';
+      }
+    }
+  } else {
+    // Si es vehículo nuevo, actualizar el banner si existe
+    const pat = document.getElementById('vn_patente').value || (vehiculoActualIngreso ? vehiculoActualIngreso.patente : '');
+    if (pat) {
+      try {
+        const res = await fetch(`api/consultar_vehiculo_api.php?patente=${encodeURIComponent(pat)}&forzar_api=1`);
+        const rData = await res.json();
+        if (rData.success && rData.datos && rData.datos.revision_tecnica) {
+          let prt = rData.datos.revision_tecnica;
+          prt.regimen = nuevoRegimen;
+          prt.es_semestral = (nuevoRegimen === 'semestral');
+          prt.es_cuatrimestral = (nuevoRegimen === 'cuatrimestral');
+          const alertBox = document.getElementById('prtAlertContainerBox');
+          if (alertBox) {
+            alertBox.outerHTML = generarHtmlAlertaPRT(prt, false);
+          }
+        }
+      } catch (e) {}
+    }
+  }
+}
+
 function onSelectVehiculoExistente(vid) {
   const sel = document.getElementById('vehiculoSelect');
-  if (sel.selectedIndex > 0) {
-    const txt = sel.options[sel.selectedIndex].text;
-    const parts = txt.split(' — ');
-    if (parts.length > 0) {
-      document.getElementById('patenteUniversalInput').value = parts[0].trim();
+  const idNum = parseInt(vid || sel.value, 10);
+  const vePrtBlock = document.getElementById('vePrtBlock');
+
+  if (idNum > 0) {
+    const v = vehiculosClienteCache.find(x => parseInt(x.VehiculoID, 10) === idNum);
+    if (v) {
+      document.getElementById('patenteUniversalInput').value = v.Patente;
+      if (v.KilometrajeUltimo) {
+        document.getElementById('kmIngresoInput').value = v.KilometrajeUltimo;
+      }
+      const reg = (v.RevisionTecnicaRegimen || (Number(v.EsTransportePublico) ? 'semestral' : 'anual')).toLowerCase();
+      vehiculoActualIngreso = {
+        id: v.VehiculoID,
+        patente: v.Patente,
+        marca: v.Marca,
+        modelo: v.Modelo,
+        regimen: reg
+      };
+
+      if (vePrtBlock) {
+        vePrtBlock.style.display = 'block';
+        const r12 = document.getElementById('ve_prt_12');
+        const r6 = document.getElementById('ve_prt_6');
+        const r4 = document.getElementById('ve_prt_4');
+        if (reg === 'cuatrimestral') {
+          if (r4) r4.checked = true;
+        } else if (reg === 'semestral') {
+          if (r6) r6.checked = true;
+        } else {
+          if (r12) r12.checked = true;
+        }
+
+        const badge = document.getElementById('vePrtInfoBadge');
+        if (badge) {
+          if (v.RevisionTecnicaVencimiento) {
+            badge.innerHTML = `<i class="fa-solid fa-calendar"></i> Vence: <strong>${new Date(v.RevisionTecnicaVencimiento + 'T00:00:00').toLocaleDateString('es-CL')}</strong>`;
+          } else {
+            badge.innerHTML = '';
+          }
+        }
+      }
     }
+  } else {
+    if (vePrtBlock) vePrtBlock.style.display = 'none';
   }
 }
 
@@ -609,26 +823,18 @@ async function buscarVehiculoUniversal() {
 
     const d = data.datos;
 
-    // Generar alerta de Revisión Técnica (PRT) si aplica
+    vehiculoActualIngreso = {
+      id: d.vehiculo_id || 0,
+      patente: d.patente || patente,
+      marca: d.marca,
+      modelo: d.modelo,
+      regimen: (d.revision_tecnica && d.revision_tecnica.regimen) ? d.revision_tecnica.regimen : 'anual',
+      revision_tecnica: d.revision_tecnica
+    };
+
     let alertaPrtHtml = '';
     if (d.revision_tecnica && d.revision_tecnica.valido) {
-      const prt = d.revision_tecnica;
-      const regimenTxt = prt.es_cuatrimestral ? ' [Cuatrimestral - Buses/Escolar]' : (prt.es_semestral ? ' [Semestral - Carga/Transporte]' : '');
-      if (prt.estado === 'vencida') {
-        alertaPrtHtml = `<div style="margin-top: 6px; padding: 6px 10px; background: rgba(239, 68, 68, 0.2); border-left: 3px solid #ef4444; border-radius: 4px; color: #fca5a5; font-weight: 600; font-size: 0.82rem;">
-          <i class="fa-solid fa-circle-xmark"></i> <strong>ALERTA REVISIÓN TÉCNICA VENCIDA (Dígito ${prt.digito} - ${prt.meses_texto}${regimenTxt}):</strong> Venció el ${prt.vencimiento ? new Date(prt.vencimiento + 'T00:00:00').toLocaleDateString('es-CL') : ''}.<br>
-          <span style="color: #fecaca; font-weight: normal;">👉 <em>Ofrécele al cliente: Pre-Revisión Técnica preventiva, revisión de frenos, luces y tren delantero.</em></span>
-        </div>`;
-      } else if (prt.estado === 'por_vencer') {
-        alertaPrtHtml = `<div style="margin-top: 6px; padding: 6px 10px; background: rgba(245, 158, 11, 0.2); border-left: 3px solid #f59e0b; border-radius: 4px; color: #fde047; font-weight: 600; font-size: 0.82rem;">
-          <i class="fa-solid fa-triangle-exclamation"></i> <strong>REVISIÓN TÉCNICA POR VENCER (Dígito ${prt.digito} - ${prt.meses_texto}${regimenTxt}):</strong> Vence este mes (${prt.vencimiento ? new Date(prt.vencimiento + 'T00:00:00').toLocaleDateString('es-CL') : ''}).<br>
-          <span style="color: #fef08a; font-weight: normal;">👉 <em>Oportunidad comercial: Ofrecer Pre-Revisión Técnica para asegurar que apruebe sin rechazos.</em></span>
-        </div>`;
-      } else if (prt.estado === 'vigente') {
-        alertaPrtHtml = `<div style="margin-top: 6px; padding: 4px 8px; background: rgba(16, 185, 129, 0.15); border-left: 3px solid #10b981; border-radius: 4px; color: #86efac; font-size: 0.8rem;">
-          <i class="fa-solid fa-circle-check"></i> Revisión Técnica al día (${prt.meses_texto}${regimenTxt} • Vence: ${prt.vencimiento ? new Date(prt.vencimiento + 'T00:00:00').toLocaleDateString('es-CL') : ''})
-        </div>`;
-      }
+      alertaPrtHtml = generarHtmlAlertaPRT(d.revision_tecnica, data.fuente === 'local');
     }
 
     if (data.fuente === 'local') {
@@ -660,6 +866,7 @@ async function buscarVehiculoUniversal() {
       document.getElementById('radioVehiculoExistente').checked = true;
       toggleVehiculoModo();
       await fetchVehiculos(d.cliente_id, d.vehiculo_id);
+      onSelectVehiculoExistente(d.vehiculo_id);
 
       if (d.kilometraje) {
         document.getElementById('kmIngresoInput').value = d.kilometraje;
@@ -765,6 +972,8 @@ async function fetchVehiculos(clienteId, seleccionar) {
   const select = document.getElementById('vehiculoSelect');
   if (!clienteId) {
     select.innerHTML = '<option value="">Primero selecciona un cliente...</option>';
+    const vePrt = document.getElementById('vePrtBlock');
+    if (vePrt) vePrt.style.display = 'none';
     return;
   }
   select.innerHTML = '<option value="">Cargando vehículos...</option>';
@@ -772,17 +981,24 @@ async function fetchVehiculos(clienteId, seleccionar) {
     const res = await fetch(`api/vehiculos_cliente.php?cliente_id=${clienteId}`);
     const data = await res.json();
     const vehiculos = data.vehiculos || [];
+    vehiculosClienteCache = vehiculos;
     if (vehiculos.length === 0) {
       select.innerHTML = '<option value="">Este cliente no tiene vehículos. Elige "Vehículo nuevo".</option>';
+      const vePrt = document.getElementById('vePrtBlock');
+      if (vePrt) vePrt.style.display = 'none';
       return;
     }
     let html = '<option value="">Selecciona un vehículo...</option>';
     for (const v of vehiculos) {
-      const selected = (seleccionar && seleccionar === v.VehiculoID) ? 'selected' : '';
+      const selected = (seleccionar && parseInt(seleccionar, 10) === parseInt(v.VehiculoID, 10)) ? 'selected' : '';
       const kmTxt = v.KilometrajeUltimo ? ` — ${Number(v.KilometrajeUltimo).toLocaleString('es-CL')} km` : '';
       html += `<option value="${v.VehiculoID}" ${selected}>${v.Patente} — ${v.Marca} ${v.Modelo}${kmTxt}</option>`;
     }
     select.innerHTML = html;
+
+    if (seleccionar) {
+      onSelectVehiculoExistente(seleccionar);
+    }
   } catch (e) {
     select.innerHTML = '<option value="">Error al cargar vehículos</option>';
   }
@@ -978,6 +1194,15 @@ document.addEventListener('DOMContentLoaded', () => {
     <?php if (!empty($vehiculoPrecargado['KilometrajeUltimo'])): ?>
       document.getElementById('kmIngresoInput').value = <?= (int)$vehiculoPrecargado['KilometrajeUltimo'] ?>;
     <?php endif; ?>
+    vehiculoActualIngreso = {
+      id: <?= (int)$vehiculoPrecargado['VehiculoID'] ?>,
+      patente: <?= json_encode($vehiculoPrecargado['Patente']) ?>,
+      marca: <?= json_encode($vehiculoPrecargado['Marca']) ?>,
+      modelo: <?= json_encode($vehiculoPrecargado['Modelo']) ?>,
+      regimen: <?= json_encode($vehiculoPrecargadoPRT ? $vehiculoPrecargadoPRT['regimen'] : 'anual') ?>,
+      revision_tecnica: <?= json_encode($vehiculoPrecargadoPRT) ?>
+    };
+    onSelectVehiculoExistente(<?= (int)$vehiculoPrecargado['VehiculoID'] ?>);
   <?php endif; ?>
 });
 </script>

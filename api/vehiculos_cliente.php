@@ -17,7 +17,8 @@ if ($clienteId <= 0) {
 try {
     $pdo = getDB();
     $stmt = $pdo->prepare("
-        SELECT VehiculoID, Patente, Marca, Modelo, Anio, Color, KilometrajeUltimo
+        SELECT VehiculoID, Patente, Marca, Modelo, Anio, Color, KilometrajeUltimo, TipoVehiculo,
+               RevisionTecnicaRegimen, EsTransportePublico, RevisionTecnicaVencimiento, RevisionTecnicaEstado
         FROM vehiculos
         WHERE ClienteID = :cid AND Activo = TRUE
         ORDER BY Patente ASC
