@@ -233,6 +233,26 @@ $vehiculoPreId = $vehiculoPrecargado['VehiculoID'] ?? null;
           <input type="text" name="vehiculo_vin_nuevo" id="vn_vin" class="form-control" placeholder="17 caracteres alfanuméricos" style="text-transform: uppercase;">
         </div>
       </div>
+
+      <div style="margin-top: 0.85rem; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-dark); border-radius: 8px; padding: 0.75rem 1rem;">
+        <label style="font-size: 0.8rem; color: #38bdf8; font-weight: 700; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
+          <i class="fa-solid fa-shield-halved"></i> FRECUENCIA REVISIÓN TÉCNICA (PRT)
+        </label>
+        <div style="display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center;">
+          <label style="font-size: 0.82rem; color: #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; margin: 0;">
+            <input type="radio" name="vn_regimen_prt" id="vn_prt_12" value="anual" checked style="accent-color: #38bdf8;">
+            <span><strong>Cada 12 meses</strong> <small style="color: var(--text-muted);">(Particular)</small></span>
+          </label>
+          <label style="font-size: 0.82rem; color: #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; margin: 0;">
+            <input type="radio" name="vn_regimen_prt" id="vn_prt_6" value="semestral" style="accent-color: #a855f7;">
+            <span><strong>Cada 6 meses</strong> <small style="color: var(--text-muted);">(Transporte / Carga / Taxi)</small></span>
+          </label>
+          <label style="font-size: 0.82rem; color: #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; margin: 0;">
+            <input type="radio" name="vn_regimen_prt" id="vn_prt_4" value="cuatrimestral" style="accent-color: #f97316;">
+            <span><strong>Cada 4 meses</strong> <small style="color: var(--text-muted);">(Buses antiguos / Escolar)</small></span>
+          </label>
+        </div>
+      </div>
     </div>
 
     <div style="margin-top: 1rem;">
@@ -593,7 +613,7 @@ async function buscarVehiculoUniversal() {
     let alertaPrtHtml = '';
     if (d.revision_tecnica && d.revision_tecnica.valido) {
       const prt = d.revision_tecnica;
-      const regimenTxt = prt.es_semestral ? ' [Semestral - Carga/Transporte]' : '';
+      const regimenTxt = prt.es_cuatrimestral ? ' [Cuatrimestral - Buses/Escolar]' : (prt.es_semestral ? ' [Semestral - Carga/Transporte]' : '');
       if (prt.estado === 'vencida') {
         alertaPrtHtml = `<div style="margin-top: 6px; padding: 6px 10px; background: rgba(239, 68, 68, 0.2); border-left: 3px solid #ef4444; border-radius: 4px; color: #fca5a5; font-weight: 600; font-size: 0.82rem;">
           <i class="fa-solid fa-circle-xmark"></i> <strong>ALERTA REVISIÓN TÉCNICA VENCIDA (Dígito ${prt.digito} - ${prt.meses_texto}${regimenTxt}):</strong> Venció el ${prt.vencimiento ? new Date(prt.vencimiento + 'T00:00:00').toLocaleDateString('es-CL') : ''}.<br>
@@ -670,6 +690,19 @@ async function buscarVehiculoUniversal() {
       if (d.transmision) document.getElementById('vn_transmision').value = d.transmision;
       if (d.tipo_vehiculo) document.getElementById('vn_tipo').value = d.tipo_vehiculo;
       if (d.vin) document.getElementById('vn_vin').value = d.vin;
+
+      if (d.revision_tecnica) {
+        if (d.revision_tecnica.regimen === 'cuatrimestral') {
+          const r4 = document.getElementById('vn_prt_4');
+          if (r4) r4.checked = true;
+        } else if (d.revision_tecnica.regimen === 'semestral') {
+          const r6 = document.getElementById('vn_prt_6');
+          if (r6) r6.checked = true;
+        } else {
+          const r12 = document.getElementById('vn_prt_12');
+          if (r12) r12.checked = true;
+        }
+      }
 
       if (d.propietario) {
         document.getElementById('radioClienteNuevo').checked = true;

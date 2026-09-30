@@ -24,7 +24,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $tipoVehiculo = trim($_POST['tipo_vehiculo'] ?? '') ?: null;
         $vin = strtoupper(trim($_POST['vin'] ?? ''));
         $km = (int)($_POST['kilometraje'] ?? 0) ?: null;
-        $esTransporte = !empty($_POST['es_transporte_publico']) ? 1 : 0;
+        $regimenPRT = strtolower(trim($_POST['regimen_prt'] ?? ''));
+        if (!in_array($regimenPRT, ['anual', 'semestral', 'cuatrimestral'], true)) {
+            $regimenPRT = !empty($_POST['es_transporte_publico']) ? 'semestral' : 'anual';
+        }
+        $esTransporte = ($regimenPRT !== 'anual') ? 1 : 0;
 
         if ($clienteId > 0 && $patente !== '' && $marca !== '' && $modelo !== '') {
             try {
@@ -33,30 +37,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         UPDATE vehiculos SET ClienteID = :cid, Patente = :pat, Marca = :marca, Modelo = :modelo,
                                Anio = :anio, Color = :color, Combustible = :comb, Motor = :mot,
                                Transmision = :trans, TipoVehiculo = :tipo, VIN = :vin, KilometrajeUltimo = :km,
-                               EsTransportePublico = :tp
+                               RevisionTecnicaRegimen = :regimen, EsTransportePublico = :tp
                         WHERE VehiculoID = :id
                     ");
                     $stmt->execute([
                         ':cid' => $clienteId, ':pat' => $patente, ':marca' => $marca, ':modelo' => $modelo,
                         ':anio' => $anio, ':color' => $color, ':comb' => $combustible, ':mot' => $motor,
                         ':trans' => $transmision, ':tipo' => $tipoVehiculo,
-                        ':vin' => $vin ?: null, ':km' => $km, ':tp' => $esTransporte, ':id' => $vehiculoId
+                        ':vin' => $vin ?: null, ':km' => $km,
+                        ':regimen' => $regimenPRT, ':tp' => $esTransporte, ':id' => $vehiculoId
                     ]);
-                    sincronizarVehiculoPRT($vehiculoId, $pdo);
+                    sincronizarVehiculoPRT($vehiculoId, $pdo, $regimenPRT);
                     $message = "Vehículo $patente actualizado correctamente.";
                 } else {
                     $stmt = $pdo->prepare("
-                        INSERT INTO vehiculos (ClienteID, Patente, Marca, Modelo, Anio, Color, Combustible, Motor, Transmision, TipoVehiculo, VIN, KilometrajeUltimo, EsTransportePublico)
-                        VALUES (:cid, :pat, :marca, :modelo, :anio, :color, :comb, :mot, :trans, :tipo, :vin, :km, :tp)
+                        INSERT INTO vehiculos (ClienteID, Patente, Marca, Modelo, Anio, Color, Combustible, Motor, Transmision, TipoVehiculo, VIN, KilometrajeUltimo, RevisionTecnicaRegimen, EsTransportePublico)
+                        VALUES (:cid, :pat, :marca, :modelo, :anio, :color, :comb, :mot, :trans, :tipo, :vin, :km, :regimen, :tp)
                     ");
                     $stmt->execute([
                         ':cid' => $clienteId, ':pat' => $patente, ':marca' => $marca, ':modelo' => $modelo,
                         ':anio' => $anio, ':color' => $color, ':comb' => $combustible, ':mot' => $motor,
                         ':trans' => $transmision, ':tipo' => $tipoVehiculo,
-                        ':vin' => $vin ?: null, ':km' => $km, ':tp' => $esTransporte
+                        ':vin' => $vin ?: null, ':km' => $km,
+                        ':regimen' => $regimenPRT, ':tp' => $esTransporte
                     ]);
                     $nuevoId = (int)$pdo->lastInsertId();
-                    sincronizarVehiculoPRT($nuevoId, $pdo);
+                    sincronizarVehiculoPRT($nuevoId, $pdo, $regimenPRT);
                     $message = "Vehículo $patente registrado correctamente.";
                 }
             } catch (Exception $e) {
@@ -106,10 +112,11 @@ foreach ($vehiculos as &$veh) {
     $veh['PRT'] = calcularCalendarioPRT(
         $veh['Patente'],
         $veh['TipoVehiculo'] ?? '',
-        (bool)($veh['EsTransportePublico'] ?? false),
+        $veh['RevisionTecnicaRegimen'] ?? (!empty($veh['EsTransportePublico']) ? 'semestral' : null),
         null,
         $veh['RevisionTecnicaUltima'] ?? null,
-        $veh['RevisionTecnicaVencimiento'] ?? null
+        $veh['RevisionTecnicaVencimiento'] ?? null,
+        $veh['Anio'] ? (int)$veh['Anio'] : null
     );
 }
 unset($veh);

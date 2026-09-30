@@ -130,8 +130,8 @@
   <div class="fv-kpi-card" style="border-left: 4px solid <?= $prtInfo['badge_color'] === 'danger' ? '#ef4444' : ($prtInfo['badge_color'] === 'warning' ? '#f59e0b' : '#10b981') ?>;">
     <div class="fv-kpi-title" style="display: flex; justify-content: space-between; align-items: center;">
       <span><i class="fa-solid fa-shield-halved"></i> Revisión Técnica (PRT)</span>
-      <span class="badge" style="font-size: 0.68rem; background: <?= $prtInfo['es_semestral'] ? 'rgba(168, 85, 247, 0.2)' : 'rgba(100, 116, 139, 0.2)' ?>; color: <?= $prtInfo['es_semestral'] ? '#c084fc' : '#cbd5e1' ?>;">
-        <?= $prtInfo['es_semestral'] ? 'Semestral' : 'Anual' ?>
+      <span class="badge" style="font-size: 0.68rem; background: <?= $prtInfo['es_cuatrimestral'] ? 'rgba(249, 115, 22, 0.2)' : ($prtInfo['es_semestral'] ? 'rgba(168, 85, 247, 0.2)' : 'rgba(100, 116, 139, 0.2)') ?>; color: <?= $prtInfo['es_cuatrimestral'] ? '#f97316' : ($prtInfo['es_semestral'] ? '#c084fc' : '#cbd5e1') ?>;">
+        <?= $prtInfo['es_cuatrimestral'] ? 'Cuatrimestral' : ($prtInfo['es_semestral'] ? 'Semestral' : 'Anual') ?>
       </span>
     </div>
     <div class="fv-kpi-val" style="font-size: 1.25rem; color: <?= $prtInfo['badge_color'] === 'danger' ? '#ef4444' : ($prtInfo['badge_color'] === 'warning' ? '#f59e0b' : '#10b981') ?>;">
@@ -160,13 +160,14 @@
         </a>
       <?php endif; ?>
 
-      <form method="POST" action="ficha_vehiculo.php?id=<?= $vehiculoId ?>" style="margin: 0; display: inline-block;">
+      <form method="POST" action="ficha_vehiculo.php?id=<?= $vehiculoId ?>" style="margin: 0; display: inline-flex; align-items: center;">
         <?= csrfField() ?>
-        <input type="hidden" name="action" value="toggle_transporte_publico">
-        <input type="hidden" name="es_transporte_publico" value="<?= empty($vehiculo['EsTransportePublico']) ? '1' : '0' ?>">
-        <button type="submit" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.7rem; color: #94a3b8;" title="Cambiar régimen: Particular (Anual) vs Transporte/Carga (Semestral)">
-          <i class="fa-solid fa-repeat"></i> <?= empty($vehiculo['EsTransportePublico']) ? 'Marcar Transporte/Taxi' : 'Marcar Particular' ?>
-        </button>
+        <input type="hidden" name="action" value="cambiar_regimen_prt">
+        <select name="regimen" onchange="this.form.submit()" style="padding: 0.25rem 0.5rem; font-size: 0.72rem; background: #0f172a; color: #cbd5e1; border: 1px solid var(--border-dark); border-radius: 6px; cursor: pointer;" title="Cambiar frecuencia de Revisión Técnica">
+          <option value="anual" <?= ($prtInfo['regimen'] ?? '') === 'anual' ? 'selected' : '' ?>>12 meses (Particular)</option>
+          <option value="semestral" <?= ($prtInfo['regimen'] ?? '') === 'semestral' ? 'selected' : '' ?>>6 meses (Transporte/Carga)</option>
+          <option value="cuatrimestral" <?= ($prtInfo['regimen'] ?? '') === 'cuatrimestral' ? 'selected' : '' ?>>4 meses (Buses/Escolar)</option>
+        </select>
       </form>
     </div>
   </div>

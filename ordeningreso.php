@@ -3,6 +3,7 @@
 // con header('Location...') y eso falla si ya se envió HTML antes (mismo patrón
 // que usa login.php).
 require_once __DIR__ . '/includes/core/auth.php';
+require_once __DIR__ . '/includes/integraciones/revision_tecnica_helper.php';
 requireLogin();
 
 $pdo = getDB();
@@ -62,18 +63,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if ($vehiculoModo === 'nuevo') {
+                $regimenPRT = strtolower(trim($_POST['vn_regimen_prt'] ?? 'anual'));
+                if (!in_array($regimenPRT, ['anual', 'semestral', 'cuatrimestral'], true)) {
+                    $regimenPRT = 'anual';
+                }
+                $esTp = ($regimenPRT !== 'anual') ? 1 : 0;
+
                 $stmt = $pdo->prepare("
-                    INSERT INTO vehiculos (ClienteID, Patente, Marca, Modelo, Anio, Color, Combustible, Motor, Transmision, TipoVehiculo, VIN, KilometrajeUltimo)
-                    VALUES (:cid, :pat, :marca, :modelo, :anio, :color, :combustible, :motor, :transmision, :tipo, :vin, :km)
+                    INSERT INTO vehiculos (ClienteID, Patente, Marca, Modelo, Anio, Color, Combustible, Motor, Transmision, TipoVehiculo, VIN, KilometrajeUltimo, RevisionTecnicaRegimen, EsTransportePublico)
+                    VALUES (:cid, :pat, :marca, :modelo, :anio, :color, :combustible, :motor, :transmision, :tipo, :vin, :km, :regimen, :tp)
                 ");
                 $stmt->execute([
                     ':cid' => $clienteId, ':pat' => $patenteNueva, ':marca' => $marcaNueva, ':modelo' => $modeloNuevo,
                     ':anio' => $anioNuevo, ':color' => $colorNuevo,
                     ':combustible' => $combustibleNuevo, ':motor' => $motorNuevo,
                     ':transmision' => $transmisionNueva, ':tipo' => $tipoVehiculoNuevo,
-                    ':vin' => $vinNuevo, ':km' => $kilometrajeIngreso
+                    ':vin' => $vinNuevo, ':km' => $kilometrajeIngreso,
+                    ':regimen' => $regimenPRT, ':tp' => $esTp
                 ]);
                 $vehiculoId = (int)$pdo->lastInsertId();
+                sincronizarVehiculoPRT($vehiculoId, $pdo, $regimenPRT);
             } else {
                 // Actualiza el kilometraje del vehículo con el dato de este ingreso.
                 if ($kilometrajeIngreso) {

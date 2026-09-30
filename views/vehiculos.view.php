@@ -102,7 +102,9 @@
               ?>
                 <span class="badge" style="background: <?= $bg ?>; color: <?= $col ?>; border: 1px solid <?= $bor ?>; font-size: 0.73rem; padding: 3px 7px; display: inline-flex; align-items: center; gap: 4px;" title="<?= htmlspecialchars($prt['estado_label']) ?>">
                   <i class="<?= $prt['badge_icon'] ?>"></i> <?= htmlspecialchars($prt['meses_texto']) ?>
-                  <?php if ($prt['es_semestral']): ?>
+                  <?php if (!empty($prt['es_cuatrimestral'])): ?>
+                    <i class="fa-solid fa-bus" style="margin-left: 2px; color: #f97316;" title="Régimen Cuatrimestral (Buses/Escolar)"></i>
+                  <?php elseif (!empty($prt['es_semestral'])): ?>
                     <i class="fa-solid fa-truck" style="margin-left: 2px;" title="Régimen Semestral (Carga/Transporte)"></i>
                   <?php endif; ?>
                 </span>
@@ -269,13 +271,23 @@
         </div>
       </div>
 
-      <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-dark); border-radius: 8px; padding: 0.65rem 0.85rem;">
-        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; font-weight: 600; cursor: pointer; color: #f1f5f9; margin: 0;">
-          <input type="checkbox" name="es_transporte_publico" id="vf_es_transporte" value="1" style="width: 16px; height: 16px; accent-color: #38bdf8;">
-          <span><i class="fa-solid fa-truck" style="color: #38bdf8;"></i> Transporte Público / Taxi / Bus / Carga</span>
+      <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-dark); border-radius: 8px; padding: 0.75rem 0.95rem;">
+        <label style="font-size: 0.8rem; color: #38bdf8; font-weight: 700; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
+          <i class="fa-solid fa-shield-halved"></i> FRECUENCIA REVISIÓN TÉCNICA (PRT)
         </label>
-        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; margin-left: 24px;">
-          Aplica régimen semestral de Revisión Técnica (2 revisiones al año según Decreto MTT).
+        <div style="display: flex; gap: 0.85rem; flex-wrap: wrap;">
+          <label style="font-size: 0.8rem; color: #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; margin: 0;">
+            <input type="radio" name="regimen_prt" id="vf_prt_12" value="anual" checked style="accent-color: #38bdf8;">
+            <span><strong>Cada 12 meses</strong> <small style="color: var(--text-muted);">(Particular)</small></span>
+          </label>
+          <label style="font-size: 0.8rem; color: #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; margin: 0;">
+            <input type="radio" name="regimen_prt" id="vf_prt_6" value="semestral" style="accent-color: #a855f7;">
+            <span><strong>Cada 6 meses</strong> <small style="color: var(--text-muted);">(Transporte / Carga / Taxi)</small></span>
+          </label>
+          <label style="font-size: 0.8rem; color: #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; margin: 0;">
+            <input type="radio" name="regimen_prt" id="vf_prt_4" value="cuatrimestral" style="accent-color: #f97316;">
+            <span><strong>Cada 4 meses</strong> <small style="color: var(--text-muted);">(Buses antiguos / Escolar)</small></span>
+          </label>
         </div>
       </div>
 
@@ -313,8 +325,8 @@ function abrirNuevoVehiculo() {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
-  const chk = document.getElementById('vf_es_transporte');
-  if (chk) chk.checked = false;
+  const r12 = document.getElementById('vf_prt_12');
+  if (r12) r12.checked = true;
   document.getElementById('apiModalStatus').style.display = 'none';
   document.getElementById('vehiculoModal').style.display = 'flex';
 }
@@ -334,8 +346,19 @@ function abrirEditarVehiculo(v) {
   document.getElementById('vf_tipo').value = v.TipoVehiculo || '';
   document.getElementById('vf_km').value = v.KilometrajeUltimo || '';
   document.getElementById('vf_vin').value = v.VIN || '';
-  const chk = document.getElementById('vf_es_transporte');
-  if (chk) chk.checked = !!Number(v.EsTransportePublico);
+
+  const reg = (v.RevisionTecnicaRegimen || (Number(v.EsTransportePublico) ? 'semestral' : 'anual')).toLowerCase();
+  if (reg === 'cuatrimestral') {
+    const r4 = document.getElementById('vf_prt_4');
+    if (r4) r4.checked = true;
+  } else if (reg === 'semestral') {
+    const r6 = document.getElementById('vf_prt_6');
+    if (r6) r6.checked = true;
+  } else {
+    const r12 = document.getElementById('vf_prt_12');
+    if (r12) r12.checked = true;
+  }
+
   document.getElementById('apiModalStatus').style.display = 'none';
   document.getElementById('vehiculoModal').style.display = 'flex';
 }
@@ -382,9 +405,17 @@ async function consultarApiVehiculosModal() {
     if (d.transmision) document.getElementById('vf_transmision').value = d.transmision;
     if (d.tipo_vehiculo) document.getElementById('vf_tipo').value = d.tipo_vehiculo;
     if (d.vin) document.getElementById('vf_vin').value = d.vin;
-    if (d.revision_tecnica && d.revision_tecnica.es_semestral) {
-      const chk = document.getElementById('vf_es_transporte');
-      if (chk) chk.checked = true;
+    if (d.revision_tecnica) {
+      if (d.revision_tecnica.regimen === 'cuatrimestral') {
+        const r4 = document.getElementById('vf_prt_4');
+        if (r4) r4.checked = true;
+      } else if (d.revision_tecnica.regimen === 'semestral' || d.revision_tecnica.es_semestral) {
+        const r6 = document.getElementById('vf_prt_6');
+        if (r6) r6.checked = true;
+      } else {
+        const r12 = document.getElementById('vf_prt_12');
+        if (r12) r12.checked = true;
+      }
     }
 
     status.style.display = 'block';

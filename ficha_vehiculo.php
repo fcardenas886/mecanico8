@@ -70,13 +70,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = $res['error'] ?? 'Error al renovar la revisión técnica.';
         }
-    } elseif ($action === 'toggle_transporte_publico') {
-        $nuevoTp = !empty($_POST['es_transporte_publico']) ? 1 : 0;
-        $pdo->prepare("UPDATE vehiculos SET EsTransportePublico = :tp WHERE VehiculoID = :id")
-            ->execute([':tp' => $nuevoTp, ':id' => $vehiculoId]);
-        sincronizarVehiculoPRT($vehiculoId, $pdo);
-        $vehiculo['EsTransportePublico'] = $nuevoTp;
-        $message = 'Régimen de Revisión Técnica actualizado a ' . ($nuevoTp ? 'Semestral (Transporte/Carga)' : 'Anual (Particular)') . '.';
+    } elseif ($action === 'cambiar_regimen_prt' || $action === 'toggle_transporte_publico') {
+        $nuevoReg = strtolower(trim($_POST['regimen'] ?? ''));
+        if (!in_array($nuevoReg, ['anual', 'semestral', 'cuatrimestral'], true)) {
+            $nuevoReg = !empty($_POST['es_transporte_publico']) ? 'semestral' : 'anual';
+        }
+        $esTp = ($nuevoReg !== 'anual') ? 1 : 0;
+        $pdo->prepare("UPDATE vehiculos SET RevisionTecnicaRegimen = :reg, EsTransportePublico = :tp WHERE VehiculoID = :id")
+            ->execute([':reg' => $nuevoReg, ':tp' => $esTp, ':id' => $vehiculoId]);
+        sincronizarVehiculoPRT($vehiculoId, $pdo, $nuevoReg);
+        $vehiculo['RevisionTecnicaRegimen'] = $nuevoReg;
+        $vehiculo['EsTransportePublico'] = $esTp;
+        $labelsReg = [
+            'anual' => 'Anual (Cada 12 meses - Particular)',
+            'semestral' => 'Semestral (Cada 6 meses - Transporte / Carga)',
+            'cuatrimestral' => 'Cuatrimestral (Cada 4 meses - Buses / Escolar)'
+        ];
+        $message = 'Régimen de Revisión Técnica actualizado a ' . ($labelsReg[$nuevoReg] ?? $nuevoReg) . '.';
+
+        // Recargar datos actualizados del vehículo
+        $stR = $pdo->prepare("SELECT * FROM vehiculos WHERE VehiculoID = :id");
+        $stR->execute([':id' => $vehiculoId]);
+        $vehiculoActualizado = $stR->fetch();
+        if ($vehiculoActualizado) {
+            $vehiculo = array_merge($vehiculo, $vehiculoActualizado);
+        }
     } elseif ($action === 'add_mantenimiento') {
         $tipo = trim($_POST['tipo_mantenimiento'] ?? '');
         $kmRealizado = (int)($_POST['km_realizado'] ?? $vehiculo['KilometrajeUltimo'] ?? 0);
@@ -115,11 +133,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Cálculo de Revisión Técnica para la vista
 $prtInfo = calcularCalendarioPRT(
     $vehiculo['Patente'],
-    $vehiculo['TipoVehiculo'],
-    (bool)($vehiculo['EsTransportePublico'] ?? false),
+    $vehiculo['TipoVehiculo'] ?? '',
+    $vehiculo['RevisionTecnicaRegimen'] ?? (!empty($vehiculo['EsTransportePublico']) ? 'semestral' : null),
     null,
     $vehiculo['RevisionTecnicaUltima'] ?? null,
-    $vehiculo['RevisionTecnicaVencimiento'] ?? null
+    $vehiculo['RevisionTecnicaVencimiento'] ?? null,
+    $vehiculo['Anio'] ? (int)$vehiculo['Anio'] : null
 );
 
 // Nombre del taller para WhatsApp

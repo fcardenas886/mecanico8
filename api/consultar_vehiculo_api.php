@@ -72,13 +72,18 @@ if ($buscarLocal && !$forzarApi && !empty($patente)) {
             } catch (Exception $em) {}
 
             // Calcular Revisión Técnica (PRT)
+            $regimenLocal = $vehiculoLocal['RevisionTecnicaRegimen'] ?? null;
+            if (empty($regimenLocal)) {
+                $regimenLocal = !empty($vehiculoLocal['EsTransportePublico']) ? 'semestral' : null;
+            }
             $prt = calcularCalendarioPRT(
                 $vehiculoLocal['Patente'],
                 $vehiculoLocal['TipoVehiculo'],
-                (bool)($vehiculoLocal['EsTransportePublico'] ?? false),
+                $regimenLocal,
                 null,
                 $vehiculoLocal['RevisionTecnicaUltima'] ?? null,
-                $vehiculoLocal['RevisionTecnicaVencimiento'] ?? null
+                $vehiculoLocal['RevisionTecnicaVencimiento'] ?? null,
+                $vehiculoLocal['Anio'] ? (int)$vehiculoLocal['Anio'] : null
             );
 
             echo json_encode([
@@ -130,7 +135,8 @@ if (!empty($resultado['success']) && !empty($resultado['datos'])) {
     $d = &$resultado['datos'];
     $patCalculo = !empty($d['patente']) ? $d['patente'] : $patente;
     $tipoCalculo = $d['tipo_vehiculo'] ?? '';
-    $d['revision_tecnica'] = calcularCalendarioPRT($patCalculo, $tipoCalculo);
+    $anioCalculo = !empty($d['anio']) ? (int)$d['anio'] : null;
+    $d['revision_tecnica'] = calcularCalendarioPRT($patCalculo, $tipoCalculo, null, null, null, null, $anioCalculo);
 }
 
 echo json_encode($resultado, JSON_UNESCAPED_UNICODE);

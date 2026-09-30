@@ -27,11 +27,15 @@ switch ($action) {
         break;
 
     case 'cambiar_regimen':
-        $esTransporte = !empty($_POST['es_transporte']) ? 1 : 0;
+        $nuevoRegimen = strtolower(trim($_POST['regimen'] ?? ''));
+        if (!in_array($nuevoRegimen, ['anual', 'semestral', 'cuatrimestral'], true)) {
+            $nuevoRegimen = !empty($_POST['es_transporte']) ? 'semestral' : 'anual';
+        }
         try {
-            $stmt = $pdo->prepare("UPDATE vehiculos SET EsTransportePublico = :tp WHERE VehiculoID = :id");
-            $stmt->execute([':tp' => $esTransporte, ':id' => $vehiculoId]);
-            $cal = sincronizarVehiculoPRT($vehiculoId, $pdo);
+            $esTp = ($nuevoRegimen !== 'anual') ? 1 : 0;
+            $stmt = $pdo->prepare("UPDATE vehiculos SET RevisionTecnicaRegimen = :reg, EsTransportePublico = :tp WHERE VehiculoID = :id");
+            $stmt->execute([':reg' => $nuevoRegimen, ':tp' => $esTp, ':id' => $vehiculoId]);
+            $cal = sincronizarVehiculoPRT($vehiculoId, $pdo, $nuevoRegimen);
             echo json_encode([
                 'success' => true,
                 'mensaje' => 'Régimen actualizado exitosamente.',
