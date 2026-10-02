@@ -200,6 +200,9 @@ if (!function_exists('obtenerUltimoDigitoPatente')) {
             $mesesTexto = $nombreMes1;
         }
 
+        $mesesLista = array_values(array_filter([$mes1, $mes2, $mes3]));
+        sort($mesesLista);
+
         $anioActual = (int)$fechaRef->format('Y');
         $mesActual = (int)$fechaRef->format('n');
         $hoyStr = $fechaRef->format('Y-m-d');
