@@ -36,11 +36,8 @@
     <a href="vehiculos.php<?= !empty($q) ? '?q=' . urlencode($q) : '' ?>" class="btn <?= empty($filtroRt) ? 'btn-primary' : 'btn-secondary' ?>" style="padding: 0.25rem 0.6rem; font-size: 0.78rem;">
       Todos (<?= $totalVehiculos ?>)
     </a>
-    <a href="vehiculos.php?filtro_rt=por_vencer<?= !empty($q) ? '&q=' . urlencode($q) : '' ?>" class="btn <?= $filtroRt === 'por_vencer' ? 'btn-warning' : 'btn-secondary' ?>" style="padding: 0.25rem 0.6rem; font-size: 0.78rem; <?= $filtroRt === 'por_vencer' ? 'background: #f59e0b; color: #000;' : 'color: #fbbf24;' ?>">
-      <i class="fa-solid fa-triangle-exclamation"></i> Vencen este mes (<?= $totalPorVencer ?>)
-    </a>
-    <a href="vehiculos.php?filtro_rt=vencidos<?= !empty($q) ? '&q=' . urlencode($q) : '' ?>" class="btn <?= $filtroRt === 'vencidos' ? 'btn-danger' : 'btn-secondary' ?>" style="padding: 0.25rem 0.6rem; font-size: 0.78rem; <?= $filtroRt === 'vencidos' ? 'background: #ef4444; color: #fff;' : 'color: #f87171;' ?>">
-      <i class="fa-solid fa-circle-xmark"></i> Vencidos (<?= $totalVencidos ?>)
+    <a href="vehiculos.php?filtro_rt=este_mes<?= !empty($q) ? '&q=' . urlencode($q) : '' ?>" class="btn <?= ($filtroRt === 'este_mes' || $filtroRt === 'por_vencer') ? 'btn-warning' : 'btn-secondary' ?>" style="padding: 0.25rem 0.6rem; font-size: 0.78rem; <?= ($filtroRt === 'este_mes' || $filtroRt === 'por_vencer') ? 'background: #f59e0b; color: #000;' : 'color: #fbbf24;' ?>">
+      <i class="fa-solid fa-bell"></i> Le corresponde este mes (<?= $totalEsteMes ?>)
     </a>
   </div>
 </div>
@@ -96,21 +93,24 @@
             <td>
               <?php if (!empty($v['PRT']['valido'])): 
                 $prt = $v['PRT'];
-                $bg = $prt['badge_color'] === 'danger' ? 'rgba(239, 68, 68, 0.15)' : ($prt['badge_color'] === 'warning' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)');
-                $col = $prt['badge_color'] === 'danger' ? '#f87171' : ($prt['badge_color'] === 'warning' ? '#fbbf24' : '#34d399');
-                $bor = $prt['badge_color'] === 'danger' ? 'rgba(239, 68, 68, 0.3)' : ($prt['badge_color'] === 'warning' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)');
+                $esEsteMes = ($prt['estado'] === 'por_vencer');
+                $bg = $esEsteMes ? 'rgba(245, 158, 11, 0.15)' : 'rgba(56, 189, 248, 0.15)';
+                $col = $esEsteMes ? '#fbbf24' : '#38bdf8';
+                $bor = $esEsteMes ? 'rgba(245, 158, 11, 0.3)' : 'rgba(56, 189, 248, 0.3)';
               ?>
                 <span class="badge" style="background: <?= $bg ?>; color: <?= $col ?>; border: 1px solid <?= $bor ?>; font-size: 0.73rem; padding: 3px 7px; display: inline-flex; align-items: center; gap: 4px;" title="<?= htmlspecialchars($prt['estado_label']) ?>">
-                  <i class="<?= $prt['badge_icon'] ?>"></i> <?= htmlspecialchars($prt['meses_texto']) ?>
+                  <i class="<?= $esEsteMes ? 'fa-solid fa-bell' : 'fa-solid fa-calendar-check' ?>"></i> <?= htmlspecialchars($prt['meses_texto']) ?>
                   <?php if (!empty($prt['es_cuatrimestral'])): ?>
                     <i class="fa-solid fa-bus" style="margin-left: 2px; color: #f97316;" title="Régimen Cuatrimestral (Buses/Escolar)"></i>
                   <?php elseif (!empty($prt['es_semestral'])): ?>
                     <i class="fa-solid fa-truck" style="margin-left: 2px;" title="Régimen Semestral (Carga/Transporte)"></i>
                   <?php endif; ?>
                 </span>
-                <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 2px;">
-                  <?= $prt['vencimiento'] ? date('d/m/Y', strtotime($prt['vencimiento'])) : '' ?>
-                </div>
+                <?php if ($esEsteMes): ?>
+                  <div style="font-size: 0.68rem; color: #fbbf24; font-weight: 600; margin-top: 2px;">
+                    ¡Le corresponde este mes!
+                  </div>
+                <?php endif; ?>
               <?php else: ?>
                 <span style="color: var(--text-muted); font-size: 0.75rem;">-</span>
               <?php endif; ?>

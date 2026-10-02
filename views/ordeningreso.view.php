@@ -561,22 +561,16 @@ function generarHtmlAlertaPRT(prt, esExistente) {
   const regimenTxt = prt.es_cuatrimestral ? ' [Cuatrimestral - Buses/Escolar]' : (prt.es_semestral ? ' [Semestral - Carga/Transporte]' : '');
 
   let alertaBody = '';
-  if (prt.estado === 'vencida') {
-    alertaBody = `
-      <div style="color: #fca5a5; font-weight: 600; font-size: 0.84rem;">
-        <i class="fa-solid fa-circle-xmark"></i> <strong>ALERTA REVISIÓN TÉCNICA VENCIDA (Dígito ${prt.digito} - ${prt.meses_texto}${regimenTxt}):</strong> Venció el ${prt.vencimiento ? new Date(prt.vencimiento + 'T00:00:00').toLocaleDateString('es-CL') : ''}.<br>
-        <span style="color: #fecaca; font-weight: normal; font-size: 0.8rem;">👉 <em>Ofrécele al cliente: Pre-Revisión Técnica preventiva, revisión de frenos, luces y tren delantero.</em></span>
-      </div>`;
-  } else if (prt.estado === 'por_vencer') {
+  if (prt.estado === 'por_vencer') {
     alertaBody = `
       <div style="color: #fde047; font-weight: 600; font-size: 0.84rem;">
-        <i class="fa-solid fa-triangle-exclamation"></i> <strong>REVISIÓN TÉCNICA POR VENCER (Dígito ${prt.digito} - ${prt.meses_texto}${regimenTxt}):</strong> Vence este mes (${prt.vencimiento ? new Date(prt.vencimiento + 'T00:00:00').toLocaleDateString('es-CL') : ''}).<br>
-        <span style="color: #fef08a; font-weight: normal; font-size: 0.8rem;">👉 <em>Oportunidad comercial: Ofrecer Pre-Revisión Técnica para asegurar que apruebe sin rechazos.</em></span>
+        <i class="fa-solid fa-triangle-exclamation"></i> <strong>REVISIÓN TÉCNICA: Le corresponde este mes (Dígito ${prt.digito} - ${prt.meses_texto}${regimenTxt}):</strong><br>
+        <span style="color: #fef08a; font-weight: normal; font-size: 0.8rem;">👉 <em>Oportunidad comercial: Ofrecer Pre-Revisión Técnica preventiva para asegurar que apruebe sin observaciones en la planta.</em></span>
       </div>`;
-  } else if (prt.estado === 'vigente') {
+  } else {
     alertaBody = `
-      <div style="color: #86efac; font-size: 0.84rem;">
-        <i class="fa-solid fa-circle-check"></i> <strong>Revisión Técnica al día:</strong> ${prt.meses_texto}${regimenTxt} • Vence: <strong>${prt.vencimiento ? new Date(prt.vencimiento + 'T00:00:00').toLocaleDateString('es-CL') : ''}</strong>
+      <div style="color: #38bdf8; font-size: 0.84rem;">
+        <i class="fa-solid fa-calendar-check"></i> <strong>Revisión Técnica MTT (Dígito ${prt.digito}):</strong> Mes legal: <strong>${prt.meses_texto}</strong>${regimenTxt}
       </div>`;
   }
 
@@ -587,11 +581,8 @@ function generarHtmlAlertaPRT(prt, esExistente) {
   if (esExistente) {
     actionButtonsHtml = `
       <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 6px;">
-        <button type="button" onclick="marcarPRTAlDiaDesdeIngreso()" style="padding: 3px 9px; font-size: 0.74rem; font-weight: 600; background: rgba(16, 185, 129, 0.25); border: 1px solid #10b981; color: #86efac; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="Si el cliente ya aprobó su revisión técnica, avanza la vigencia al siguiente ciclo (+1 año o +6/+4 meses)">
-          <i class="fa-solid fa-circle-check"></i> ¿Está al día? Marcar Aprobada
-        </button>
-        <button type="button" onclick="toggleEditorFechaPRTIngreso()" style="padding: 3px 9px; font-size: 0.74rem; font-weight: 600; background: rgba(56, 189, 248, 0.2); border: 1px solid rgba(56, 189, 248, 0.4); color: #bae6fd; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="Ingresar o ajustar manualmente la fecha exacta de vencimiento">
-          <i class="fa-regular fa-calendar-days"></i> Ajustar Fecha
+        <button type="button" onclick="toggleEditorFechaPRTIngreso()" style="padding: 3px 9px; font-size: 0.74rem; font-weight: 600; background: rgba(56, 189, 248, 0.2); border: 1px solid rgba(56, 189, 248, 0.4); color: #bae6fd; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="Registrar o ajustar manualmente la fecha exacta de vencimiento del sticker">
+          <i class="fa-regular fa-calendar-days"></i> Registrar Fecha de Sticker
         </button>
         <div id="editorFechaPRTInline" style="display: none; align-items: center; gap: 5px;">
           <input type="date" id="inputFechaPRTManual" value="${prt.vencimiento || ''}" style="padding: 2px 6px; font-size: 0.74rem; background: #0f172a; color: #fff; border: 1px solid var(--border-dark); border-radius: 4px;">
@@ -624,8 +615,8 @@ function generarHtmlAlertaPRT(prt, esExistente) {
     `;
   }
 
-  const borderCol = prt.estado === 'vencida' ? '#ef4444' : (prt.estado === 'por_vencer' ? '#f59e0b' : '#10b981');
-  const bgCol = prt.estado === 'vencida' ? 'rgba(239, 68, 68, 0.2)' : (prt.estado === 'por_vencer' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.15)');
+  const borderCol = (prt.estado === 'por_vencer') ? '#f59e0b' : '#38bdf8';
+  const bgCol = (prt.estado === 'por_vencer') ? 'rgba(245, 158, 11, 0.18)' : 'rgba(56, 189, 248, 0.12)';
 
   return `
     <div id="prtAlertContainerBox" style="margin-top: 8px; padding: 8px 12px; background: ${bgCol}; border-left: 4px solid ${borderCol}; border-radius: 6px;">

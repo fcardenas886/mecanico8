@@ -81,13 +81,10 @@ $clientes = $pdo->query("SELECT ClienteID, Nombre FROM clientes WHERE Activo = T
 $q = trim($_GET['q'] ?? '');
 $filtroRt = trim($_GET['filtro_rt'] ?? '');
 
+$mesActualNum = (int)date('n');
 $sqlFiltroRt = '';
-if ($filtroRt === 'vencidos') {
-    $sqlFiltroRt = " AND v.RevisionTecnicaEstado = 'vencida'";
-} elseif ($filtroRt === 'por_vencer') {
-    $sqlFiltroRt = " AND v.RevisionTecnicaEstado = 'por_vencer'";
-} elseif ($filtroRt === 'vigentes') {
-    $sqlFiltroRt = " AND v.RevisionTecnicaEstado = 'vigente'";
+if ($filtroRt === 'este_mes' || $filtroRt === 'por_vencer') {
+    $sqlFiltroRt = " AND (v.RevisionTecnicaMes1 = {$mesActualNum} OR v.RevisionTecnicaMes2 = {$mesActualNum} OR v.RevisionTecnicaMes3 = {$mesActualNum} OR v.RevisionTecnicaEstado = 'por_vencer')";
 }
 
 $stmtV = $pdo->prepare("
@@ -104,8 +101,7 @@ $vehiculos = $stmtV->fetchAll();
 
 // Contadores rápidos para los filtros de Revisión Técnica
 $totalVehiculos = (int)$pdo->query("SELECT COUNT(*) FROM vehiculos WHERE Activo = TRUE")->fetchColumn();
-$totalVencidos = (int)$pdo->query("SELECT COUNT(*) FROM vehiculos WHERE Activo = TRUE AND RevisionTecnicaEstado = 'vencida'")->fetchColumn();
-$totalPorVencer = (int)$pdo->query("SELECT COUNT(*) FROM vehiculos WHERE Activo = TRUE AND RevisionTecnicaEstado = 'por_vencer'")->fetchColumn();
+$totalEsteMes = (int)$pdo->query("SELECT COUNT(*) FROM vehiculos WHERE Activo = TRUE AND (RevisionTecnicaMes1 = {$mesActualNum} OR RevisionTecnicaMes2 = {$mesActualNum} OR RevisionTecnicaMes3 = {$mesActualNum} OR RevisionTecnicaEstado = 'por_vencer')")->fetchColumn();
 
 // Enriquecer cada vehículo con su información PRT calculada
 foreach ($vehiculos as &$veh) {

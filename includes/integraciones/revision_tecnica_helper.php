@@ -201,189 +201,73 @@ if (!function_exists('obtenerUltimoDigitoPatente')) {
         }
 
         $anioActual = (int)$fechaRef->format('Y');
+        $mesActual = (int)$fechaRef->format('n');
         $hoyStr = $fechaRef->format('Y-m-d');
         $hoyTime = strtotime($hoyStr);
 
-        // Si hay una fecha manual forzada válida
-        if (!empty($vencimientoManual) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $vencimientoManual)) {
-            $vencStr = $vencimientoManual;
-            $vencTime = strtotime($vencStr);
-            $dias = (int)round(($vencTime - $hoyTime) / 86400);
+        // ¿Le corresponde revisión técnica este mes según el calendario oficial MTT?
+        $leTocaEsteMes = in_array($mesActual, $mesesLista, true);
 
-            if ($dias < 0) {
-                $estado = 'vencida';
-                $label = 'Vencida el ' . date('d/m/Y', $vencTime);
-                $color = 'danger';
-                $icon = 'fa-solid fa-circle-xmark';
-                $alerta = "Revisión técnica VENCIDA hace " . abs($dias) . " días. Ofrécele al cliente: Pre-Revisión Técnica y Frenos.";
-            } elseif ($dias <= 30) {
-                $estado = 'por_vencer';
-                $label = 'Vence en ' . $dias . ' día' . ($dias === 1 ? '' : 's') . ' (' . date('d/m/Y', $vencTime) . ')';
-                $color = 'warning';
-                $icon = 'fa-solid fa-triangle-exclamation';
-                $alerta = "Revisión técnica vence este mes. Ofrécele al cliente: Pre-Revisión Técnica y Luces.";
-            } else {
-                $estado = 'vigente';
-                $label = 'Al día (Vence el ' . date('d/m/Y', $vencTime) . ')';
-                $color = 'success';
-                $icon = 'fa-solid fa-circle-check';
-                $alerta = "Revisión técnica al día. Próxima inspección: " . date('d/m/Y', $vencTime);
-            }
-
-            return [
-                'valido' => true,
-                'patente' => $patente,
-                'digito' => $digito,
-                'regimen' => $regimen,
-                'es_semestral' => $esSemestral,
-                'es_cuatrimestral' => $esCuatrimestral,
-                'meses_intervalo' => $esCuatrimestral ? 4 : ($esSemestral ? 6 : 12),
-                'mes1' => $mes1,
-                'mes2' => $mes2,
-                'mes3' => $mes3,
-                'meses_texto' => $mesesTexto,
-                'vencimiento' => $vencStr,
-                'ultima_revision' => $ultimaRevision,
-                'estado' => $estado,
-                'estado_label' => $label,
-                'badge_color' => $color,
-                'badge_icon' => $icon,
-                'dias_restantes' => $dias,
-                'alerta_comercial' => $alerta,
-                'origen' => 'manual'
-            ];
-        }
-
-        // CÁLCULO LEGAL MTT
+        // Determinar la próxima fecha de vencimiento / ciclo legal MTT
+        $vencStr = null;
         if ($regimen === 'anual') {
-            // RÉGIMEN ANUAL (Particulares - 12 meses)
-            $vencimientoEsteAnio = ultimoDiaDelMes($anioActual, $mes1);
-            $vencTimeEsteAnio = strtotime($vencimientoEsteAnio);
-
-            $renovadoEnCiclo = false;
-            if (!empty($ultimaRevision)) {
-                $ultTime = strtotime($ultimaRevision);
-                if ($ultTime >= strtotime("$anioActual-01-01") && $ultTime >= $vencTimeEsteAnio - (60 * 86400)) {
-                    $renovadoEnCiclo = true;
-                }
-            }
-
-            $vencStr = $renovadoEnCiclo ? ultimoDiaDelMes($anioActual + 1, $mes1) : $vencimientoEsteAnio;
-            $vencTime = strtotime($vencStr);
-            $dias = (int)round(($vencTime - $hoyTime) / 86400);
-
-            if ($dias < 0) {
-                $estado = 'vencida';
-                $label = 'Vencida (' . $nombreMes1 . ' ' . date('Y', $vencTime) . ')';
-                $color = 'danger';
-                $icon = 'fa-solid fa-circle-xmark';
-                $alerta = "Revisión Técnica VENCIDA (Dígito $digito - $nombreMes1). Ofrécele al cliente: Pre-Revisión Técnica, Frenos y Gases.";
-            } elseif ($dias <= 31 || (int)$fechaRef->format('n') === $mes1) {
-                $estado = 'por_vencer';
-                $label = 'Vence este mes (' . $nombreMes1 . ' ' . date('Y', $vencTime) . ')';
-                $color = 'warning';
-                $icon = 'fa-solid fa-triangle-exclamation';
-                $alerta = "Revisión Técnica vence este mes (Dígito $digito - $nombreMes1). Ofrécele al cliente: Pre-Revisión Técnica preventiva.";
+            if ($mesActual <= $mes1) {
+                $vencStr = ultimoDiaDelMes($anioActual, $mes1);
             } else {
-                $estado = 'vigente';
-                $label = 'Al día (Vence en ' . $nombreMes1 . ' ' . date('Y', $vencTime) . ')';
-                $color = 'success';
-                $icon = 'fa-solid fa-circle-check';
-                $alerta = "Revisión Técnica al día hasta $nombreMes1 " . date('Y', $vencTime) . ".";
+                $vencStr = ultimoDiaDelMes($anioActual + 1, $mes1);
             }
-
         } elseif ($regimen === 'semestral') {
-            // RÉGIMEN SEMESTRAL (Camiones, Buses, Taxis - 6 meses)
             $fechasSemestrales = [
-                ultimoDiaDelMes($anioActual, $mes1),
-                ultimoDiaDelMes($anioActual, $mes2)
+                ultimoDiaDelMes($anioActual, $mesesLista[0]),
+                ultimoDiaDelMes($anioActual, $mesesLista[1]),
+                ultimoDiaDelMes($anioActual + 1, $mesesLista[0])
             ];
-            usort($fechasSemestrales, function($a, $b) {
-                return strcmp($a, $b);
-            });
-
-            $vencStr = null;
             foreach ($fechasSemestrales as $f) {
                 if (strtotime($f) >= $hoyTime) {
                     $vencStr = $f;
                     break;
                 }
             }
-            if (!$vencStr) {
-                $vencStr = end($fechasSemestrales);
-            }
-
-            $vencTime = strtotime($vencStr);
-            $mesVenc = (int)date('n', $vencTime);
-            $nombreMesVenc = obtenerNombreMesEspanol($mesVenc);
-            $dias = (int)round(($vencTime - $hoyTime) / 86400);
-
-            if ($dias < 0) {
-                $estado = 'vencida';
-                $label = 'Semestral Vencida (' . $nombreMesVenc . ' ' . date('Y', $vencTime) . ')';
-                $color = 'danger';
-                $icon = 'fa-solid fa-circle-xmark';
-                $alerta = "Revisión Semestral VENCIDA (Dígito $digito - $nombreMesVenc). Ofrécele: Inspección técnica para vehículos de carga/pasajeros.";
-            } elseif ($dias <= 31 || (int)$fechaRef->format('n') === $mesVenc) {
-                $estado = 'por_vencer';
-                $label = 'Semestral vence este mes (' . $nombreMesVenc . ')';
-                $color = 'warning';
-                $icon = 'fa-solid fa-triangle-exclamation';
-                $alerta = "Revisión Semestral vence este mes ($nombreMesVenc). Ofrécele al transportista: Pre-Revisión Técnica y Frenos de aire.";
-            } else {
-                $estado = 'vigente';
-                $label = 'Semestral al día (Hasta ' . $nombreMesVenc . ' ' . date('Y', $vencTime) . ')';
-                $color = 'success';
-                $icon = 'fa-solid fa-circle-check';
-                $alerta = "Revisión Semestral al día hasta $nombreMesVenc " . date('Y', $vencTime) . ".";
-            }
-
+            if (!$vencStr) $vencStr = end($fechasSemestrales);
         } else {
-            // RÉGIMEN CUATRIMESTRAL (Buses antiguos, escolares - 4 meses)
+            // Cuatrimestral
             $fechasCuatrimestrales = [
-                ultimoDiaDelMes($anioActual, $mes1),
-                ultimoDiaDelMes($anioActual, $mes2),
-                ultimoDiaDelMes($anioActual, $mes3)
+                ultimoDiaDelMes($anioActual, $mesesLista[0]),
+                ultimoDiaDelMes($anioActual, $mesesLista[1]),
+                ultimoDiaDelMes($anioActual, $mesesLista[2]),
+                ultimoDiaDelMes($anioActual + 1, $mesesLista[0])
             ];
-            usort($fechasCuatrimestrales, function($a, $b) {
-                return strcmp($a, $b);
-            });
-
-            $vencStr = null;
             foreach ($fechasCuatrimestrales as $f) {
                 if (strtotime($f) >= $hoyTime) {
                     $vencStr = $f;
                     break;
                 }
             }
-            if (!$vencStr) {
-                $vencStr = end($fechasCuatrimestrales);
-            }
+            if (!$vencStr) $vencStr = end($fechasCuatrimestrales);
+        }
 
-            $vencTime = strtotime($vencStr);
-            $mesVenc = (int)date('n', $vencTime);
-            $nombreMesVenc = obtenerNombreMesEspanol($mesVenc);
-            $dias = (int)round(($vencTime - $hoyTime) / 86400);
+        $origen = 'calculo_mtt';
+        // Si hay una fecha manual forzada válida (por ejemplo sticker registrado)
+        if (!empty($vencimientoManual) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $vencimientoManual)) {
+            $vencStr = $vencimientoManual;
+            $origen = 'manual';
+        }
 
-            if ($dias < 0) {
-                $estado = 'vencida';
-                $label = 'Cuatrimestral Vencida (' . $nombreMesVenc . ' ' . date('Y', $vencTime) . ')';
-                $color = 'danger';
-                $icon = 'fa-solid fa-circle-xmark';
-                $alerta = "Revisión Cuatrimestral VENCIDA (Dígito $digito - $nombreMesVenc). Vehículo de pasajeros fuera de norma MTT.";
-            } elseif ($dias <= 31 || (int)$fechaRef->format('n') === $mesVenc) {
-                $estado = 'por_vencer';
-                $label = 'Cuatrimestral vence este mes (' . $nombreMesVenc . ')';
-                $color = 'warning';
-                $icon = 'fa-solid fa-triangle-exclamation';
-                $alerta = "Revisión Cuatrimestral vence este mes ($nombreMesVenc). Ofrécele al operador: Inspección preventiva de seguridad y emisiones.";
-            } else {
-                $estado = 'vigente';
-                $label = 'Cuatrimestral al día (Hasta ' . $nombreMesVenc . ' ' . date('Y', $vencTime) . ')';
-                $color = 'success';
-                $icon = 'fa-solid fa-circle-check';
-                $alerta = "Revisión Cuatrimestral al día hasta $nombreMesVenc " . date('Y', $vencTime) . ".";
-            }
+        $vencTime = strtotime($vencStr);
+        $dias = (int)round(($vencTime - $hoyTime) / 86400);
+
+        if ($leTocaEsteMes || ($origen === 'manual' && $dias >= 0 && $dias <= 30)) {
+            $estado = 'por_vencer';
+            $label = 'Le corresponde este mes (' . obtenerNombreMesEspanol($mesActual) . ')';
+            $color = 'warning';
+            $icon = 'fa-solid fa-triangle-exclamation';
+            $alerta = "Revisión Técnica: A este vehículo le corresponde inspección este mes (" . obtenerNombreMesEspanol($mesActual) . "). Ofrécele al cliente: Pre-Revisión Técnica preventiva para que apruebe sin rechazos.";
+        } else {
+            $estado = 'vigente';
+            $label = 'Mes legal: ' . $mesesTexto;
+            $color = 'info';
+            $icon = 'fa-solid fa-calendar-check';
+            $alerta = "Calendario MTT: Le corresponde inspección en " . $mesesTexto . ".";
         }
 
         return [
@@ -406,7 +290,7 @@ if (!function_exists('obtenerUltimoDigitoPatente')) {
             'badge_icon' => $icon,
             'dias_restantes' => $dias,
             'alerta_comercial' => $alerta,
-            'origen' => 'calculo_mtt'
+            'origen' => $origen
         ];
     }
 

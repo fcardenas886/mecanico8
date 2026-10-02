@@ -1,10 +1,15 @@
 <?php
 // Version de la app: unica fuente de verdad, para que login y footer nunca queden desincronizados.
-define('APP_VERSION', 'v5.5.3');
+define('APP_VERSION', 'v5.5.4');
 
 // Novedades reales por versión, para la pantalla de bienvenida y el módulo "Acerca de".
 // Registra la cronología completa de la evolución del sistema desde su inicio.
 define('APP_CHANGELOG', [
+    'v5.5.4' => [
+        'Enfoque preventivo en Revisión Técnica (PRT): eliminación de falsas alarmas de "Vencida" para respetar la realidad de inspecciones realizadas en plantas externas del MTT.',
+        'Recordatorio inteligente del Mes Legal: el sistema resalta oportunamente el mes que le corresponde inspección según calendario oficial («Le corresponde este mes») para ofrecer Pre-Revisión Técnica preventiva.',
+        'Filtro optimizado en Vehículos: filtro directo «Le corresponde este mes» y registro manual de fecha de sticker sin suposiciones de estado.',
+    ],
     'v5.5.3' => [
         'Simplificación de mensajes de WhatsApp: eliminación de la línea «Código de seguridad» en los mensajes de Presupuesto, Comprobante de Custodia y Aviso de Retiro.',
         'Acceso directo sin fricción: el enlace web inteligente ya contiene el token de acceso seguro necesario, permitiendo al cliente abrir su documento o PDF con un solo toque sin códigos ni pasos adicionales.'

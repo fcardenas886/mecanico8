@@ -70,6 +70,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = $res['error'] ?? 'Error al renovar la revisión técnica.';
         }
+    } elseif ($action === 'guardar_fecha_prt') {
+        $fechaVenc = trim($_POST['vencimiento'] ?? '');
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaVenc)) {
+            $pdo->prepare("UPDATE vehiculos SET RevisionTecnicaVencimiento = :venc, RevisionTecnicaActualizadoEn = NOW() WHERE VehiculoID = :id")
+                ->execute([':venc' => $fechaVenc, ':id' => $vehiculoId]);
+            sincronizarVehiculoPRT($vehiculoId, $pdo);
+            $message = 'Fecha de sticker registrada exitosamente (' . date('d/m/Y', strtotime($fechaVenc)) . ').';
+            $stR = $pdo->prepare("SELECT * FROM vehiculos WHERE VehiculoID = :id");
+            $stR->execute([':id' => $vehiculoId]);
+            $vehiculoActualizado = $stR->fetch();
+            if ($vehiculoActualizado) {
+                $vehiculo = array_merge($vehiculo, $vehiculoActualizado);
+            }
+        } else {
+            $error = 'Fecha de vencimiento inválida.';
+        }
     } elseif ($action === 'cambiar_regimen_prt' || $action === 'toggle_transporte_publico') {
         $nuevoReg = strtolower(trim($_POST['regimen'] ?? ''));
         if (!in_array($nuevoReg, ['anual', 'semestral', 'cuatrimestral'], true)) {
